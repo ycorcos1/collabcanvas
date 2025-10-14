@@ -1,0 +1,98 @@
+.user-presence {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  z-index: 1000;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.presence-header {
+  margin-bottom: 12px;
+}
+
+.presence-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.user-item:hover {
+  background-color: #f8f9ff;
+}
+
+.user-item.current-user {
+  background-color: #f0f7ff;
+  border: 1px solid #e1f0ff;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current-user .user-name {
+  color: #0066cc;
+}
+
+.empty-message {
+  text-align: center;
+  color: #999;
+  font-size: 0.8rem;
+  font-style: italic;
+  padding: 16px 8px;
+}
+
+/* Animation for user join/leave */
+.user-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

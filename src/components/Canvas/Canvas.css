@@ -1,0 +1,77 @@
+.canvas-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #fafafa;
+  cursor: grab; /* Default: can drag canvas when no tool selected */
+}
+
+.canvas-container:active {
+  cursor: grabbing;
+}
+
+.canvas-container.creating-shape {
+  cursor: crosshair; /* When tool is selected: always crosshair */
+}
+
+.canvas-container.creating-shape:active {
+  cursor: crosshair;
+}
+
+/* Loading and error states */
+.canvas-loading,
+.canvas-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 24px 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.canvas-loading .loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.canvas-loading p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.canvas-error {
+  background: #fee;
+  border-left: 4px solid #c33;
+}
+
+.canvas-error p {
+  margin: 0;
+  color: #c33;
+  font-size: 0.9rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

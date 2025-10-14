@@ -1,0 +1,28 @@
+.cursor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1000;
+  transform-origin: top left;
+}
+
+.cursor-pointer {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.cursor-label {
+  position: absolute;
+  left: 20px;
+  top: -2px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Smooth cursor transitions */
+.cursor {
+  transition: all 0.1s ease-out;
+}
