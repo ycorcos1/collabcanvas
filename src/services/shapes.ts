@@ -60,6 +60,7 @@ const getShapesCollection = () => {
 export const createShape = async (
   shapeData: CreateShapeData
 ): Promise<string> => {
+  console.log("🔥 SHAPES - Creating shape with data:", shapeData);
   const shapesCollection = getShapesCollection();
   const now = Date.now();
 
@@ -69,11 +70,20 @@ export const createShape = async (
     updatedAt: now,
   };
 
-  const docRef = await addDoc(
-    shapesCollection,
-    shapeToFirestore(shapeWithTimestamps)
-  );
-  return docRef.id;
+  console.log("🔥 SHAPES - Shape with timestamps:", shapeWithTimestamps);
+  console.log("🔥 SHAPES - Firestore data:", shapeToFirestore(shapeWithTimestamps));
+
+  try {
+    const docRef = await addDoc(
+      shapesCollection,
+      shapeToFirestore(shapeWithTimestamps)
+    );
+    console.log("🔥 SHAPES - Shape created successfully with ID:", docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error("🔥 SHAPES ERROR - Failed to create shape:", error);
+    throw error;
+  }
 };
 
 // Update an existing shape
@@ -158,23 +168,29 @@ export const subscribeToShapes = (
   callback: (shapes: Shape[]) => void,
   onError?: (error: Error) => void
 ): (() => void) => {
+  console.log("🔥 SHAPES - Starting subscription to shapes...");
   const shapesCollection = getShapesCollection();
   const q = query(shapesCollection, orderBy("createdAt", "asc"));
 
   const unsubscribe = onSnapshot(
     q,
     (snapshot) => {
+      console.log("🔥 SHAPES - Received snapshot with", snapshot.docs.length, "documents");
       const shapes: Shape[] = [];
 
       snapshot.forEach((doc) => {
         const shape = firestoreToShape({ id: doc.id, ...doc.data() });
+        console.log("🔥 SHAPES - Parsed shape:", shape);
         shapes.push(shape);
       });
 
+      console.log("🔥 SHAPES - Final shapes array:", shapes);
       callback(shapes);
     },
     (error) => {
-      console.error("Error listening to shapes:", error);
+      console.error("🔥 SHAPES ERROR - Error listening to shapes:", error);
+      console.error("🔥 SHAPES ERROR - Error code:", error.code);
+      console.error("🔥 SHAPES ERROR - Error message:", error.message);
       if (onError) {
         onError(error);
       }

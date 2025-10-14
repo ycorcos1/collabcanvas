@@ -19,7 +19,13 @@ const firebaseConfig = {
     "https://collabcursor-default-rtdb.firebaseio.com",
 };
 
-console.log("Firebase config:", {
+console.log("🔥 Firebase Environment Check:");
+console.log("VITE_FIREBASE_API_KEY exists:", !!import.meta.env.VITE_FIREBASE_API_KEY);
+console.log("VITE_FIREBASE_PROJECT_ID:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
+console.log("VITE_FIREBASE_AUTH_DOMAIN:", import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
+console.log("VITE_FIREBASE_DATABASE_URL:", import.meta.env.VITE_FIREBASE_DATABASE_URL);
+
+console.log("🔥 Final Firebase config:", {
   ...firebaseConfig,
   apiKey: firebaseConfig.apiKey.substring(0, 10) + "...", // Hide sensitive data
   databaseURL: firebaseConfig.databaseURL, // Show the full database URL for debugging
