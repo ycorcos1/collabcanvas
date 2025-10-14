@@ -227,11 +227,19 @@ export const Shape: React.FC<ShapeProps> = React.memo(
               <Rect x={1} y={-2} width={2} height={4} fill="#ff4444" />
             </Group>
           )}
-          {/* User label for shapes selected by others */}
+          {/* User label for shapes selected by others - positioned above circle center */}
           {selectedByOther && !isSelected && (
-            <Group x={shape.x} y={shape.y - 25}>
+            <Group
+              x={shape.x + shape.width / 2}
+              y={
+                shape.y +
+                shape.height / 2 -
+                Math.min(shape.width, shape.height) / 2 -
+                25
+              }
+            >
               <Rect
-                x={0}
+                x={-(selectedByOther.name.length * 8 + 10) / 2}
                 y={0}
                 width={selectedByOther.name.length * 8 + 10}
                 height={20}
@@ -240,7 +248,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
                 opacity={0.9}
               />
               <Text
-                x={5}
+                x={-(selectedByOther.name.length * 8 + 10) / 2 + 5}
                 y={3}
                 text={selectedByOther.name}
                 fontSize={12}
