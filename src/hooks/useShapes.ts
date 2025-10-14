@@ -6,7 +6,11 @@ import { useAuth } from "../components/Auth/AuthProvider";
 export const useShapes = () => {
   const { user } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
-  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  // Persist selected shape across page refreshes
+  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(() => {
+    const saved = localStorage.getItem('collabcanvas-selected-shape');
+    return saved || null;
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +51,18 @@ export const useShapes = () => {
       setIsLoading(false);
     };
   }, [user]);
+
+  // Validate persisted selected shape still exists after shapes load
+  useEffect(() => {
+    if (selectedShapeId && shapes.length > 0) {
+      const shapeExists = shapes.some(shape => shape.id === selectedShapeId);
+      if (!shapeExists) {
+        // Selected shape no longer exists, clear the selection
+        setSelectedShapeId(null);
+        localStorage.removeItem('collabcanvas-selected-shape');
+      }
+    }
+  }, [shapes, selectedShapeId]);
 
   const createShape = useCallback(
     async (shapeData: CreateShapeData) => {
@@ -127,6 +143,7 @@ export const useShapes = () => {
         setShapes((prev) => prev.filter((shape) => shape.id !== id));
         if (selectedShapeId === id) {
           setSelectedShapeId(null);
+          localStorage.removeItem('collabcanvas-selected-shape');
         }
 
         // Delete from Firebase
@@ -169,8 +186,13 @@ export const useShapes = () => {
           );
         }
 
-        // Update local state
+        // Update local state and persist to localStorage
         setSelectedShapeId(id);
+        if (id) {
+          localStorage.setItem('collabcanvas-selected-shape', id);
+        } else {
+          localStorage.removeItem('collabcanvas-selected-shape');
+        }
       } catch (error) {
         console.error("Error selecting shape:", error);
       }

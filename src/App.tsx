@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./components/Auth/AuthProvider";
 import { Login } from "./components/Auth/Login";
 import { Canvas } from "./components/Canvas/Canvas";
@@ -13,7 +13,33 @@ import "./App.css";
 const AppContent: React.FC = () => {
   const { user, isLoading, signOut } = useAuth();
   const { clearAllShapes } = useShapes();
-  const [selectedTool, setSelectedTool] = useState<Shape["type"] | null>(null);
+  // Persist selected tool across page refreshes
+  const [selectedTool, setSelectedTool] = useState<Shape["type"] | null>(() => {
+    const saved = localStorage.getItem('collabcanvas-selected-tool');
+    return saved ? (saved as Shape["type"]) : null;
+  });
+
+  // Save selected tool to localStorage when it changes
+  useEffect(() => {
+    if (selectedTool) {
+      localStorage.setItem('collabcanvas-selected-tool', selectedTool);
+    } else {
+      localStorage.removeItem('collabcanvas-selected-tool');
+    }
+  }, [selectedTool]);
+
+  // Clear persisted state when page is unloaded (tab closed/navigated away)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      localStorage.removeItem('collabcanvas-selected-tool');
+      localStorage.removeItem('collabcanvas-selected-shape');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const handleToolSelect = (tool: Shape["type"] | null) => {
     setSelectedTool(tool);
