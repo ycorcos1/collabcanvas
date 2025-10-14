@@ -69,6 +69,13 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
     );
   }, [isDrawing, drawStartPos, previewShape]);
 
+  // Reset canvas state when user signs out
+  useEffect(() => {
+    if (!user) {
+      updateCanvasState({ x: 0, y: 0, scale: 1 });
+    }
+  }, [user, updateCanvasState]);
+
   // Update stage size on window resize
   useEffect(() => {
     const updateSize = () => {

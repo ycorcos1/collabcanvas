@@ -28,6 +28,13 @@ const AppContent: React.FC = () => {
     }
   }, [selectedTool]);
 
+  // Reset selected tool when user signs out
+  useEffect(() => {
+    if (!user) {
+      setSelectedTool(null);
+    }
+  }, [user]);
+
   const handleToolSelect = (tool: Shape["type"] | null) => {
     setSelectedTool(tool);
   };
