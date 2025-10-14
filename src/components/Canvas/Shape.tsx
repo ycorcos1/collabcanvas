@@ -96,9 +96,6 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         e.cancelBubble = true;
         // Don't allow selection if locked by another user
         if (isLockedByOther) {
-          console.log(
-            `Shape ${shape.id} is locked by ${selectedByOther?.name}`
-          );
           return;
         }
         // Pass the original mouse event to get shift key state

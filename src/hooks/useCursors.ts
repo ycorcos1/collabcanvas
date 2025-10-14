@@ -32,7 +32,7 @@ export const useCursors = () => {
         console.error("Cursor subscription error:", error);
         // Don't crash the app - just log the error and keep existing cursors
         if ((error as any)?.code === 'unavailable' || (error as any)?.code === 'permission-denied') {
-          console.log("Cursors temporarily unavailable, keeping existing");
+          // Cursors temporarily unavailable, keeping existing
         }
       }
     );

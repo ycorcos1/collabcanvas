@@ -39,11 +39,9 @@ export const useCanvasDimensions = () => {
               // Network issues or auth token expired - keep existing dimensions
               setError(null);
               setIsLoading(false);
-              console.log("Canvas dimensions temporarily unavailable, keeping existing");
             } else if (retryCount < maxRetries) {
               // Retry connection for other errors
               retryCount++;
-              console.log(`Retrying canvas dimensions subscription (${retryCount}/${maxRetries})`);
               setTimeout(setupSubscription, 2000 * retryCount); // Exponential backoff
             } else {
               setError("Unable to sync canvas dimensions");

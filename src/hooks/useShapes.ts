@@ -156,7 +156,6 @@ export const useShapes = () => {
 
       try {
         setError(null);
-        console.log("Creating shape:", shapeData);
 
         // Optimistically add the shape to local state
         const newShape: Shape = {
@@ -168,7 +167,6 @@ export const useShapes = () => {
 
         setShapes((prev) => [...prev, newShape]);
         // Don't auto-select the shape during creation - let user explicitly select it
-        console.log("🔥 Shape added optimistically:", tempId);
 
         // Set up pending tracking for when Firebase returns the real shape
         setPendingAutoSelect({
@@ -176,11 +174,9 @@ export const useShapes = () => {
           createdAt: Date.now(),
           userId: user.id,
         });
-        console.log("🔥 Pending shape tracking set for:", tempId);
 
         // Save to Firebase (the subscription will update with the real ID)
         await shapesService.createShape(shapeData);
-        console.log("Shape saved to Firebase successfully");
 
         return newShape;
       } catch (err: any) {
@@ -274,9 +270,6 @@ export const useShapes = () => {
         const shape = shapes.find((s) => s.id === id);
         if (shape?.selectedBy && shape.selectedBy !== user.id) {
           // Shape is selected by another user - cannot select
-          console.log(
-            `Shape ${id} is selected by ${shape.selectedByName}, cannot select`
-          );
           return;
         }
 
