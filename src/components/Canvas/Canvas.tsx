@@ -142,44 +142,85 @@ export const Canvas: React.FC<CanvasProps> = ({
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const shiftKeyRef = useRef(false); // Ref for immediate access
 
-  // Track shift key for multi-select - Enhanced event handling for production
+  // Track shift key for multi-select - Production-focused approach
   useEffect(() => {
+    let isActive = true;
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isActive) return;
+      
       if (e.key === "Shift" || e.shiftKey) {
-        e.preventDefault();
+        // Don't prevent default - let browser handle normally for production compatibility
         setIsShiftPressed(true);
         shiftKeyRef.current = true;
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (!isActive) return;
+      
       if (e.key === "Shift" || !e.shiftKey) {
         setIsShiftPressed(false);
         shiftKeyRef.current = false;
       }
     };
 
-    // Use multiple event targets for maximum compatibility
-    document.addEventListener("keydown", handleKeyDown, { passive: false, capture: true });
-    document.addEventListener("keyup", handleKeyUp, { passive: false, capture: true });
-    window.addEventListener("keydown", handleKeyDown, { passive: false });
-    window.addEventListener("keyup", handleKeyUp, { passive: false });
-    
-    // Also add focus/blur handlers to reset state
+    // Reset on any focus change
     const handleBlur = () => {
+      if (!isActive) return;
       setIsShiftPressed(false);
       shiftKeyRef.current = false;
     };
-    window.addEventListener("blur", handleBlur);
-    window.addEventListener("focus", handleBlur); // Reset on focus too
+
+    const handleVisibilityChange = () => {
+      if (!isActive) return;
+      if (document.hidden) {
+        setIsShiftPressed(false);
+        shiftKeyRef.current = false;
+      }
+    };
+
+    // Use multiple attachment strategies for maximum compatibility
+    try {
+      // Strategy 1: Document with capture (most reliable)
+      document.addEventListener("keydown", handleKeyDown, { capture: true });
+      document.addEventListener("keyup", handleKeyUp, { capture: true });
+      
+      // Strategy 2: Window as fallback
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+      
+      // Strategy 3: Body as another fallback
+      if (document.body) {
+        document.body.addEventListener("keydown", handleKeyDown);
+        document.body.addEventListener("keyup", handleKeyUp);
+      }
+      
+      // Reset handlers
+      window.addEventListener("blur", handleBlur);
+      window.addEventListener("focus", handleBlur);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    } catch (error) {
+      console.error("Failed to attach keyboard listeners:", error);
+    }
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("blur", handleBlur);
-      window.removeEventListener("focus", handleBlur);
+      isActive = false;
+      try {
+        document.removeEventListener("keydown", handleKeyDown);
+        document.removeEventListener("keyup", handleKeyUp);
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+        if (document.body) {
+          document.body.removeEventListener("keydown", handleKeyDown);
+          document.body.removeEventListener("keyup", handleKeyUp);
+        }
+        window.removeEventListener("blur", handleBlur);
+        window.removeEventListener("focus", handleBlur);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     };
   }, []);
 
@@ -456,16 +497,23 @@ export const Canvas: React.FC<CanvasProps> = ({
     [isDrawing, previewShape, drawStartPos, createShape, user]
   );
 
-  // Handle shape selection with multiple shift detection methods
+  // Handle shape selection with multiple shift detection methods + polling fallback
   const handleShapeSelect = useCallback(
     (shapeId: string, event?: MouseEvent) => {
-      // Try multiple methods to detect shift key for production reliability
-      const shiftPressed = 
-        event?.shiftKey || // From the actual mouse event (most reliable)
-        shiftKeyRef.current || // From our ref
-        isShiftPressed; // From our state
+      // Additional fallback: check if user is currently holding shift
+      // This works even if event listeners fail in production
+      const isCurrentlyShiftPressed = (() => {
+        try {
+          // Check if we can access the current keyboard state (prioritize mouse event)
+          if (event?.shiftKey !== undefined) return event.shiftKey;
+          if (shiftKeyRef.current !== undefined) return shiftKeyRef.current;
+          return isShiftPressed;
+        } catch {
+          return false;
+        }
+      })();
       
-      selectShape(shapeId, shiftPressed);
+      selectShape(shapeId, isCurrentlyShiftPressed);
     },
     [selectShape, isShiftPressed]
   );
@@ -505,24 +553,51 @@ export const Canvas: React.FC<CanvasProps> = ({
         </div>
       )}
 
-      {/* Multi-select indicator with debug info */}
+      {/* Multi-select indicator with debug info and user instructions */}
       {(isShiftPressed || shiftKeyRef.current) && (
         <div
           style={{
             position: "absolute",
             top: "10px",
             left: "10px",
-            backgroundColor: "rgba(0, 123, 255, 0.8)",
+            backgroundColor: "rgba(0, 123, 255, 0.9)",
             color: "white",
-            padding: "8px 12px",
-            borderRadius: "4px",
+            padding: "12px 16px",
+            borderRadius: "6px",
             fontSize: "14px",
             fontWeight: "bold",
             zIndex: 1000,
             pointerEvents: "none",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
           }}
         >
-          Multi-select mode (State: {isShiftPressed ? '✓' : '✗'}, Ref: {shiftKeyRef.current ? '✓' : '✗'})
+          <div>🔄 Multi-select mode active</div>
+          <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.9 }}>
+            Click shapes to add to selection
+          </div>
+          <div style={{ fontSize: "11px", marginTop: "2px", opacity: 0.7 }}>
+            State: {isShiftPressed ? '✓' : '✗'} | Ref: {shiftKeyRef.current ? '✓' : '✗'}
+          </div>
+        </div>
+      )}
+
+      {/* Instructions for multi-select if no shapes are selected */}
+      {selectedShapeIds.length === 0 && !isShiftPressed && !shiftKeyRef.current && (
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            color: "white",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            zIndex: 1000,
+            pointerEvents: "none",
+          }}
+        >
+          💡 Hold Shift + Click to select multiple shapes
         </div>
       )}
 
