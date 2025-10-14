@@ -13,33 +13,20 @@ import "./App.css";
 const AppContent: React.FC = () => {
   const { user, isLoading, signOut } = useAuth();
   const { clearAllShapes } = useShapes();
-  // Persist selected tool across page refreshes
+  // Persist selected tool across page refreshes (using sessionStorage)
   const [selectedTool, setSelectedTool] = useState<Shape["type"] | null>(() => {
-    const saved = localStorage.getItem('collabcanvas-selected-tool');
+    const saved = sessionStorage.getItem('collabcanvas-selected-tool');
     return saved ? (saved as Shape["type"]) : null;
   });
 
-  // Save selected tool to localStorage when it changes
+  // Save selected tool to sessionStorage when it changes
   useEffect(() => {
     if (selectedTool) {
-      localStorage.setItem('collabcanvas-selected-tool', selectedTool);
+      sessionStorage.setItem('collabcanvas-selected-tool', selectedTool);
     } else {
-      localStorage.removeItem('collabcanvas-selected-tool');
+      sessionStorage.removeItem('collabcanvas-selected-tool');
     }
   }, [selectedTool]);
-
-  // Clear persisted state when page is unloaded (tab closed/navigated away)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      localStorage.removeItem('collabcanvas-selected-tool');
-      localStorage.removeItem('collabcanvas-selected-shape');
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
 
   const handleToolSelect = (tool: Shape["type"] | null) => {
     setSelectedTool(tool);

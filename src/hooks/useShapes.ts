@@ -6,9 +6,9 @@ import { useAuth } from "../components/Auth/AuthProvider";
 export const useShapes = () => {
   const { user } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
-  // Persist selected shape across page refreshes
+  // Persist selected shape across page refreshes (using sessionStorage)
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(() => {
-    const saved = localStorage.getItem('collabcanvas-selected-shape');
+    const saved = sessionStorage.getItem('collabcanvas-selected-shape');
     return saved || null;
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +59,7 @@ export const useShapes = () => {
       if (!shapeExists) {
         // Selected shape no longer exists, clear the selection
         setSelectedShapeId(null);
-        localStorage.removeItem('collabcanvas-selected-shape');
+        sessionStorage.removeItem('collabcanvas-selected-shape');
       }
     }
   }, [shapes, selectedShapeId]);
@@ -143,7 +143,7 @@ export const useShapes = () => {
         setShapes((prev) => prev.filter((shape) => shape.id !== id));
         if (selectedShapeId === id) {
           setSelectedShapeId(null);
-          localStorage.removeItem('collabcanvas-selected-shape');
+          sessionStorage.removeItem('collabcanvas-selected-shape');
         }
 
         // Delete from Firebase
@@ -186,12 +186,12 @@ export const useShapes = () => {
           );
         }
 
-        // Update local state and persist to localStorage
+        // Update local state and persist to sessionStorage
         setSelectedShapeId(id);
         if (id) {
-          localStorage.setItem('collabcanvas-selected-shape', id);
+          sessionStorage.setItem('collabcanvas-selected-shape', id);
         } else {
-          localStorage.removeItem('collabcanvas-selected-shape');
+          sessionStorage.removeItem('collabcanvas-selected-shape');
         }
       } catch (error) {
         console.error("Error selecting shape:", error);
