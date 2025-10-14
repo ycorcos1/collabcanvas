@@ -4,6 +4,13 @@ import * as shapesService from "../services/shapes";
 import { useAuth } from "../components/Auth/AuthProvider";
 
 export const useShapes = () => {
+  // Track the most recent shape creation for auto-selection
+  const [pendingAutoSelect, setPendingAutoSelect] = useState<{
+    tempId: string;
+    createdAt: number;
+    userId: string;
+  } | null>(null);
+
   const { user } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
   // Persist selected shape across page refreshes (using sessionStorage)
@@ -35,21 +42,23 @@ export const useShapes = () => {
         clearTimeout(loadingTimeout);
         console.log("🔥 AUTO-SELECT - Firebase shapes received:", firebaseShapes.length);
         console.log("🔥 AUTO-SELECT - Current selectedShapeId:", selectedShapeId);
+        console.log("🔥 AUTO-SELECT - Pending auto-select:", pendingAutoSelect);
         
-        // If we have a selected shape with a temporary ID, try to find the corresponding Firebase shape
-        let newSelectedShapeId = selectedShapeId;
-        if (selectedShapeId && selectedShapeId.includes('-')) { // Temporary IDs contain hyphens
-          console.log("🔥 AUTO-SELECT - Looking for Firebase shape to replace temp ID:", selectedShapeId);
+        // If we have a pending auto-select, try to find the corresponding Firebase shape
+        if (pendingAutoSelect && user && pendingAutoSelect.userId === user.id) {
+          console.log("🔥 AUTO-SELECT - Looking for Firebase shape to replace temp ID:", pendingAutoSelect.tempId);
           
-          // Find the most recently created shape (likely our newly created shape)
-          const sortedShapes = [...firebaseShapes].sort((a, b) => b.createdAt - a.createdAt);
-          const newestShape = sortedShapes[0];
+          // Find the most recently created shape by this user
+          const userShapes = firebaseShapes.filter(shape => shape.createdBy === user.id);
+          const sortedUserShapes = userShapes.sort((a, b) => b.createdAt - a.createdAt);
+          const newestUserShape = sortedUserShapes[0];
           
-          if (newestShape && (Date.now() - newestShape.createdAt < 5000)) { // Created within last 5 seconds
-            console.log("🔥 AUTO-SELECT - Found newest shape, selecting it:", newestShape.id);
-            newSelectedShapeId = newestShape.id;
-            setSelectedShapeId(newestShape.id);
-            sessionStorage.setItem('collabcanvas-selected-shape', newestShape.id);
+          // Check if this shape was created around the same time as our pending shape
+          if (newestUserShape && Math.abs(newestUserShape.createdAt - pendingAutoSelect.createdAt) < 3000) {
+            console.log("🔥 AUTO-SELECT - Found matching shape, selecting it:", newestUserShape.id);
+            setSelectedShapeId(newestUserShape.id);
+            sessionStorage.setItem('collabcanvas-selected-shape', newestUserShape.id);
+            setPendingAutoSelect(null); // Clear the pending auto-select
           }
         }
         
@@ -120,6 +129,14 @@ export const useShapes = () => {
         // Persist the selection to sessionStorage
         sessionStorage.setItem('collabcanvas-selected-shape', tempId);
 
+        // Set up pending auto-select for when Firebase returns the real shape
+        setPendingAutoSelect({
+          tempId: tempId,
+          createdAt: Date.now(),
+          userId: user.id
+        });
+        console.log("🔥 AUTO-SELECT - Pending auto-select set for:", tempId);
+
         // Save to Firebase (the subscription will update with the real ID)
         await shapesService.createShape(shapeData);
         console.log("Shape saved to Firebase successfully");
@@ -130,6 +147,8 @@ export const useShapes = () => {
         setError(err.message || "Failed to create shape");
         // Remove the optimistic shape on error
         setShapes((prev) => prev.filter((shape) => shape.id !== tempId));
+        // Clear pending auto-select on error
+        setPendingAutoSelect(null);
         return null;
       }
     },
