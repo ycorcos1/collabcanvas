@@ -28,12 +28,13 @@ const AppContent: React.FC = () => {
     }
   }, [selectedTool]);
 
-  // Reset selected tool when user signs out
+  // Reset selected tool when user signs out (but not when signing back in)
   useEffect(() => {
-    if (!user) {
+    // Only reset if user becomes null AND we're not in the initial loading state
+    if (!user && !isLoading) {
       setSelectedTool(null);
     }
-  }, [user]);
+  }, [user, isLoading]);
 
   const handleToolSelect = (tool: Shape["type"] | null) => {
     setSelectedTool(tool);

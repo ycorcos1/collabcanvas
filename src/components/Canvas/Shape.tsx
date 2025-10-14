@@ -171,10 +171,49 @@ export const Shape: React.FC<ShapeProps> = React.memo(
       return (
         <Group>
           <Circle
-            {...commonProps}
             x={shape.x + shape.width / 2} // Adjust x to center
             y={shape.y + shape.height / 2} // Adjust y to center
             radius={Math.min(shape.width, shape.height) / 2}
+            fill={isPreview ? "rgba(33, 150, 243, 0.3)" : shape.color}
+            stroke={isSelected
+              ? "#2196f3"
+              : selectedByOther
+              ? selectedByOther.color
+              : isPreview
+              ? "#2196f3"
+              : "transparent"}
+            strokeWidth={isSelected ? 3 : selectedByOther ? 3 : isPreview ? 2 : 0}
+            strokeScaleEnabled={false}
+            draggable={!isPreview && !isLockedByOther} // Disable dragging if locked by another user
+            onClick={isPreview ? undefined : handleClick}
+            onTap={isPreview ? undefined : handleClick}
+            onDragStart={isPreview || isLockedByOther ? undefined : handleDragStart} // Disable drag if locked
+            onDragEnd={isPreview || isLockedByOther ? undefined : (e: KonvaEventObject<DragEvent>) => {
+              const node = e.target;
+              // Prevent event bubbling to the stage
+              e.cancelBubble = true;
+              setIsDragging(false);
+              // Reset cursor - let CSS handle the state
+              const stage = e.target.getStage();
+              if (stage) {
+                stage.container().style.cursor = "";
+              }
+              // For circles, we need to adjust the position back to top-left corner
+              onDragEnd(shape.id, node.x() - shape.width / 2, node.y() - shape.height / 2);
+            }} // Disable drag if locked
+            onMouseEnter={isPreview ? undefined : handleMouseEnter}
+            onMouseLeave={isPreview ? undefined : handleMouseLeave}
+            perfectDrawEnabled={false}
+            shadowColor={isSelected
+              ? "rgba(33, 150, 243, 0.3)"
+              : selectedByOther
+              ? `${selectedByOther.color}40`
+              : "transparent"}
+            shadowOffset={{ x: 0, y: 2 }}
+            shadowBlur={isSelected || selectedByOther ? 8 : 0}
+            listening={!isPreview}
+            dash={isPreview ? [5, 5] : undefined}
+            opacity={isLockedByOther ? 0.7 : 1} // Slightly transparent if locked by another user
           />
           {/* Trash icon for selected circle - only show if selected by current user */}
           {isSelected && !isPreview && !isLockedByOther && (

@@ -72,6 +72,8 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
   // Reset canvas state when user signs out
   useEffect(() => {
     if (!user) {
+      // Clear sessionStorage and reset canvas state
+      sessionStorage.removeItem('collabcanvas-canvas-state');
       updateCanvasState({ x: 0, y: 0, scale: 1 });
     }
   }, [user, updateCanvasState]);
