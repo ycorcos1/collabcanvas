@@ -55,12 +55,14 @@ export const useShapes = () => {
         return null;
       }
 
+      // Generate temp ID at the beginning so it's accessible in catch block
+      const tempId = crypto.randomUUID();
+
       try {
         setError(null);
         console.log("Creating shape:", shapeData);
 
         // Optimistically add the shape to local state
-        const tempId = crypto.randomUUID();
         const newShape: Shape = {
           id: tempId,
           ...shapeData,
@@ -205,16 +207,12 @@ export const useShapes = () => {
   useEffect(() => {
     if (!user) return;
 
-    const cleanup = async () => {
-      try {
-        await shapesService.clearUserSelections(user.id);
-      } catch (error) {
-        console.error("Error clearing user selections:", error);
-      }
-    };
-
     // Clear selections when component unmounts
-    return cleanup;
+    return () => {
+      shapesService.clearUserSelections(user.id).catch((error) => {
+        console.error("Error clearing user selections:", error);
+      });
+    };
   }, [user]);
 
   const clearShapes = useCallback(() => {
@@ -229,7 +227,6 @@ export const useShapes = () => {
       setError(null);
 
       // Optimistically clear all shapes
-      const originalShapes = shapes;
       setShapes([]);
       setSelectedShapeId(null);
 

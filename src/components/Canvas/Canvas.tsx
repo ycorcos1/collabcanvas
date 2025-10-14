@@ -228,7 +228,7 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
 
   // Handle mouse move - update preview shape or cursor
   const handleMouseMove = useCallback(
-    (e: KonvaEventObject<MouseEvent>) => {
+    (_e: KonvaEventObject<MouseEvent>) => {
       const stage = stageRef.current;
       if (!stage || !user) return;
 

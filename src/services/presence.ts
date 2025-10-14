@@ -85,11 +85,10 @@ export const subscribeToPresence = (
       console.log("🔥 FIREBASE - Calling callback with", users.length, "users");
       callback(users);
     },
-    (error) => {
-      console.error("🔥 ERROR - Error listening to presence:", error);
-      console.error("🔥 ERROR - Error code:", error.code);
-      console.error("🔥 ERROR - Error message:", error.message);
-    }
+        (error) => {
+          console.error("🔥 ERROR - Error listening to presence:", error);
+          console.error("🔥 ERROR - Error message:", error.message);
+        }
   );
 
   return unsubscribe;
