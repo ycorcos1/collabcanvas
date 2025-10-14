@@ -40,8 +40,8 @@ export const usePresence = () => {
         console.error("Presence subscription error:", error);
         // Don't crash - just log the error and keep existing presence data
         if (
-          error?.code === "unavailable" ||
-          error?.code === "permission-denied"
+          (error as any)?.code === "unavailable" ||
+          (error as any)?.code === "permission-denied"
         ) {
           // Presence temporarily unavailable, keeping existing data
         }

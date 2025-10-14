@@ -35,7 +35,7 @@ export const useCanvasDimensions = () => {
             console.error("Canvas dimensions subscription error:", error);
             
             // Handle different types of errors gracefully
-            if (error?.code === 'unavailable' || error?.code === 'permission-denied') {
+            if ((error as any)?.code === 'unavailable' || (error as any)?.code === 'permission-denied') {
               // Network issues or auth token expired - keep existing dimensions
               setError(null);
               setIsLoading(false);

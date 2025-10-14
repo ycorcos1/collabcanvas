@@ -104,8 +104,8 @@ export const useShapes = () => {
 
         // Handle different types of errors gracefully
         if (
-          error.code === "unavailable" ||
-          error.code === "permission-denied"
+          (error as any).code === "unavailable" ||
+          (error as any).code === "permission-denied"
         ) {
           // Network issues or auth token expired - keep existing shapes and retry
           setError(null); // Don't show error to user for temporary network issues

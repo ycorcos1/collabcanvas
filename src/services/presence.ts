@@ -51,7 +51,7 @@ export const subscribeToPresence = (
 
       if (snapshot.exists()) {
         const presenceData = snapshot.val();
-        Object.entries(presenceData).forEach(([userId, userData]) => {
+        Object.entries(presenceData).forEach(([_userId, userData]) => {
           if (userData && typeof userData === "object") {
             users.push(userData as PresenceData);
           }
