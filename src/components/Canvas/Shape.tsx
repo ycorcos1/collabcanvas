@@ -179,8 +179,16 @@ export const Shape: React.FC<ShapeProps> = React.memo(
           {/* Trash icon for selected circle - only show if selected by current user */}
           {isSelected && !isPreview && !isLockedByOther && (
             <Group
-              x={shape.x + shape.width}
-              y={shape.y}
+              x={
+                shape.x +
+                shape.width / 2 +
+                Math.min(shape.width, shape.height) / 2
+              }
+              y={
+                shape.y +
+                shape.height / 2 -
+                Math.min(shape.width, shape.height) / 2
+              }
               onClick={handleDelete}
               onTap={handleDelete}
               onMouseEnter={handleTrashMouseEnter}
