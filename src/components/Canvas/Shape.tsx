@@ -9,7 +9,7 @@ interface ShapeProps {
   isSelected: boolean;
   isPreview?: boolean;
   selectedTool: ShapeType["type"] | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, event?: MouseEvent) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
   isLockedByOther?: boolean; // New prop for collaborative locking
   selectedByOther?: { name: string; color: string } | null; // New prop for showing who selected it
@@ -101,7 +101,8 @@ export const Shape: React.FC<ShapeProps> = React.memo(
           );
           return;
         }
-        onSelect(shape.id);
+        // Pass the original mouse event to get shift key state
+        onSelect(shape.id, e.evt);
       },
       [shape.id, onSelect, isLockedByOther, selectedByOther]
     );
