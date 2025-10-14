@@ -162,7 +162,7 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
 
   // Handle mouse down - start shape creation or selection
   const handleMouseDown = useCallback(
-    (e: KonvaEventObject<MouseEvent>) => {
+    (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
       const stage = stageRef.current;
       if (!stage || !user) {
         console.log("No stage or user:", { stage: !!stage, user: !!user });
@@ -276,7 +276,7 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
   );
 
   // Handle mouse up - finalize shape creation
-  const handleMouseUp = useCallback(async () => {
+  const handleMouseUp = useCallback(async (e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
     console.log(
       "Mouse up - isDrawing:",
       isDrawing,
