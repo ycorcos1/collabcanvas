@@ -141,26 +141,33 @@ export const Canvas: React.FC<CanvasProps> = ({
     };
   }, []);
 
-  // Track shift key for multi-select
+  // Track shift key for multi-select - More robust event handling for production
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
+      if (e.key === "Shift" || e.shiftKey) {
+        e.preventDefault();
         setIsShiftPressed(true);
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
+      if (e.key === "Shift" || !e.shiftKey) {
         setIsShiftPressed(false);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    // Use document instead of window for better compatibility
+    document.addEventListener("keydown", handleKeyDown, { passive: false });
+    document.addEventListener("keyup", handleKeyUp, { passive: false });
+    
+    // Also add focus/blur handlers to reset state
+    const handleBlur = () => setIsShiftPressed(false);
+    window.addEventListener("blur", handleBlur);
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
     };
   }, []);
 
@@ -477,6 +484,27 @@ export const Canvas: React.FC<CanvasProps> = ({
         <div className="canvas-loading">
           <div className="loading-spinner"></div>
           <p>Loading canvas...</p>
+        </div>
+      )}
+
+      {/* Multi-select indicator */}
+      {isShiftPressed && (
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            backgroundColor: "rgba(0, 123, 255, 0.8)",
+            color: "white",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            fontSize: "14px",
+            fontWeight: "bold",
+            zIndex: 1000,
+            pointerEvents: "none",
+          }}
+        >
+          Multi-select mode (Shift held)
         </div>
       )}
 
