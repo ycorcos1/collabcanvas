@@ -277,7 +277,7 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
 
   // Handle mouse up - finalize shape creation
   const handleMouseUp = useCallback(
-    async (e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    async (_e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
       console.log(
         "Mouse up - isDrawing:",
         isDrawing,
