@@ -89,6 +89,13 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedShapeId) {
           e.preventDefault();
+          
+          // Reset cursor when deleting via keyboard
+          const stage = stageRef.current;
+          if (stage) {
+            stage.container().style.cursor = "";
+          }
+          
           deleteShape(selectedShapeId);
         }
       }

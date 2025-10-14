@@ -100,6 +100,13 @@ export const Shape: React.FC<ShapeProps> = React.memo(
     const handleDelete = useCallback(
       (e: KonvaEventObject<MouseEvent>) => {
         e.cancelBubble = true; // Prevent shape selection
+        
+        // Reset cursor since trash icon will disappear after deletion
+        const stage = e.target.getStage();
+        if (stage) {
+          stage.container().style.cursor = "";
+        }
+        
         onDelete(shape.id);
       },
       [shape.id, onDelete]
