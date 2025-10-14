@@ -3,7 +3,7 @@ import { Stage, Layer, Rect, Circle } from "react-konva";
 import Konva from "konva";
 import { KonvaEventObject } from "konva/lib/Node";
 import { useCanvas } from "../../hooks/useCanvas";
-import { useShapes } from "../../hooks/useShapes";
+import { useCanvasDimensions } from "../../hooks/useCanvasDimensions";
 import { useCursors } from "../../hooks/useCursors";
 import { useAuth } from "../Auth/AuthProvider";
 import { Shape } from "./Shape";
@@ -15,32 +15,62 @@ import {
 } from "../../utils/canvasHelpers";
 import "./Canvas.css";
 
-// Canvas dimensions (virtual workspace) - Made larger
-const CANVAS_WIDTH = 5000;
-const CANVAS_HEIGHT = 4000;
-
 interface CanvasProps {
   selectedTool: ShapeType["type"] | null;
+  shapes: ShapeType[];
+  selectedShapeIds: string[];
+  isLoading: boolean;
+  error: string | null;
+  createShape: (shapeData: any) => Promise<ShapeType | null>;
+  updateShape: (id: string, updates: any) => Promise<void>;
+  deleteSelectedShapes: () => Promise<void>;
+  selectShape: (id: string | null, isShiftPressed?: boolean) => Promise<void>;
+  isShapeLockedByOther: (shapeId: string) => boolean;
+  getShapeSelector: (shapeId: string) => { name: string; color: string } | null;
 }
 
-export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
+export const Canvas: React.FC<CanvasProps> = ({
+  selectedTool,
+  shapes,
+  selectedShapeIds,
+  isLoading,
+  error,
+  createShape,
+  updateShape,
+  deleteSelectedShapes,
+  selectShape,
+  isShapeLockedByOther,
+  getShapeSelector,
+}) => {
   const { user } = useAuth();
-  const { canvasState, updateCanvasState } = useCanvas();
-  const {
-    shapes,
-    selectedShapeId,
-    isLoading,
-    error,
-    createShape,
-    updateShape,
-    deleteShape,
-    selectShape,
-    isShapeLockedByOther,
-    getShapeSelector,
-  } = useShapes();
+  const { canvasState, updateCanvasState, resetCanvas, centerCanvas } =
+    useCanvas();
+  const { dimensions: canvasDimensions } = useCanvasDimensions();
   const { updateCursorPosition } = useCursors();
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Track shift key state for multi-select
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  // Zoom optimization refs
+  const zoomAnimationRef = useRef<number | null>(null);
+  const pendingZoomUpdate = useRef<{
+    x: number;
+    y: number;
+    scale: number;
+  } | null>(null);
+  const lastZoomTime = useRef<number>(0);
+  const zoomAccumulator = useRef<{
+    deltaX: number;
+    deltaY: number;
+    count: number;
+  }>({
+    deltaX: 0,
+    deltaY: 0,
+    count: 0,
+  });
 
   // State for shape creation
   const [isDrawing, setIsDrawing] = useState(false);
@@ -69,14 +99,80 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
     );
   }, [isDrawing, drawStartPos, previewShape]);
 
-  // Reset canvas state when user signs out
+  // Optimized zoom update using requestAnimationFrame with throttling
+  const scheduleZoomUpdate = useCallback(() => {
+    if (zoomAnimationRef.current) return; // Animation already scheduled
+
+    zoomAnimationRef.current = requestAnimationFrame(() => {
+      if (pendingZoomUpdate.current) {
+        // Only update React state every 16ms (60 FPS) to prevent excessive re-renders
+        const now = Date.now();
+        if (now - lastZoomTime.current >= 16) {
+          updateCanvasState(pendingZoomUpdate.current);
+          lastZoomTime.current = now;
+        } else {
+          // Re-schedule if we're updating too frequently
+          zoomAnimationRef.current = null;
+          scheduleZoomUpdate();
+          return;
+        }
+        pendingZoomUpdate.current = null;
+      }
+      zoomAnimationRef.current = null;
+    });
+  }, [updateCanvasState]);
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (zoomAnimationRef.current) {
+        cancelAnimationFrame(zoomAnimationRef.current);
+      }
+    };
+  }, []);
+
+  // Track shift key for multi-select
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setIsShiftPressed(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setIsShiftPressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  // Handle canvas state based on user authentication
   useEffect(() => {
     if (!user) {
-      // Clear sessionStorage and reset canvas state
-      sessionStorage.removeItem('collabcanvas-canvas-state');
-      updateCanvasState({ x: 0, y: 0, scale: 1 });
+      // Reset canvas state when user signs out (clears sessionStorage)
+      resetCanvas();
+      setHasInitialized(false);
+    } else if (!hasInitialized) {
+      // Center the canvas when user first signs in
+      // Use setTimeout to ensure sessionStorage has been cleared
+      setTimeout(() => {
+        const saved = sessionStorage.getItem("collabcanvas-canvas-state");
+        if (!saved) {
+          // No saved state means fresh sign-in, center the canvas
+          centerCanvas(canvasDimensions.width, canvasDimensions.height);
+        }
+        setHasInitialized(true);
+      }, 0);
     }
-  }, [user, updateCanvasState]);
+  }, [user, resetCanvas, centerCanvas, hasInitialized, canvasDimensions]);
 
   // Update stage size on window resize
   useEffect(() => {
@@ -85,6 +181,7 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
         width: window.innerWidth,
         height: window.innerHeight,
       });
+      // Note: We don't re-center on resize anymore to preserve user's position
     };
 
     updateSize();
@@ -96,7 +193,7 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedShapeId) {
+        if (selectedShapeIds.length > 0) {
           e.preventDefault();
 
           // Reset cursor when deleting via keyboard
@@ -105,22 +202,40 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
             stage.container().style.cursor = "";
           }
 
-          deleteShape(selectedShapeId);
+          // Delete all selected shapes
+          deleteSelectedShapes();
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedShapeId, deleteShape]);
+  }, [selectedShapeIds, deleteSelectedShapes]);
 
-  // Handle zoom (wheel)
+  // Handle zoom (wheel) - Ultra-smooth with event batching
   const handleWheel = useCallback(
     (e: KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
 
       const stage = stageRef.current;
       if (!stage) return;
+
+      // Batch wheel events for smoother scrolling
+      const now = Date.now();
+      zoomAccumulator.current.deltaX += e.evt.deltaX;
+      zoomAccumulator.current.deltaY += e.evt.deltaY;
+      zoomAccumulator.current.count++;
+
+      // Process accumulated wheel events every few milliseconds
+      if (now - lastZoomTime.current < 8) {
+        return; // Batch more events
+      }
+
+      const avgDeltaY =
+        zoomAccumulator.current.deltaY / zoomAccumulator.current.count;
+
+      // Reset accumulator
+      zoomAccumulator.current = { deltaX: 0, deltaY: 0, count: 0 };
 
       const oldScale = stage.scaleX();
       const pointer = stage.getPointerPosition();
@@ -133,30 +248,33 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
       };
 
       // Determine zoom direction and factor
-      const direction = e.evt.deltaY > 0 ? -1 : 1;
-      const scaleBy = 1.02; // Reduced from 1.05 for less sensitivity
+      const direction = avgDeltaY > 0 ? -1 : 1;
+      const scaleBy = 1.05; // Increased back for faster zooming while keeping smoothness
       const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
       // Clamp scale between 0.1 and 5
       const clampedScale = Math.max(0.1, Math.min(5, newScale));
-
-      stage.scale({ x: clampedScale, y: clampedScale });
 
       const newPos = {
         x: pointer.x - mousePointTo.x * clampedScale,
         y: pointer.y - mousePointTo.y * clampedScale,
       };
 
+      // Update Konva stage immediately for visual feedback
+      stage.scale({ x: clampedScale, y: clampedScale });
       stage.position(newPos);
       stage.batchDraw();
 
-      updateCanvasState({
+      // Schedule React state update for next frame
+      pendingZoomUpdate.current = {
         x: newPos.x,
         y: newPos.y,
         scale: clampedScale,
-      });
+      };
+      scheduleZoomUpdate();
+      lastZoomTime.current = now;
     },
-    [updateCanvasState]
+    [scheduleZoomUpdate]
   );
 
   // Handle pan (drag) - only when dragging the stage itself
@@ -217,9 +335,9 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
         if (
           selectedTool &&
           pos.x >= 0 &&
-          pos.x <= CANVAS_WIDTH &&
+          pos.x <= canvasDimensions.width &&
           pos.y >= 0 &&
-          pos.y <= CANVAS_HEIGHT
+          pos.y <= canvasDimensions.height
         ) {
           console.log("Starting shape creation with tool:", selectedTool);
 
@@ -272,8 +390,8 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
         const startY = drawStartPos.y;
 
         // Calculate dimensions (constrain to canvas)
-        const endX = Math.max(0, Math.min(CANVAS_WIDTH, pos.x));
-        const endY = Math.max(0, Math.min(CANVAS_HEIGHT, pos.y));
+        const endX = Math.max(0, Math.min(canvasDimensions.width, pos.x));
+        const endY = Math.max(0, Math.min(canvasDimensions.height, pos.y));
 
         const width = Math.abs(endX - startX);
         const height = Math.abs(endY - startY);
@@ -341,17 +459,9 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
   // Handle shape selection
   const handleShapeSelect = useCallback(
     (shapeId: string) => {
-      selectShape(shapeId);
+      selectShape(shapeId, isShiftPressed);
     },
-    [selectShape]
-  );
-
-  // Handle shape deletion
-  const handleShapeDelete = useCallback(
-    (shapeId: string) => {
-      deleteShape(shapeId);
-    },
-    [deleteShape]
+    [selectShape, isShiftPressed]
   );
 
   // Handle shape drag end
@@ -365,8 +475,8 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
       const minVisible = 20;
 
       // Calculate constrained position
-      const maxX = CANVAS_WIDTH - minVisible; // Allow shape to go mostly off-canvas to the right
-      const maxY = CANVAS_HEIGHT - minVisible; // Allow shape to go mostly off-canvas to the bottom
+      const maxX = canvasDimensions.width - minVisible; // Allow shape to go mostly off-canvas to the right
+      const maxY = canvasDimensions.height - minVisible; // Allow shape to go mostly off-canvas to the bottom
       const minX = minVisible - shape.width; // Allow shape to go mostly off-canvas to the left
       const minY = minVisible - shape.height; // Allow shape to go mostly off-canvas to the top
 
@@ -437,29 +547,33 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
         onTouchEnd={handleMouseUp}
         // Performance optimizations for smooth 60 FPS
         perfectDrawEnabled={false}
+        imageSmoothingEnabled={true}
         listening={true}
       >
         <Layer
           clipX={0}
           clipY={0}
-          clipWidth={CANVAS_WIDTH}
-          clipHeight={CANVAS_HEIGHT}
+          clipWidth={canvasDimensions.width}
+          clipHeight={canvasDimensions.height}
+          perfectDrawEnabled={false}
         >
           {/* Canvas Background */}
           <Rect
             x={0}
             y={0}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
+            width={canvasDimensions.width}
+            height={canvasDimensions.height}
             fill="#ffffff"
             stroke="#d0d0d0"
             strokeWidth={3}
           />
 
           {/* Grid pattern */}
-          {Array.from({ length: Math.floor(CANVAS_WIDTH / 100) }).map((_, i) =>
-            Array.from({ length: Math.floor(CANVAS_HEIGHT / 100) }).map(
-              (_, j) => (
+          {Array.from({ length: Math.floor(canvasDimensions.width / 100) }).map(
+            (_, i) =>
+              Array.from({
+                length: Math.floor(canvasDimensions.height / 100),
+              }).map((_, j) => (
                 <Rect
                   key={`grid-${i}-${j}`}
                   x={i * 100}
@@ -469,9 +583,11 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
                   fill="transparent"
                   stroke="#f5f5f5"
                   strokeWidth={1}
+                  listening={false}
+                  perfectDrawEnabled={false}
+                  strokeScaleEnabled={false}
                 />
-              )
-            )
+              ))
           )}
 
           {/* Render all shapes */}
@@ -484,19 +600,18 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
               <Shape
                 key={shape.id}
                 shape={shape}
-                isSelected={selectedShapeId === shape.id}
+                isSelected={selectedShapeIds.includes(shape.id)}
                 selectedTool={selectedTool}
                 onSelect={handleShapeSelect}
                 onDragEnd={handleShapeDragEnd}
-                onDelete={handleShapeDelete}
                 isLockedByOther={isLockedByOther}
                 selectedByOther={selectedByOther}
+                canvasScale={canvasState.scale}
               />
             );
           })}
 
           {/* Preview shape while drawing */}
-          {console.log("Preview shape:", previewShape)}
           {previewShape &&
             (previewShape.type === "circle" ? (
               <Circle

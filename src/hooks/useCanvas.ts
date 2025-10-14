@@ -4,7 +4,7 @@ import { CanvasState } from "../types/canvas";
 export const useCanvas = () => {
   // Persist canvas state across page refreshes (using sessionStorage)
   const [canvasState, setCanvasState] = useState<CanvasState>(() => {
-    const saved = sessionStorage.getItem('collabcanvas-canvas-state');
+    const saved = sessionStorage.getItem("collabcanvas-canvas-state");
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -18,7 +18,10 @@ export const useCanvas = () => {
 
   // Save canvas state to sessionStorage when it changes
   useEffect(() => {
-    sessionStorage.setItem('collabcanvas-canvas-state', JSON.stringify(canvasState));
+    sessionStorage.setItem(
+      "collabcanvas-canvas-state",
+      JSON.stringify(canvasState)
+    );
   }, [canvasState]);
 
   const updateCanvasState = useCallback((updates: Partial<CanvasState>) => {
@@ -26,10 +29,40 @@ export const useCanvas = () => {
   }, []);
 
   const resetCanvas = useCallback(() => {
-    const defaultState = { x: 0, y: 0, scale: 1 };
-    setCanvasState(defaultState);
-    sessionStorage.setItem('collabcanvas-canvas-state', JSON.stringify(defaultState));
+    setCanvasState({ x: 0, y: 0, scale: 1 });
+    sessionStorage.removeItem("collabcanvas-canvas-state");
   }, []);
+
+  const centerCanvas = useCallback(
+    (canvasWidth: number, canvasHeight: number) => {
+      // Position the viewport so the center of the canvas is visible in the center of the viewport
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Calculate the center of the canvas
+      const canvasCenterX = canvasWidth / 2;
+      const canvasCenterY = canvasHeight / 2;
+
+      // Position the canvas so its center appears in the viewport center
+      const x = viewportWidth / 2 - canvasCenterX;
+      const y = viewportHeight / 2 - canvasCenterY;
+
+      setCanvasState({ x, y, scale: 1 });
+    },
+    []
+  );
+
+  const initializeCanvas = useCallback(
+    (canvasWidth: number, canvasHeight: number) => {
+      // Only center if there's no saved state (indicating a fresh sign-in)
+      const saved = sessionStorage.getItem("collabcanvas-canvas-state");
+      if (!saved) {
+        centerCanvas(canvasWidth, canvasHeight);
+      }
+      // If there is saved state, it's already loaded in the useState initializer
+    },
+    [centerCanvas]
+  );
 
   const zoomToFit = useCallback((width: number, height: number) => {
     const padding = 100;
@@ -48,6 +81,8 @@ export const useCanvas = () => {
     canvasState,
     updateCanvasState,
     resetCanvas,
+    centerCanvas,
+    initializeCanvas,
     zoomToFit,
   };
 };

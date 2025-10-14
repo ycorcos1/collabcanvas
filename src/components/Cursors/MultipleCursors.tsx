@@ -2,6 +2,7 @@ import React from "react";
 import { useCursors } from "../../hooks/useCursors";
 import { Cursor } from "./Cursor";
 import { CanvasState } from "../../types/canvas";
+import "./MultipleCursors.css";
 
 interface MultipleCursorsProps {
   canvasState: CanvasState;
@@ -14,18 +15,16 @@ export const MultipleCursors: React.FC<MultipleCursorsProps> = ({
 }) => {
   const { cursors } = useCursors();
 
-  // Convert canvas coordinates to screen coordinates
+  // Position cursor at canvas coordinates - it should stay at the same canvas position regardless of zoom/pan
   const getScreenPosition = (canvasX: number, canvasY: number) => {
     const stage = stageRef.current;
     if (!stage) return { x: 0, y: 0 };
 
-    const transform = stage.getAbsoluteTransform();
+    // Convert canvas coordinates to screen coordinates using the stage transformation
+    const transform = stage.getAbsoluteTransform().copy();
     const screenPos = transform.point({ x: canvasX, y: canvasY });
 
-    return {
-      x: screenPos.x,
-      y: screenPos.y,
-    };
+    return screenPos;
   };
 
   return (

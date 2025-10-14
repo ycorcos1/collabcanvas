@@ -4,7 +4,7 @@ import * as shapesService from "../services/shapes";
 import { useAuth } from "../components/Auth/AuthProvider";
 
 export const useShapes = () => {
-  // Track the most recent shape creation for auto-selection
+  // Track the most recent shape creation for Firebase synchronization
   const [pendingAutoSelect, setPendingAutoSelect] = useState<{
     tempId: string;
     createdAt: number;
@@ -13,13 +13,32 @@ export const useShapes = () => {
 
   const { user } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
-  // Persist selected shape across page refreshes (using sessionStorage)
-  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(() => {
-    const saved = sessionStorage.getItem('collabcanvas-selected-shape');
-    return saved || null;
+  // Persist selected shapes across page refreshes (using sessionStorage) - now supports multiple
+  const [selectedShapeIds, setSelectedShapeIds] = useState<string[]>(() => {
+    const saved = sessionStorage.getItem("collabcanvas-selected-shapes");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
+      }
+    }
+    return [];
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Save selected shapes to sessionStorage when they change
+  useEffect(() => {
+    if (selectedShapeIds.length > 0) {
+      sessionStorage.setItem(
+        "collabcanvas-selected-shapes",
+        JSON.stringify(selectedShapeIds)
+      );
+    } else {
+      sessionStorage.removeItem("collabcanvas-selected-shapes");
+    }
+  }, [selectedShapeIds]);
 
   // Subscribe to shapes from Firebase
   useEffect(() => {
@@ -40,28 +59,39 @@ export const useShapes = () => {
     const unsubscribe = shapesService.subscribeToShapes(
       (firebaseShapes) => {
         clearTimeout(loadingTimeout);
-        console.log("🔥 AUTO-SELECT - Firebase shapes received:", firebaseShapes.length);
-        console.log("🔥 AUTO-SELECT - Current selectedShapeId:", selectedShapeId);
-        console.log("🔥 AUTO-SELECT - Pending auto-select:", pendingAutoSelect);
-        
-        // If we have a pending auto-select, try to find the corresponding Firebase shape
+        // Firebase shapes received
+
+        // If we have a pending shape creation, find the corresponding Firebase shape
         if (pendingAutoSelect && user && pendingAutoSelect.userId === user.id) {
-          console.log("🔥 AUTO-SELECT - Looking for Firebase shape to replace temp ID:", pendingAutoSelect.tempId);
-          
+          console.log(
+            "🔥 Looking for Firebase shape to replace temp ID:",
+            pendingAutoSelect.tempId
+          );
+
           // Find the most recently created shape by this user
-          const userShapes = firebaseShapes.filter(shape => shape.createdBy === user.id);
-          const sortedUserShapes = userShapes.sort((a, b) => b.createdAt - a.createdAt);
+          const userShapes = firebaseShapes.filter(
+            (shape) => shape.createdBy === user.id
+          );
+          const sortedUserShapes = userShapes.sort(
+            (a, b) => b.createdAt - a.createdAt
+          );
           const newestUserShape = sortedUserShapes[0];
-          
+
           // Check if this shape was created around the same time as our pending shape
-          if (newestUserShape && Math.abs(newestUserShape.createdAt - pendingAutoSelect.createdAt) < 3000) {
-            console.log("🔥 AUTO-SELECT - Found matching shape, selecting it:", newestUserShape.id);
-            setSelectedShapeId(newestUserShape.id);
-            sessionStorage.setItem('collabcanvas-selected-shape', newestUserShape.id);
-            setPendingAutoSelect(null); // Clear the pending auto-select
+          if (
+            newestUserShape &&
+            Math.abs(newestUserShape.createdAt - pendingAutoSelect.createdAt) <
+              3000
+          ) {
+            console.log(
+              "🔥 Found matching shape (but not auto-selecting):",
+              newestUserShape.id
+            );
+            // Don't auto-select - let user explicitly select if they want
+            setPendingAutoSelect(null); // Clear the pending tracking
           }
         }
-        
+
         setShapes(firebaseShapes);
         setIsLoading(false);
         console.log("Firebase shapes loaded:", firebaseShapes.length);
@@ -82,22 +112,35 @@ export const useShapes = () => {
   }, [user]);
 
   // Validate persisted selected shape still exists after shapes load
+  // Validate selected shapes still exist when shapes array changes
   useEffect(() => {
-    if (selectedShapeId && shapes.length > 0) {
-      console.log("🔥 AUTO-SELECT - Validating selected shape:", selectedShapeId);
-      console.log("🔥 AUTO-SELECT - Current shapes:", shapes.map(s => s.id));
-      
-      const shapeExists = shapes.some(shape => shape.id === selectedShapeId);
-      if (!shapeExists) {
-        // Selected shape no longer exists, clear the selection
-        console.log("🔥 AUTO-SELECT - Selected shape no longer exists, clearing selection");
-        setSelectedShapeId(null);
-        sessionStorage.removeItem('collabcanvas-selected-shape');
+    if (selectedShapeIds.length > 0 && shapes.length > 0) {
+      console.log(
+        "🔥 AUTO-SELECT - Validating selected shapes:",
+        selectedShapeIds
+      );
+      console.log(
+        "🔥 AUTO-SELECT - Current shapes:",
+        shapes.map((s) => s.id)
+      );
+
+      const validShapeIds = selectedShapeIds.filter((id) =>
+        shapes.some((shape) => shape.id === id)
+      );
+
+      if (validShapeIds.length !== selectedShapeIds.length) {
+        // Some selected shapes no longer exist, update the selection
+        console.log(
+          "🔥 AUTO-SELECT - Some selected shapes no longer exist, updating selection"
+        );
+        setSelectedShapeIds(validShapeIds);
       } else {
-        console.log("🔥 AUTO-SELECT - Selected shape still exists, keeping selection");
+        console.log(
+          "🔥 AUTO-SELECT - All selected shapes still exist, keeping selection"
+        );
       }
     }
-  }, [shapes, selectedShapeId]);
+  }, [shapes, selectedShapeIds]);
 
   const createShape = useCallback(
     async (shapeData: CreateShapeData) => {
@@ -122,20 +165,16 @@ export const useShapes = () => {
         };
 
         setShapes((prev) => [...prev, newShape]);
-        setSelectedShapeId(tempId);
-        console.log("🔥 AUTO-SELECT - Shape added optimistically and selected:", tempId);
-        console.log("🔥 AUTO-SELECT - Selected shape ID set to:", tempId);
+        // Don't auto-select the shape during creation - let user explicitly select it
+        console.log("🔥 Shape added optimistically:", tempId);
 
-        // Persist the selection to sessionStorage
-        sessionStorage.setItem('collabcanvas-selected-shape', tempId);
-
-        // Set up pending auto-select for when Firebase returns the real shape
+        // Set up pending tracking for when Firebase returns the real shape
         setPendingAutoSelect({
           tempId: tempId,
           createdAt: Date.now(),
-          userId: user.id
+          userId: user.id,
         });
-        console.log("🔥 AUTO-SELECT - Pending auto-select set for:", tempId);
+        console.log("🔥 Pending shape tracking set for:", tempId);
 
         // Save to Firebase (the subscription will update with the real ID)
         await shapesService.createShape(shapeData);
@@ -190,9 +229,12 @@ export const useShapes = () => {
 
         // Optimistically remove from local state
         setShapes((prev) => prev.filter((shape) => shape.id !== id));
-        if (selectedShapeId === id) {
-          setSelectedShapeId(null);
-          sessionStorage.removeItem('collabcanvas-selected-shape');
+
+        // Remove from selection if it was selected
+        if (selectedShapeIds.includes(id)) {
+          setSelectedShapeIds((prev) =>
+            prev.filter((shapeId) => shapeId !== id)
+          );
         }
 
         // Delete from Firebase
@@ -202,52 +244,105 @@ export const useShapes = () => {
         // The subscription will restore the shape on error
       }
     },
-    [user, selectedShapeId]
+    [user, selectedShapeIds]
   );
 
+  // Multi-select shape function - supports shift key for multiple selection
   const selectShape = useCallback(
-    async (id: string | null) => {
+    async (id: string | null, isShiftPressed: boolean = false) => {
       if (!user) return;
 
       try {
-        // If deselecting current shape, clear selection in Firebase
-        if (selectedShapeId && !id) {
-          await shapesService.deselectShape(selectedShapeId);
+        if (!id) {
+          // Deselecting all shapes
+          // Clear selections in Firebase for all currently selected shapes
+          for (const shapeId of selectedShapeIds) {
+            await shapesService.deselectShape(shapeId);
+          }
+          setSelectedShapeIds([]);
+          return;
         }
 
-        // If selecting a new shape, check if it's available
-        if (id) {
-          const shape = shapes.find((s) => s.id === id);
-          if (shape?.selectedBy && shape.selectedBy !== user.id) {
-            // Shape is selected by another user - cannot select
-            console.log(
-              `Shape ${id} is selected by ${shape.selectedByName}, cannot select`
+        // Check if shape is available for selection
+        const shape = shapes.find((s) => s.id === id);
+        if (shape?.selectedBy && shape.selectedBy !== user.id) {
+          // Shape is selected by another user - cannot select
+          console.log(
+            `Shape ${id} is selected by ${shape.selectedByName}, cannot select`
+          );
+          return;
+        }
+
+        if (isShiftPressed) {
+          // Shift key pressed - toggle selection
+          if (selectedShapeIds.includes(id)) {
+            // Deselect this shape
+            await shapesService.deselectShape(id);
+            setSelectedShapeIds((prev) =>
+              prev.filter((shapeId) => shapeId !== id)
             );
-            return;
+          } else {
+            // Add to selection
+            await shapesService.selectShape(
+              id,
+              user.id,
+              user.displayName,
+              user.color
+            );
+            setSelectedShapeIds((prev) => [...prev, id]);
+          }
+        } else {
+          // No shift key - single selection (clear others and select this one)
+          // First deselect all currently selected shapes
+          for (const shapeId of selectedShapeIds) {
+            if (shapeId !== id) {
+              await shapesService.deselectShape(shapeId);
+            }
           }
 
-          // Select the shape in Firebase
+          // Select the new shape
           await shapesService.selectShape(
             id,
             user.id,
             user.displayName,
             user.color
           );
-        }
-
-        // Update local state and persist to sessionStorage
-        setSelectedShapeId(id);
-        if (id) {
-          sessionStorage.setItem('collabcanvas-selected-shape', id);
-        } else {
-          sessionStorage.removeItem('collabcanvas-selected-shape');
+          setSelectedShapeIds([id]);
         }
       } catch (error) {
         console.error("Error selecting shape:", error);
       }
     },
-    [user, selectedShapeId, shapes]
+    [user, selectedShapeIds, shapes]
   );
+
+  // Delete all selected shapes
+  const deleteSelectedShapes = useCallback(async () => {
+    if (!user || selectedShapeIds.length === 0) return;
+
+    try {
+      setError(null);
+
+      // Store the IDs to delete before clearing selection
+      const shapesToDelete = [...selectedShapeIds];
+
+      // Clear selection immediately
+      setSelectedShapeIds([]);
+
+      // Optimistically remove all selected shapes from local state
+      setShapes((prev) =>
+        prev.filter((shape) => !shapesToDelete.includes(shape.id))
+      );
+
+      // Delete all selected shapes from Firebase concurrently for better performance
+      await Promise.all(
+        shapesToDelete.map((shapeId) => shapesService.deleteShape(shapeId))
+      );
+    } catch (err: any) {
+      setError(err.message || "Failed to delete shapes");
+      // The subscription will restore the shapes on error
+    }
+  }, [user, selectedShapeIds]);
 
   // Check if a shape is selected by another user
   const isShapeLockedByOther = useCallback(
@@ -263,7 +358,7 @@ export const useShapes = () => {
   const getShapeSelector = useCallback(
     (shapeId: string): { name: string; color: string } | null => {
       if (!user) return null;
-      
+
       const shape = shapes.find((s) => s.id === shapeId);
       if (shape?.selectedBy && shape.selectedByName && shape.selectedByColor) {
         // Only return selector info if it's NOT the current user
@@ -293,7 +388,7 @@ export const useShapes = () => {
 
   const clearShapes = useCallback(() => {
     setShapes([]);
-    setSelectedShapeId(null);
+    setSelectedShapeIds([]);
   }, []);
 
   const clearAllShapes = useCallback(async () => {
@@ -304,7 +399,7 @@ export const useShapes = () => {
 
       // Optimistically clear all shapes
       setShapes([]);
-      setSelectedShapeId(null);
+      setSelectedShapeIds([]);
 
       // Delete all shapes from Firebase
       await Promise.all(
@@ -325,12 +420,13 @@ export const useShapes = () => {
 
   return {
     shapes,
-    selectedShapeId,
+    selectedShapeIds, // Changed from selectedShapeId to selectedShapeIds
     isLoading,
     error,
     createShape,
     updateShape,
     deleteShape,
+    deleteSelectedShapes, // New function for deleting all selected shapes
     selectShape,
     clearShapes,
     clearAllShapes,

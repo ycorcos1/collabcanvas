@@ -143,9 +143,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error: null,
       }));
 
-      // Clear session storage on sign out to reset selected tool, shape, and canvas state
+      // Clear session storage on sign out to reset selected tool, shapes, and canvas state
       sessionStorage.removeItem("collabcanvas-selected-tool");
-      sessionStorage.removeItem("collabcanvas-selected-shape");
+      sessionStorage.removeItem("collabcanvas-selected-shapes"); // Updated for multi-select
       sessionStorage.removeItem("collabcanvas-canvas-state");
 
       const { signOutUser } = await import("../../services/auth");
