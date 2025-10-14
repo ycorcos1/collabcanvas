@@ -16,25 +16,39 @@ export const DEFAULT_CANVAS_DIMENSIONS = {
 const CANVAS_DIMENSIONS_DOC_ID = "global-canvas-dimensions";
 
 export const subscribeToCanvasDimensions = (
-  callback: (dimensions: CanvasDimensions) => void
+  callback: (dimensions: CanvasDimensions) => void,
+  errorCallback?: (error: any) => void
 ) => {
   const docRef = doc(firestore, "canvasDimensions", CANVAS_DIMENSIONS_DOC_ID);
 
-  return onSnapshot(docRef, (docSnapshot) => {
-    if (docSnapshot.exists()) {
-      const data = docSnapshot.data() as CanvasDimensions;
-      callback(data);
-    } else {
-      // If document doesn't exist, create it with default dimensions
-      const defaultDimensions: CanvasDimensions = {
-        ...DEFAULT_CANVAS_DIMENSIONS,
-        updatedAt: Date.now(),
-        updatedBy: "system",
-      };
-      setDoc(docRef, defaultDimensions);
-      callback(defaultDimensions);
+  return onSnapshot(
+    docRef, 
+    (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data() as CanvasDimensions;
+        callback(data);
+      } else {
+        // If document doesn't exist, create it with default dimensions
+        const defaultDimensions: CanvasDimensions = {
+          ...DEFAULT_CANVAS_DIMENSIONS,
+          updatedAt: Date.now(),
+          updatedBy: "system",
+        };
+        setDoc(docRef, defaultDimensions).catch((error) => {
+          console.error("Failed to create default canvas dimensions:", error);
+          // Still call callback with default dimensions even if save fails
+          callback(defaultDimensions);
+        });
+        callback(defaultDimensions);
+      }
+    },
+    (error) => {
+      console.error("Canvas dimensions subscription error:", error);
+      if (errorCallback) {
+        errorCallback(error);
+      }
     }
-  });
+  );
 };
 
 export const updateCanvasDimensions = async (

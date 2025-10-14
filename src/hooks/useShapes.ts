@@ -94,13 +94,24 @@ export const useShapes = () => {
 
         setShapes(firebaseShapes);
         setIsLoading(false);
+        setError(null); // Clear any previous errors on successful reconnection
         console.log("Firebase shapes loaded:", firebaseShapes.length);
       },
       (error) => {
         clearTimeout(loadingTimeout);
-        setError(`Firebase connection failed: ${error.message}`);
-        setIsLoading(false);
         console.error("Firebase shapes error:", error);
+        
+        // Handle different types of errors gracefully
+        if (error.code === 'unavailable' || error.code === 'permission-denied') {
+          // Network issues or auth token expired - keep existing shapes and retry
+          setError(null); // Don't show error to user for temporary network issues
+          setIsLoading(false);
+          console.log("Firebase temporarily unavailable, keeping existing shapes");
+        } else {
+          // Other errors - show error but don't crash
+          setError(`Connection issue: ${error.message}`);
+          setIsLoading(false);
+        }
       }
     );
 

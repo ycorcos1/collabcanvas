@@ -41,7 +41,8 @@ export const setUserOffline = async (userId: string): Promise<void> => {
 
 // Subscribe to presence changes
 export const subscribeToPresence = (
-  callback: (users: PresenceData[]) => void
+  callback: (users: PresenceData[]) => void,
+  errorCallback?: (error: any) => void
 ): (() => void) => {
   console.log("🔥 STARTING - Subscribing to presence changes");
   const presenceRef = ref(database, `presence/${CANVAS_ID}`);
@@ -85,10 +86,13 @@ export const subscribeToPresence = (
       console.log("🔥 FIREBASE - Calling callback with", users.length, "users");
       callback(users);
     },
-        (error) => {
-          console.error("🔥 ERROR - Error listening to presence:", error);
-          console.error("🔥 ERROR - Error message:", error.message);
-        }
+    (error) => {
+      console.error("🔥 ERROR - Error listening to presence:", error);
+      console.error("🔥 ERROR - Error message:", error.message);
+      if (errorCallback) {
+        errorCallback(error);
+      }
+    }
   );
 
   return unsubscribe;

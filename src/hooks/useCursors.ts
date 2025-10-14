@@ -11,20 +11,40 @@ export const useCursors = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Set up disconnection cleanup
-    cursorsService.setupCursorDisconnection(user.id);
+    let isActive = true;
 
-    // Subscribe to other users' cursors
+    // Set up disconnection cleanup with error handling
+    try {
+      cursorsService.setupCursorDisconnection(user.id);
+    } catch (error) {
+      console.error("Failed to setup cursor disconnection:", error);
+    }
+
+    // Subscribe to other users' cursors with error handling
     const unsubscribe = cursorsService.subscribeToCursors(
       user.id,
       (newCursors) => {
-        setCursors(newCursors);
+        if (isActive) {
+          setCursors(newCursors);
+        }
+      },
+      (error) => {
+        console.error("Cursor subscription error:", error);
+        // Don't crash the app - just log the error and keep existing cursors
+        if (error?.code === 'unavailable' || error?.code === 'permission-denied') {
+          console.log("Cursors temporarily unavailable, keeping existing");
+        }
       }
     );
 
     return () => {
-      unsubscribe();
-      cursorsService.removeCursor(user.id);
+      isActive = false;
+      try {
+        unsubscribe();
+        cursorsService.removeCursor(user.id);
+      } catch (error) {
+        console.error("Error during cursor cleanup:", error);
+      }
     };
   }, [user]);
 
@@ -32,13 +52,18 @@ export const useCursors = () => {
     (x: number, y: number) => {
       if (!user) return;
 
-      cursorsService.updateCursorPosition(
-        user.id,
-        x,
-        y,
-        user.displayName,
-        user.color
-      );
+      try {
+        cursorsService.updateCursorPosition(
+          user.id,
+          x,
+          y,
+          user.displayName,
+          user.color
+        );
+      } catch (error) {
+        console.error("Error updating cursor position:", error);
+        // Don't crash the app - cursor updates are not critical
+      }
     },
     [user]
   );

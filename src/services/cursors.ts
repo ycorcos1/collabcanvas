@@ -61,7 +61,8 @@ export const removeCursor = async (userId: string): Promise<void> => {
 // Subscribe to cursor changes
 export const subscribeToCursors = (
   currentUserId: string,
-  callback: (cursors: CursorState) => void
+  callback: (cursors: CursorState) => void,
+  errorCallback?: (error: any) => void
 ): (() => void) => {
   const cursorsRef = ref(database, `cursors/${CANVAS_ID}`);
 
@@ -88,6 +89,9 @@ export const subscribeToCursors = (
     },
     (error) => {
       console.error("Error listening to cursors:", error);
+      if (errorCallback) {
+        errorCallback(error);
+      }
     }
   );
 

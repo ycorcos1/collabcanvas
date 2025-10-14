@@ -12,8 +12,9 @@ export const usePresence = () => {
     if (!user) return;
 
     console.log("Setting up presence for user:", user.displayName);
+    let isActive = true;
 
-    // Set current user as online
+    // Set current user as online with error handling
     presenceService
       .setUserOnline(user.id, user.displayName, user.color)
       .then(() => {
@@ -21,45 +22,66 @@ export const usePresence = () => {
       })
       .catch((error) => {
         console.error("Failed to set user online:", error);
+        // Don't crash - presence is not critical for core functionality
       });
 
-    // Subscribe to presence changes
-    const unsubscribe = presenceService.subscribeToPresence((users) => {
-      console.log("🔥 PRESENCE UPDATE - Raw users received:", users);
-      console.log("🔥 PRESENCE UPDATE - Number of users:", users.length);
-      console.log("🔥 PRESENCE UPDATE - Current user ID:", user.id);
+    // Subscribe to presence changes with error handling
+    const unsubscribe = presenceService.subscribeToPresence(
+      (users) => {
+        if (!isActive) return;
+        
+        console.log("🔥 PRESENCE UPDATE - Raw users received:", users);
+        console.log("🔥 PRESENCE UPDATE - Number of users:", users.length);
+        console.log("🔥 PRESENCE UPDATE - Current user ID:", user.id);
 
-      // Filter out current user from the online users list since we show them separately
-      const otherUsers = users.filter((u) => {
+        // Filter out current user from the online users list since we show them separately
+        const otherUsers = users.filter((u) => {
+          console.log(
+            "🔥 PRESENCE UPDATE - Checking user:",
+            u.userId,
+            "vs current:",
+            user.id
+          );
+          return u.userId !== user.id;
+        });
+        console.log("🔥 PRESENCE UPDATE - Other users (filtered):", otherUsers);
         console.log(
-          "🔥 PRESENCE UPDATE - Checking user:",
-          u.userId,
-          "vs current:",
-          user.id
+          "🔥 PRESENCE UPDATE - Setting state with",
+          otherUsers.length,
+          "other users"
         );
-        return u.userId !== user.id;
-      });
-      console.log("🔥 PRESENCE UPDATE - Other users (filtered):", otherUsers);
-      console.log(
-        "🔥 PRESENCE UPDATE - Setting state with",
-        otherUsers.length,
-        "other users"
-      );
 
-      setOnlineUsers(otherUsers);
-      console.log("🔥 PRESENCE UPDATE - State updated!");
-    });
+        setOnlineUsers(otherUsers);
+        console.log("🔥 PRESENCE UPDATE - State updated!");
+      },
+      (error) => {
+        console.error("Presence subscription error:", error);
+        // Don't crash - just log the error and keep existing presence data
+        if (error?.code === 'unavailable' || error?.code === 'permission-denied') {
+          console.log("Presence temporarily unavailable, keeping existing data");
+        }
+      }
+    );
 
-    // Update activity periodically
+    // Update activity periodically with error handling
     const activityInterval = setInterval(() => {
-      presenceService.updateUserActivity(user.id);
+      try {
+        presenceService.updateUserActivity(user.id);
+      } catch (error) {
+        console.error("Error updating user activity:", error);
+      }
     }, 30000); // Update every 30 seconds
 
     return () => {
+      isActive = false;
       console.log("Cleaning up presence for user:", user.displayName);
-      unsubscribe();
-      clearInterval(activityInterval);
-      presenceService.setUserOffline(user.id);
+      try {
+        unsubscribe();
+        clearInterval(activityInterval);
+        presenceService.setUserOffline(user.id);
+      } catch (error) {
+        console.error("Error during presence cleanup:", error);
+      }
     };
   }, [user]);
 
