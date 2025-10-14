@@ -379,32 +379,41 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
         </div>
       )}
 
-      <Stage
-        ref={stageRef}
-        width={stageSize.width}
-        height={stageSize.height}
-        x={canvasState.x}
-        y={canvasState.y}
-        scaleX={canvasState.scale}
-        scaleY={canvasState.scale}
-        draggable={!selectedTool && !isDrawing}
-        onDragEnd={handleStageDragEnd}
-        onWheel={handleWheel}
-        onMouseDown={(e) => {
-          console.log("🔥 STAGE - Raw mouse down event received!");
-          console.log("🔥 STAGE - Event details:", {
-            target: e.target.constructor.name,
-            position: e.evt.clientX + "," + e.evt.clientY,
-            selectedTool,
-          });
-          handleMouseDown(e);
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        // Performance optimizations for smooth 60 FPS
-        perfectDrawEnabled={false}
-        listening={true}
-      >
+        <Stage
+          ref={stageRef}
+          width={stageSize.width}
+          height={stageSize.height}
+          x={canvasState.x}
+          y={canvasState.y}
+          scaleX={canvasState.scale}
+          scaleY={canvasState.scale}
+          draggable={!selectedTool && !isDrawing}
+          onDragEnd={handleStageDragEnd}
+          onWheel={handleWheel}
+          onMouseDown={(e) => {
+            console.log("🔥 STAGE - Raw mouse down event received!");
+            console.log("🔥 STAGE - Event details:", {
+              target: e.target.constructor.name,
+              position: e.evt.clientX + "," + e.evt.clientY,
+              selectedTool,
+            });
+            handleMouseDown(e);
+          }}
+          onTouchStart={(e) => {
+            console.log("🔥 STAGE - Touch start event received!");
+            console.log("🔥 STAGE - Touch event details:", {
+              target: e.target.constructor.name,
+              selectedTool,
+            });
+            handleMouseDown(e);
+          }}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onTouchEnd={handleMouseUp}
+          // Performance optimizations for smooth 60 FPS
+          perfectDrawEnabled={false}
+          listening={true}
+        >
         <Layer
           clipX={0}
           clipY={0}
