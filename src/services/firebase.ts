@@ -21,9 +21,11 @@ const firebaseConfig = {
 
 console.log("🔥 Firebase Environment Check:");
 console.log("VITE_FIREBASE_API_KEY exists:", !!import.meta.env.VITE_FIREBASE_API_KEY);
+console.log("VITE_FIREBASE_API_KEY value:", import.meta.env.VITE_FIREBASE_API_KEY ? "***EXISTS***" : "MISSING");
 console.log("VITE_FIREBASE_PROJECT_ID:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
 console.log("VITE_FIREBASE_AUTH_DOMAIN:", import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
 console.log("VITE_FIREBASE_DATABASE_URL:", import.meta.env.VITE_FIREBASE_DATABASE_URL);
+console.log("All import.meta.env keys:", Object.keys(import.meta.env));
 
 console.log("🔥 Final Firebase config:", {
   ...firebaseConfig,
