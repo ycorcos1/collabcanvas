@@ -179,12 +179,18 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
       console.log("Selected tool:", selectedTool);
       console.log("User:", user);
 
-      // Check if clicking on background (stage or background rect)
+      // Check if clicking on background (stage, background elements, or canvas background)
       const isBackgroundClick =
         e.target === stage ||
+        // Check for background Rect elements
         (e.target.constructor.name === "Rect" &&
           (e.target.attrs.fill === "#ffffff" ||
-            e.target.attrs.fill === "transparent"));
+           e.target.attrs.fill === "transparent")) ||
+        // Check for Konva canvas background nodes (like 'n0')
+        (typeof e.target === "object" && 
+         e.target.constructor.name !== "Rect" && 
+         e.target.constructor.name !== "Circle" &&
+         e.target.constructor.name !== "Group");
 
       if (isBackgroundClick) {
         console.log("Clicked on background (stage or background rect)");
