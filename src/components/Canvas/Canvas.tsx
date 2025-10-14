@@ -276,42 +276,45 @@ export const Canvas: React.FC<CanvasProps> = ({ selectedTool }) => {
   );
 
   // Handle mouse up - finalize shape creation
-  const handleMouseUp = useCallback(async (e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
-    console.log(
-      "Mouse up - isDrawing:",
-      isDrawing,
-      "previewShape:",
-      previewShape
-    );
-    if (isDrawing && previewShape && drawStartPos) {
-      console.log("Finalizing shape creation:", previewShape);
-      setIsDrawing(false);
-      setDrawStartPos(null);
+  const handleMouseUp = useCallback(
+    async (e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
+      console.log(
+        "Mouse up - isDrawing:",
+        isDrawing,
+        "previewShape:",
+        previewShape
+      );
+      if (isDrawing && previewShape && drawStartPos) {
+        console.log("Finalizing shape creation:", previewShape);
+        setIsDrawing(false);
+        setDrawStartPos(null);
 
-      // Only create if shape is large enough
-      if (previewShape.width > 5 && previewShape.height > 5) {
-        console.log("Creating shape in Firebase");
-        try {
-          await createShape({
-            type: previewShape.type,
-            x: previewShape.x,
-            y: previewShape.y,
-            width: previewShape.width,
-            height: previewShape.height,
-            color: previewShape.color,
-            createdBy: user!.id,
-          });
-          console.log("Shape created successfully");
-        } catch (error) {
-          console.error("Failed to create shape:", error);
+        // Only create if shape is large enough
+        if (previewShape.width > 5 && previewShape.height > 5) {
+          console.log("Creating shape in Firebase");
+          try {
+            await createShape({
+              type: previewShape.type,
+              x: previewShape.x,
+              y: previewShape.y,
+              width: previewShape.width,
+              height: previewShape.height,
+              color: previewShape.color,
+              createdBy: user!.id,
+            });
+            console.log("Shape created successfully");
+          } catch (error) {
+            console.error("Failed to create shape:", error);
+          }
+        } else {
+          console.log("Shape too small, not creating");
         }
-      } else {
-        console.log("Shape too small, not creating");
-      }
 
-      setPreviewShape(null);
-    }
-  }, [isDrawing, previewShape, drawStartPos, createShape, user]);
+        setPreviewShape(null);
+      }
+    },
+    [isDrawing, previewShape, drawStartPos, createShape, user]
+  );
 
   // Handle shape selection
   const handleShapeSelect = useCallback(
