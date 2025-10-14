@@ -56,11 +56,14 @@ const getShapesCollection = () => {
   return collection(firestore, `canvases/${CANVAS_ID}/shapes`);
 };
 
-// Create a new shape
+/**
+ * Creates a new shape in Firestore
+ * @param shapeData - Shape creation data without timestamps
+ * @returns Promise resolving to the new shape's ID
+ */
 export const createShape = async (
   shapeData: CreateShapeData
 ): Promise<string> => {
-  console.log("🔥 SHAPES - Creating shape with data:", shapeData);
   const shapesCollection = getShapesCollection();
   const now = Date.now();
 
@@ -70,15 +73,11 @@ export const createShape = async (
     updatedAt: now,
   };
 
-  console.log("🔥 SHAPES - Shape with timestamps:", shapeWithTimestamps);
-  console.log("🔥 SHAPES - Firestore data:", shapeToFirestore(shapeWithTimestamps));
-
   try {
     const docRef = await addDoc(
       shapesCollection,
       shapeToFirestore(shapeWithTimestamps)
     );
-    console.log("🔥 SHAPES - Shape created successfully with ID:", docRef.id);
     return docRef.id;
   } catch (error) {
     console.error("🔥 SHAPES ERROR - Failed to create shape:", error);
@@ -163,28 +162,29 @@ export const clearUserSelections = async (userId: string): Promise<void> => {
   }
 };
 
-// Subscribe to shapes changes
+/**
+ * Real-time subscription to shape changes
+ * @param callback - Function called with updated shapes array
+ * @param onError - Optional error handler for connection issues
+ * @returns Unsubscribe function to clean up the listener
+ */
 export const subscribeToShapes = (
   callback: (shapes: Shape[]) => void,
   onError?: (error: Error) => void
 ): (() => void) => {
-  console.log("🔥 SHAPES - Starting subscription to shapes...");
   const shapesCollection = getShapesCollection();
   const q = query(shapesCollection, orderBy("createdAt", "asc"));
 
   const unsubscribe = onSnapshot(
     q,
     (snapshot) => {
-      console.log("🔥 SHAPES - Received snapshot with", snapshot.docs.length, "documents");
       const shapes: Shape[] = [];
 
       snapshot.forEach((doc) => {
         const shape = firestoreToShape({ id: doc.id, ...doc.data() });
-        console.log("🔥 SHAPES - Parsed shape:", shape);
         shapes.push(shape);
       });
 
-      console.log("🔥 SHAPES - Final shapes array:", shapes);
       callback(shapes);
     },
     (error) => {

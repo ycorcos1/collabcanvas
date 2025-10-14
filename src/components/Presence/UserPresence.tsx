@@ -5,13 +5,6 @@ import "./UserPresence.css";
 export const UserPresence: React.FC = () => {
   const { onlineUsers, currentUser, getUserCount } = usePresence();
 
-  console.log("🔥 COMPONENT - UserPresence render:", {
-    onlineUsersCount: onlineUsers.length,
-    onlineUsers,
-    currentUser: currentUser?.displayName,
-    totalCount: getUserCount(),
-  });
-
   return (
     <div className="user-presence">
       <div className="presence-header">

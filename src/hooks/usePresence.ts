@@ -11,14 +11,13 @@ export const usePresence = () => {
   useEffect(() => {
     if (!user) return;
 
-    console.log("Setting up presence for user:", user.displayName);
     let isActive = true;
 
     // Set current user as online with error handling
     presenceService
       .setUserOnline(user.id, user.displayName, user.color)
       .then(() => {
-        console.log("User set as online:", user.displayName);
+        // User successfully set as online
       })
       .catch((error) => {
         console.error("Failed to set user online:", error);
@@ -29,36 +28,22 @@ export const usePresence = () => {
     const unsubscribe = presenceService.subscribeToPresence(
       (users) => {
         if (!isActive) return;
-        
-        console.log("🔥 PRESENCE UPDATE - Raw users received:", users);
-        console.log("🔥 PRESENCE UPDATE - Number of users:", users.length);
-        console.log("🔥 PRESENCE UPDATE - Current user ID:", user.id);
 
         // Filter out current user from the online users list since we show them separately
         const otherUsers = users.filter((u) => {
-          console.log(
-            "🔥 PRESENCE UPDATE - Checking user:",
-            u.userId,
-            "vs current:",
-            user.id
-          );
           return u.userId !== user.id;
         });
-        console.log("🔥 PRESENCE UPDATE - Other users (filtered):", otherUsers);
-        console.log(
-          "🔥 PRESENCE UPDATE - Setting state with",
-          otherUsers.length,
-          "other users"
-        );
 
         setOnlineUsers(otherUsers);
-        console.log("🔥 PRESENCE UPDATE - State updated!");
       },
       (error) => {
         console.error("Presence subscription error:", error);
         // Don't crash - just log the error and keep existing presence data
-        if (error?.code === 'unavailable' || error?.code === 'permission-denied') {
-          console.log("Presence temporarily unavailable, keeping existing data");
+        if (
+          error?.code === "unavailable" ||
+          error?.code === "permission-denied"
+        ) {
+          // Presence temporarily unavailable, keeping existing data
         }
       }
     );
@@ -74,7 +59,6 @@ export const usePresence = () => {
 
     return () => {
       isActive = false;
-      console.log("Cleaning up presence for user:", user.displayName);
       try {
         unsubscribe();
         clearInterval(activityInterval);

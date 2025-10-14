@@ -11,7 +11,6 @@ export const setUserOnline = async (
   userColor: string
 ): Promise<void> => {
   try {
-    console.log("Setting user online:", { userId, userName, userColor });
     const userPresenceRef = ref(database, `presence/${CANVAS_ID}/${userId}`);
 
     const presenceData: PresenceData = {
@@ -23,7 +22,6 @@ export const setUserOnline = async (
     };
 
     await set(userPresenceRef, presenceData);
-    console.log("User presence data set successfully");
 
     // Remove user from presence when they disconnect
     onDisconnect(userPresenceRef).remove();
@@ -44,46 +42,22 @@ export const subscribeToPresence = (
   callback: (users: PresenceData[]) => void,
   errorCallback?: (error: any) => void
 ): (() => void) => {
-  console.log("🔥 STARTING - Subscribing to presence changes");
   const presenceRef = ref(database, `presence/${CANVAS_ID}`);
-  console.log("🔥 STARTING - Presence ref path:", `presence/${CANVAS_ID}`);
 
   const unsubscribe = onValue(
     presenceRef,
     (snapshot) => {
-      console.log("🔥 FIREBASE - Presence snapshot received:", {
-        exists: snapshot.exists(),
-        size: snapshot.size,
-        val: snapshot.val(),
-      });
-
       const users: PresenceData[] = [];
 
       if (snapshot.exists()) {
         const presenceData = snapshot.val();
-        console.log("🔥 FIREBASE - Raw presence data:", presenceData);
         Object.entries(presenceData).forEach(([userId, userData]) => {
-          console.log(
-            "🔥 FIREBASE - Processing presence for user:",
-            userId,
-            userData
-          );
           if (userData && typeof userData === "object") {
             users.push(userData as PresenceData);
-            console.log("🔥 FIREBASE - Added user to presence:", userId);
-          } else {
-            console.log(
-              "🔥 FIREBASE - Skipped invalid presence data for user:",
-              userId
-            );
           }
         });
-      } else {
-        console.log("🔥 FIREBASE - No presence data exists yet");
       }
 
-      console.log("🔥 FIREBASE - Final parsed online users:", users);
-      console.log("🔥 FIREBASE - Calling callback with", users.length, "users");
       callback(users);
     },
     (error) => {

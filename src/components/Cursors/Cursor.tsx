@@ -2,10 +2,23 @@ import React from "react";
 import { CursorPosition } from "../../types/cursor";
 import "./Cursor.css";
 
+/**
+ * Props interface for individual cursor component
+ */
 interface CursorProps {
   cursor: CursorPosition;
   canvasScale: number;
 }
+
+/**
+ * Cursor Component - Individual user cursor indicator
+ *
+ * Displays other users' cursor positions in real-time with:
+ * - Traditional arrow cursor icon
+ * - User name label with custom color
+ * - Automatic scaling based on canvas zoom level
+ * - Smooth positioning updates via CSS transforms
+ */
 
 export const Cursor: React.FC<CursorProps> = ({ cursor, canvasScale }) => {
   const { x, y, userName, userColor } = cursor;
@@ -24,13 +37,13 @@ export const Cursor: React.FC<CursorProps> = ({ cursor, canvasScale }) => {
     >
       {/* Cursor pointer */}
       <svg
-        width="20"
-        height="20"
+        width="24"
+        height="24"
         viewBox="0 0 24 24"
         fill={userColor}
         className="cursor-pointer"
       >
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        <path d="M2 2l8 16 2-6 6-2L2 2z" />
       </svg>
 
       {/* User name label */}

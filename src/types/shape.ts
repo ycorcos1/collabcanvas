@@ -1,21 +1,38 @@
+/**
+ * Shape Type Definitions for Collaborative Canvas
+ *
+ * Defines the core data structures for shapes in the collaborative canvas.
+ * These types ensure type safety across Firebase operations, UI components,
+ * and real-time synchronization features.
+ */
+
+/**
+ * Core shape interface - represents a drawable object on the canvas
+ * Includes collaborative selection tracking for real-time editing
+ */
 export interface Shape {
-  id: string;
-  type: "rectangle" | "circle";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  createdBy: string;
-  createdAt: number;
-  updatedAt: number;
-  // Selection state for collaborative editing
-  selectedBy?: string; // userId of who has this shape selected
-  selectedByName?: string; // display name of who has this shape selected
-  selectedByColor?: string; // color of who has this shape selected
-  selectedAt?: number; // timestamp when selected
+  id: string; // Unique identifier (Firebase document ID)
+  type: "rectangle" | "circle"; // Shape geometry type
+  x: number; // X coordinate (top-left for rectangles, center for circles)
+  y: number; // Y coordinate (top-left for rectangles, center for circles)
+  width: number; // Width in pixels
+  height: number; // Height in pixels
+  color: string; // Fill color (hex format)
+  createdBy: string; // User ID who created the shape
+  createdAt: number; // Creation timestamp (Unix time)
+  updatedAt: number; // Last modification timestamp
+
+  // Collaborative selection state - tracks which user has selected this shape
+  selectedBy?: string; // User ID of current selector (for shape locking)
+  selectedByName?: string; // Display name for UI indicators
+  selectedByColor?: string; // User color for visual consistency
+  selectedAt?: number; // Selection timestamp for cleanup
 }
 
+/**
+ * Shape update interface - for partial shape modifications
+ * Used when updating existing shapes (position, size, color changes)
+ */
 export interface ShapeUpdate {
   id: string;
   x?: number;
@@ -25,5 +42,10 @@ export interface ShapeUpdate {
   color?: string;
   updatedAt: number;
 }
+
+/**
+ * Shape creation data - used when creating new shapes
+ * Omits auto-generated fields (id, timestamps) that Firebase handles
+ */
 
 export type CreateShapeData = Omit<Shape, "id" | "createdAt" | "updatedAt">;

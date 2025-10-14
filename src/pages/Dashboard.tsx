@@ -9,6 +9,20 @@ import { useShapes } from "../hooks/useShapes";
 import { Shape } from "../types/shape";
 import "../App.css";
 
+/**
+ * Dashboard Page - Main collaborative canvas interface
+ *
+ * This is the core application page that brings together:
+ * - Canvas for shape creation and manipulation
+ * - Toolbar for tools and canvas controls
+ * - User presence indicators
+ * - Connection status monitoring
+ * - Session persistence for selected tools and shapes
+ * - Real-time collaboration features
+ *
+ * Requires authentication - redirects to sign-in if not logged in
+ */
+
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, isLoading, signOut } = useAuth();

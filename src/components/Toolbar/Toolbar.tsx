@@ -3,6 +3,10 @@ import { Shape } from "../../types/shape";
 import { useCanvasDimensions } from "../../hooks/useCanvasDimensions";
 import "./Toolbar.css";
 
+/**
+ * Props interface for the Toolbar component
+ * Handles tool selection, shape actions, and canvas dimension controls
+ */
 interface ToolbarProps {
   selectedTool: Shape["type"] | null;
   onToolSelect: (tool: Shape["type"] | null) => void;
@@ -10,6 +14,17 @@ interface ToolbarProps {
   onDeleteSelected: () => void;
   hasSelectedShapes: boolean;
 }
+
+/**
+ * Toolbar Component - Main UI controls for the collaborative canvas
+ *
+ * Features:
+ * - Shape creation tools (Rectangle, Circle)
+ * - Shape management actions (Delete Selected, Clear All)
+ * - Dynamic canvas resizing with real-time sync across all users
+ * - Auto-correction for dimension inputs (5000-15000 pixel range)
+ * - Confirmation dialogs for destructive actions
+ */
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   selectedTool,
@@ -26,6 +41,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     error: dimensionsError,
   } = useCanvasDimensions();
 
+  // Local state for temporary dimension values during editing
   const [tempWidth, setTempWidth] = useState(dimensions.width.toString());
   const [tempHeight, setTempHeight] = useState(dimensions.height.toString());
 
@@ -53,6 +69,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     }
   };
 
+  /**
+   * Handles canvas dimension updates with validation and auto-correction
+   * Enforces min/max limits (5000-15000) and syncs changes across all users
+   */
   const handleDimensionUpdate = () => {
     let width = parseInt(tempWidth);
     let height = parseInt(tempHeight);

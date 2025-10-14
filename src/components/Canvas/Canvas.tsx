@@ -15,6 +15,9 @@ import {
 } from "../../utils/canvasHelpers";
 import "./Canvas.css";
 
+/**
+ * Props interface for the Canvas component
+ */
 interface CanvasProps {
   selectedTool: ShapeType["type"] | null;
   shapes: ShapeType[];
@@ -28,6 +31,20 @@ interface CanvasProps {
   isShapeLockedByOther: (shapeId: string) => boolean;
   getShapeSelector: (shapeId: string) => { name: string; color: string } | null;
 }
+
+/**
+ * Canvas Component - Main collaborative drawing surface
+ *
+ * Features:
+ * - Interactive shape creation (click and drag to draw)
+ * - Multi-select with Shift key support
+ * - Real-time cursor tracking across all users
+ * - Zoom and pan functionality with smooth performance
+ * - Dynamic canvas dimensions with real-time sync
+ * - Shape locking and collaboration indicators
+ * - Keyboard shortcuts (Delete key, Escape to deselect)
+ * - Optimized rendering for 60 FPS performance
+ */
 
 export const Canvas: React.FC<CanvasProps> = ({
   selectedTool,
@@ -89,17 +106,10 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Debug state changes
   useEffect(() => {
-    console.log(
-      "State changed - isDrawing:",
-      isDrawing,
-      "drawStartPos:",
-      drawStartPos,
-      "previewShape:",
-      previewShape
-    );
+    // Drawing state changed
   }, [isDrawing, drawStartPos, previewShape]);
 
-  // Optimized zoom update using requestAnimationFrame with throttling
+  // Optimized zoom update using requestAnimationFrame with throttling for 60 FPS
   const scheduleZoomUpdate = useCallback(() => {
     if (zoomAnimationRef.current) return; // Animation already scheduled
 
@@ -299,19 +309,13 @@ export const Canvas: React.FC<CanvasProps> = ({
     (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
       const stage = stageRef.current;
       if (!stage || !user) {
-        console.log("No stage or user:", { stage: !!stage, user: !!user });
         return;
       }
 
       const pos = getRelativePointerPosition(stage);
       if (!pos) {
-        console.log("No position found");
         return;
       }
-
-      console.log("Mouse down at:", pos, "Target:", e.target.constructor.name);
-      console.log("Selected tool:", selectedTool);
-      console.log("User:", user);
 
       // Check if clicking on background (stage, background elements, or canvas background)
       const isBackgroundClick =
@@ -327,7 +331,6 @@ export const Canvas: React.FC<CanvasProps> = ({
           e.target.constructor.name !== "Group");
 
       if (isBackgroundClick) {
-        console.log("Clicked on background (stage or background rect)");
         // Always deselect shape when clicking on background
         selectShape(null);
 
@@ -339,8 +342,6 @@ export const Canvas: React.FC<CanvasProps> = ({
           pos.y >= 0 &&
           pos.y <= canvasDimensions.height
         ) {
-          console.log("Starting shape creation with tool:", selectedTool);
-
           const newPreviewShape = {
             x: pos.x,
             y: pos.y,
@@ -350,17 +351,13 @@ export const Canvas: React.FC<CanvasProps> = ({
             color: generateRandomColor(),
           };
 
-          console.log("Created preview shape:", newPreviewShape);
-
           // Start creating shape
           setIsDrawing(true);
           setDrawStartPos(pos);
           setPreviewShape(newPreviewShape);
-
-          console.log("State updated - isDrawing: true, drawStartPos:", pos);
         }
       } else {
-        console.log("Clicked on non-stage element:", e.target.constructor.name);
+        // Clicked on a shape or other element
       }
     },
     [user, selectedTool, selectShape]
@@ -380,12 +377,6 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       // Update preview shape if drawing
       if (isDrawing && drawStartPos && previewShape) {
-        console.log("Updating preview shape:", {
-          isDrawing,
-          drawStartPos,
-          currentPos: pos,
-          previewShape,
-        });
         const startX = drawStartPos.x;
         const startY = drawStartPos.y;
 
@@ -408,7 +399,6 @@ export const Canvas: React.FC<CanvasProps> = ({
           height: Math.max(height, 1),
         };
 
-        console.log("Setting new preview shape:", newPreviewShape);
         setPreviewShape(newPreviewShape);
       }
     },
@@ -418,20 +408,12 @@ export const Canvas: React.FC<CanvasProps> = ({
   // Handle mouse up - finalize shape creation
   const handleMouseUp = useCallback(
     async (_e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
-      console.log(
-        "Mouse up - isDrawing:",
-        isDrawing,
-        "previewShape:",
-        previewShape
-      );
       if (isDrawing && previewShape && drawStartPos) {
-        console.log("Finalizing shape creation:", previewShape);
         setIsDrawing(false);
         setDrawStartPos(null);
 
         // Only create if shape is large enough
         if (previewShape.width > 5 && previewShape.height > 5) {
-          console.log("Creating shape in Firebase");
           try {
             await createShape({
               type: previewShape.type,
@@ -442,12 +424,11 @@ export const Canvas: React.FC<CanvasProps> = ({
               color: previewShape.color,
               createdBy: user!.id,
             });
-            console.log("Shape created successfully");
           } catch (error) {
             console.error("Failed to create shape:", error);
           }
         } else {
-          console.log("Shape too small, not creating");
+          // Shape too small, not creating
         }
 
         setPreviewShape(null);
@@ -484,14 +465,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       const constrainedX = Math.max(minX, Math.min(maxX, x));
       const constrainedY = Math.max(minY, Math.min(maxY, y));
 
-      console.log("Shape drag end:", {
-        shapeId,
-        originalPos: { x, y },
-        constrainedPos: { x: constrainedX, y: constrainedY },
-        shapeDimensions: { width: shape.width, height: shape.height },
-        bounds: { minX, maxX, minY, maxY },
-      });
-
       updateShape(shapeId, { x: constrainedX, y: constrainedY });
     },
     [updateShape, shapes]
@@ -526,20 +499,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         onDragEnd={handleStageDragEnd}
         onWheel={handleWheel}
         onMouseDown={(e) => {
-          console.log("🔥 STAGE - Raw mouse down event received!");
-          console.log("🔥 STAGE - Event details:", {
-            target: e.target.constructor.name,
-            position: e.evt.clientX + "," + e.evt.clientY,
-            selectedTool,
-          });
           handleMouseDown(e);
         }}
         onTouchStart={(e) => {
-          console.log("🔥 STAGE - Touch start event received!");
-          console.log("🔥 STAGE - Touch event details:", {
-            target: e.target.constructor.name,
-            selectedTool,
-          });
           handleMouseDown(e);
         }}
         onMouseMove={handleMouseMove}
@@ -591,7 +553,6 @@ export const Canvas: React.FC<CanvasProps> = ({
           )}
 
           {/* Render all shapes */}
-          {console.log("Rendering shapes array:", shapes)}
           {shapes.map((shape) => {
             const isLockedByOther = isShapeLockedByOther(shape.id);
             const selectedByOther = getShapeSelector(shape.id);

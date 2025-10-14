@@ -3,6 +3,19 @@ import { Shape, CreateShapeData } from "../types/shape";
 import * as shapesService from "../services/shapes";
 import { useAuth } from "../components/Auth/AuthProvider";
 
+/**
+ * useShapes Hook - Central state management for collaborative shapes
+ *
+ * Handles:
+ * - Real-time shape synchronization via Firebase Firestore
+ * - Multi-select functionality with Shift-key support
+ * - Shape creation, updates, and deletion
+ * - Session persistence of selected shapes
+ * - Optimistic UI updates with Firebase sync
+ * - Error handling and connection resilience for idle users
+ * - Shape validation and cleanup
+ */
+
 export const useShapes = () => {
   // Track the most recent shape creation for Firebase synchronization
   const [pendingAutoSelect, setPendingAutoSelect] = useState<{
@@ -13,7 +26,8 @@ export const useShapes = () => {
 
   const { user } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
-  // Persist selected shapes across page refreshes (using sessionStorage) - now supports multiple
+
+  // Multi-select state - persisted across page refreshes using sessionStorage
   const [selectedShapeIds, setSelectedShapeIds] = useState<string[]>(() => {
     const saved = sessionStorage.getItem("collabcanvas-selected-shapes");
     if (saved) {
@@ -40,7 +54,7 @@ export const useShapes = () => {
     }
   }, [selectedShapeIds]);
 
-  // Subscribe to shapes from Firebase
+  // Subscribe to shapes from Firebase with robust error handling
   useEffect(() => {
     if (!user) return;
 
@@ -51,9 +65,6 @@ export const useShapes = () => {
     const loadingTimeout = setTimeout(() => {
       setIsLoading(false);
       setError(null); // Clear error - shapes will load from cache if available
-      console.log(
-        "Canvas loaded with timeout fallback - Firestore may not be accessible"
-      );
     }, 5000); // 5 second timeout
 
     const unsubscribe = shapesService.subscribeToShapes(
@@ -63,11 +74,6 @@ export const useShapes = () => {
 
         // If we have a pending shape creation, find the corresponding Firebase shape
         if (pendingAutoSelect && user && pendingAutoSelect.userId === user.id) {
-          console.log(
-            "🔥 Looking for Firebase shape to replace temp ID:",
-            pendingAutoSelect.tempId
-          );
-
           // Find the most recently created shape by this user
           const userShapes = firebaseShapes.filter(
             (shape) => shape.createdBy === user.id
@@ -83,10 +89,6 @@ export const useShapes = () => {
             Math.abs(newestUserShape.createdAt - pendingAutoSelect.createdAt) <
               3000
           ) {
-            console.log(
-              "🔥 Found matching shape (but not auto-selecting):",
-              newestUserShape.id
-            );
             // Don't auto-select - let user explicitly select if they want
             setPendingAutoSelect(null); // Clear the pending tracking
           }
@@ -95,18 +97,19 @@ export const useShapes = () => {
         setShapes(firebaseShapes);
         setIsLoading(false);
         setError(null); // Clear any previous errors on successful reconnection
-        console.log("Firebase shapes loaded:", firebaseShapes.length);
       },
       (error) => {
         clearTimeout(loadingTimeout);
         console.error("Firebase shapes error:", error);
-        
+
         // Handle different types of errors gracefully
-        if (error.code === 'unavailable' || error.code === 'permission-denied') {
+        if (
+          error.code === "unavailable" ||
+          error.code === "permission-denied"
+        ) {
           // Network issues or auth token expired - keep existing shapes and retry
           setError(null); // Don't show error to user for temporary network issues
           setIsLoading(false);
-          console.log("Firebase temporarily unavailable, keeping existing shapes");
         } else {
           // Other errors - show error but don't crash
           setError(`Connection issue: ${error.message}`);
@@ -126,33 +129,21 @@ export const useShapes = () => {
   // Validate selected shapes still exist when shapes array changes
   useEffect(() => {
     if (selectedShapeIds.length > 0 && shapes.length > 0) {
-      console.log(
-        "🔥 AUTO-SELECT - Validating selected shapes:",
-        selectedShapeIds
-      );
-      console.log(
-        "🔥 AUTO-SELECT - Current shapes:",
-        shapes.map((s) => s.id)
-      );
-
       const validShapeIds = selectedShapeIds.filter((id) =>
         shapes.some((shape) => shape.id === id)
       );
 
       if (validShapeIds.length !== selectedShapeIds.length) {
         // Some selected shapes no longer exist, update the selection
-        console.log(
-          "🔥 AUTO-SELECT - Some selected shapes no longer exist, updating selection"
-        );
         setSelectedShapeIds(validShapeIds);
-      } else {
-        console.log(
-          "🔥 AUTO-SELECT - All selected shapes still exist, keeping selection"
-        );
       }
     }
   }, [shapes, selectedShapeIds]);
 
+  /**
+   * Creates a new shape with optimistic UI updates
+   * Immediately adds a temporary shape to the UI, then syncs with Firebase
+   */
   const createShape = useCallback(
     async (shapeData: CreateShapeData) => {
       if (!user) {
@@ -259,6 +250,11 @@ export const useShapes = () => {
   );
 
   // Multi-select shape function - supports shift key for multiple selection
+  /**
+   * Handles shape selection with multi-select support
+   * @param shapeId - ID of shape to select/deselect, or null to clear selection
+   * @param isShiftPressed - Whether Shift key is held for multi-select
+   */
   const selectShape = useCallback(
     async (id: string | null, isShiftPressed: boolean = false) => {
       if (!user) return;
@@ -328,6 +324,10 @@ export const useShapes = () => {
   );
 
   // Delete all selected shapes
+  /**
+   * Deletes all currently selected shapes
+   * Uses optimistic updates for immediate UI response
+   */
   const deleteSelectedShapes = useCallback(async () => {
     if (!user || selectedShapeIds.length === 0) return;
 

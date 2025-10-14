@@ -3,7 +3,18 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase, Database } from "firebase/database";
 
-// Firebase configuration
+/**
+ * Firebase Configuration and Initialization
+ *
+ * Sets up Firebase services for the collaborative canvas:
+ * - Authentication for user management
+ * - Firestore for persistent shape data
+ * - Realtime Database for live cursors and presence
+ *
+ * Uses environment variables for secure configuration
+ */
+
+// Firebase configuration - uses environment variables with fallbacks for development
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-api-key",
   authDomain:
@@ -19,31 +30,17 @@ const firebaseConfig = {
     "https://collabcursor-default-rtdb.firebaseio.com",
 };
 
-console.log("🔥 Firebase Environment Check:");
-console.log("VITE_FIREBASE_API_KEY exists:", !!import.meta.env.VITE_FIREBASE_API_KEY);
-console.log("VITE_FIREBASE_API_KEY value:", import.meta.env.VITE_FIREBASE_API_KEY ? "***EXISTS***" : "MISSING");
-console.log("VITE_FIREBASE_PROJECT_ID:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
-console.log("VITE_FIREBASE_AUTH_DOMAIN:", import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
-console.log("VITE_FIREBASE_DATABASE_URL:", import.meta.env.VITE_FIREBASE_DATABASE_URL);
-console.log("All import.meta.env keys:", Object.keys(import.meta.env));
-
-console.log("🔥 Final Firebase config:", {
-  ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey.substring(0, 10) + "...", // Hide sensitive data
-  databaseURL: firebaseConfig.databaseURL, // Show the full database URL for debugging
-});
-
-// Initialize Firebase
+// Initialize Firebase app with configuration
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
-export const auth = getAuth(app);
-export const firestore = getFirestore(app);
+// Initialize Firebase services for different features
+export const auth = getAuth(app); // User authentication
+export const firestore = getFirestore(app); // Persistent shape storage
 
+// Realtime Database for live features (cursors, presence)
 let database: Database;
 try {
   database = getDatabase(app);
-  console.log("Firebase Realtime Database initialized successfully");
 } catch (error) {
   console.error("Failed to initialize Firebase Realtime Database:", error);
   throw error;
