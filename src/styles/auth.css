@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: center;
   background: #fef7f0; /* Fixed light background */
-  padding: var(--space-4);
+  padding: 0; /* Remove all padding */
 }
 
 .auth-card {
@@ -107,7 +107,7 @@
 /* Mobile responsive */
 @media (max-width: 480px) {
   .auth-page {
-    padding: var(--space-2);
+    padding: 0; /* No padding on mobile either */
   }
 
   .auth-card {
