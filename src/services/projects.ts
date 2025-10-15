@@ -241,7 +241,12 @@ export async function getProjects(
     };
   } catch (error) {
     console.error("Error getting projects:", error);
-    throw new Error("Failed to get projects");
+    // For new users with no projects, return empty result instead of throwing
+    return {
+      projects: [],
+      hasMore: false,
+      nextCursor: undefined,
+    };
   }
 }
 
