@@ -9,6 +9,7 @@ export const SignUp: React.FC = () => {
   const [formData, setFormData] = React.useState({
     email: "",
     password: "",
+    confirmPassword: "",
     displayName: "",
   });
   const [localError, setLocalError] = React.useState<string | null>(null);
@@ -27,6 +28,17 @@ export const SignUp: React.FC = () => {
         setLocalError("Display name is required");
         return;
       }
+      
+      if (formData.password !== formData.confirmPassword) {
+        setLocalError("Passwords do not match");
+        return;
+      }
+      
+      if (formData.password.length < 6) {
+        setLocalError("Password must be at least 6 characters");
+        return;
+      }
+      
       await signUp(formData.email, formData.password, formData.displayName);
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
@@ -89,6 +101,23 @@ export const SignUp: React.FC = () => {
             }
             placeholder="Enter your password (min 6 characters)"
             disabled={isLoading}
+            fullWidth
+          />
+
+          <Input
+            label="Confirm Password"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))
+            }
+            placeholder="Confirm your password"
+            disabled={isLoading}
+            error={
+              localError && localError.includes("Passwords do not match")
+                ? localError
+                : undefined
+            }
             fullWidth
           />
 

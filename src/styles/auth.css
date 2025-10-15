@@ -15,30 +15,17 @@
 }
 
 .auth-card {
-  background: #ffffff; /* Fixed white background */
-  border: 1px solid #e5e5e5; /* Fixed light border */
+  background: transparent; /* No background - blend with page */
+  border: none; /* No border */
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  padding: var(--space-8);
+  box-shadow: none; /* No shadow */
+  padding: var(--space-8) var(--space-12); /* Added horizontal padding */
   width: 100%;
   max-width: 500px; /* Made wider */
   position: relative;
 }
 
-.auth-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(
-    90deg,
-    #ff6b35 0%,
-    #ff8c42 100%
-  );
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-}
+/* Removed top border decoration since there's no card background */
 
 .auth-header {
   text-align: center;
@@ -84,7 +71,7 @@
 .auth-footer {
   text-align: center;
   padding-top: var(--space-4);
-  border-top: 1px solid #e5e5e5; /* Fixed border color */
+  border-top: none; /* No border since no card background */
 }
 
 .auth-footer p {
@@ -112,7 +99,7 @@
   }
 
   .auth-card {
-    padding: var(--space-6);
+    padding: var(--space-6) var(--space-4); /* Reduced horizontal padding on mobile */
   }
 
   .auth-title {
