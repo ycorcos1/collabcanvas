@@ -256,11 +256,6 @@ export const useShapes = () => {
       if (!user) return;
 
       try {
-        // Debug logging for production
-        if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-          console.log('🔍 SelectShape Debug:', { id, isShiftPressed, selectedShapeIds: selectedShapeIds.length });
-        }
-
         if (!id) {
           // Deselecting all shapes
           // Clear selections in Firebase for all currently selected shapes
