@@ -2,7 +2,8 @@
  * Authentication Pages Styles
  * 
  * Shared styles for sign-in and sign-up pages
- * Always uses light mode regardless of user preferences
+ * ALWAYS LIGHT MODE - Theme switching only applies after user login
+ * These pages are completely isolated from dark/light mode preferences
  */
 
 .auth-page {
@@ -120,165 +121,13 @@
   }
 }
 
-/* Force light mode on auth pages - override any theme settings */
-html:has(.auth-page),
-body:has(.auth-page),
-.auth-page,
-.auth-page *,
-.auth-card,
-.auth-card * {
-  color-scheme: light !important;
-}
-
-/* Override theme at root level when auth page is present */
-html:has(.auth-page) {
-  background: #fef7f0 !important;
-  color: #2d1b0e !important;
-}
-
-body:has(.auth-page) {
-  background: #fef7f0 !important;
-  color: #2d1b0e !important;
-}
-
-/* Override dark mode styles completely - all possible selectors */
-[data-theme="dark"] .auth-page,
-[data-theme="dark"] .auth-card,
-.auth-page[data-theme="dark"],
-.auth-card[data-theme="dark"],
-html[data-theme="dark"] .auth-page,
-html[data-theme="dark"] .auth-card,
-body[data-theme="dark"] .auth-page,
-body[data-theme="dark"] .auth-card,
-[data-theme="dark"] html .auth-page,
-[data-theme="dark"] body .auth-page {
-  background: #fef7f0 !important;
-  color: #2d1b0e !important;
-}
-
-[data-theme="dark"] .auth-card,
-html[data-theme="dark"] .auth-card,
-body[data-theme="dark"] .auth-card {
-  background: #ffffff !important;
-  border: 1px solid rgba(255, 107, 53, 0.1) !important;
-}
-
-[data-theme="dark"] .auth-title,
-html[data-theme="dark"] .auth-title,
-body[data-theme="dark"] .auth-title,
-[data-theme="dark"] .auth-page .auth-title {
-  color: #2d1b0e !important;
-}
-
-[data-theme="dark"] .auth-subtitle,
-html[data-theme="dark"] .auth-subtitle,
-body[data-theme="dark"] .auth-subtitle,
-[data-theme="dark"] .auth-page .auth-subtitle {
-  color: #6b5b4d !important;
-}
-
-[data-theme="dark"] .auth-footer p,
-html[data-theme="dark"] .auth-footer p,
-body[data-theme="dark"] .auth-footer p,
-[data-theme="dark"] .auth-page .auth-footer p {
-  color: #6b5b4d !important;
-}
-
-[data-theme="dark"] .auth-link,
-html[data-theme="dark"] .auth-link,
-body[data-theme="dark"] .auth-link,
-[data-theme="dark"] .auth-page .auth-link {
-  color: #ff6b35 !important;
-}
-
-[data-theme="dark"] .auth-link:hover,
-html[data-theme="dark"] .auth-link:hover,
-body[data-theme="dark"] .auth-link:hover,
-[data-theme="dark"] .auth-page .auth-link:hover {
-  color: #e55a2b !important;
-}
-
-/* Override system dark mode preference */
-@media (prefers-color-scheme: dark) {
-  .auth-page,
-  .auth-card {
-    background: #fef7f0 !important;
-    color: #2d1b0e !important;
-  }
-
-  .auth-card {
-    background: #ffffff !important;
-    border: 1px solid rgba(255, 107, 53, 0.1) !important;
-  }
-
-  .auth-title {
-    color: #2d1b0e !important;
-  }
-
-  .auth-subtitle {
-    color: #6b5b4d !important;
-  }
-
-  .auth-footer p {
-    color: #6b5b4d !important;
-  }
-
-  .auth-link {
-    color: #ff6b35 !important;
-  }
-
-  .auth-link:hover {
-    color: #e55a2b !important;
-  }
-}
-
-/* Override shared component styles in auth pages - comprehensive selectors */
-[data-theme="dark"] .auth-page input,
-[data-theme="dark"] .auth-card input,
-.auth-page[data-theme="dark"] input,
-.auth-card[data-theme="dark"] input,
-html[data-theme="dark"] .auth-page input,
-html[data-theme="dark"] .auth-card input,
-body[data-theme="dark"] .auth-page input,
-body[data-theme="dark"] .auth-card input,
-[data-theme="dark"] .auth-page .input,
-[data-theme="dark"] .auth-card .input {
-  background: #ffffff !important;
-  border: 1px solid #e5e5e5 !important;
-  color: #2d1b0e !important;
-}
-
-[data-theme="dark"] .auth-page button,
-[data-theme="dark"] .auth-card button,
-.auth-page[data-theme="dark"] button,
-.auth-card[data-theme="dark"] button,
-html[data-theme="dark"] .auth-page button,
-html[data-theme="dark"] .auth-card button,
-body[data-theme="dark"] .auth-page button,
-body[data-theme="dark"] .auth-card button,
-[data-theme="dark"] .auth-page .button,
-[data-theme="dark"] .auth-card .button {
-  background: #ff6b35 !important;
-  color: #ffffff !important;
-  border: 1px solid #ff6b35 !important;
-}
-
-/* System dark mode overrides for inputs and buttons */
-@media (prefers-color-scheme: dark) {
-  .auth-page input,
-  .auth-card input {
-    background: #ffffff !important;
-    border: 1px solid #e5e5e5 !important;
-    color: #2d1b0e !important;
-  }
-
-  .auth-page button,
-  .auth-card button {
-    background: #ff6b35 !important;
-    color: #ffffff !important;
-    border: 1px solid #ff6b35 !important;
-  }
-}
+/* 
+ * THEME ISOLATION: Auth pages are completely isolated from theme system
+ * - No CSS variables that could change with theme
+ * - All colors are fixed hex/rgba values
+ * - Dark mode only applies after successful login
+ * - No @media (prefers-color-scheme) queries
+ */
 
 /* Focus states for accessibility */
 .auth-link:focus {
