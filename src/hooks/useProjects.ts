@@ -28,6 +28,8 @@ interface UseProjectsReturn {
   error: string | null;
   /** Whether there are more projects to load */
   hasMore: boolean;
+  /** Whether the initial load has completed */
+  hasInitialized: boolean;
   /** Create a new project */
   createNewProject: (data: CreateProjectData) => Promise<Project | null>;
   /** Open a project (navigate to canvas) */
@@ -66,10 +68,11 @@ export const useProjects = (
   const navigate = useNavigate();
 
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<any>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Load projects
   const loadProjects = useCallback(
@@ -100,6 +103,7 @@ export const useProjects = (
         setError("Failed to load projects");
       } finally {
         setIsLoading(false);
+        setHasInitialized(true);
       }
     },
     [user, options, nextCursor]
@@ -257,6 +261,7 @@ export const useProjects = (
     isLoading,
     error,
     hasMore,
+    hasInitialized,
     createNewProject,
     openProject,
     renameProject,
@@ -276,7 +281,7 @@ export const useProjects = (
 export const useRecentProjects = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

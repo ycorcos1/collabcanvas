@@ -26,6 +26,7 @@ export const AllProjects: React.FC = () => {
     isLoading,
     error,
     hasMore,
+    hasInitialized,
     openProject,
     renameProject,
     deleteProject,
@@ -216,7 +217,7 @@ export const AllProjects: React.FC = () => {
       {/* Projects Grid */}
       <ProjectGrid
         projects={projects}
-        isLoading={isLoading && projects.length === 0 && !error}
+        isLoading={!hasInitialized && isLoading}
         emptyState={searchQuery ? <EmptySearchState /> : <EmptyProjectsState />}
         onOpenProject={openProject}
         onRenameProject={renameProject}
