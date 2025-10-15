@@ -31,30 +31,30 @@ const HomePage: React.FC = () => {
           backdropFilter: "blur(10px)",
         }}
       >
-         <h1
-           style={{
-             color: "white",
-             fontSize: "var(--text-2xl)",
-             fontWeight: "var(--font-bold)",
-             margin: 0,
-             textShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
-             letterSpacing: "0.05em"
-           }}
-         >
-           HØRIZON
-         </h1>
+        <h1
+          style={{
+            color: "white",
+            fontSize: "var(--text-2xl)",
+            fontWeight: "var(--font-bold)",
+            margin: 0,
+            textShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
+            letterSpacing: "0.05em",
+          }}
+        >
+          HØRIZON
+        </h1>
 
         <div style={{ display: "flex", gap: "var(--space-3)" }}>
            <Button
              as={Link}
              to="/signin"
              variant="ghost"
-             style={{ 
-               color: "white", 
+             style={{
+               color: "rgba(255, 255, 255, 0.95)",
                borderColor: "rgba(255, 255, 255, 0.5)",
                fontWeight: "var(--font-bold)",
                backgroundColor: "rgba(255, 255, 255, 0.1)",
-               backdropFilter: "blur(10px)"
+               backdropFilter: "blur(10px)",
              }}
            >
              Sign In
@@ -310,7 +310,6 @@ const HomePage: React.FC = () => {
           </Button>
         </div>
       </main>
-
     </div>
   );
 };
