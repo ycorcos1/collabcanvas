@@ -120,7 +120,117 @@
   }
 }
 
-/* Auth pages always use light mode - no dark mode overrides */
+/* Force light mode on auth pages - override any theme settings */
+.auth-page,
+.auth-page *,
+.auth-card,
+.auth-card * {
+  color-scheme: light !important;
+}
+
+/* Override dark mode styles completely */
+[data-theme="dark"] .auth-page,
+[data-theme="dark"] .auth-card,
+.auth-page[data-theme="dark"],
+.auth-card[data-theme="dark"] {
+  background: #fef7f0 !important;
+  color: #2d1b0e !important;
+}
+
+[data-theme="dark"] .auth-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 107, 53, 0.1) !important;
+}
+
+[data-theme="dark"] .auth-title {
+  color: #2d1b0e !important;
+}
+
+[data-theme="dark"] .auth-subtitle {
+  color: #6b5b4d !important;
+}
+
+[data-theme="dark"] .auth-footer p {
+  color: #6b5b4d !important;
+}
+
+[data-theme="dark"] .auth-link {
+  color: #ff6b35 !important;
+}
+
+[data-theme="dark"] .auth-link:hover {
+  color: #e55a2b !important;
+}
+
+/* Override system dark mode preference */
+@media (prefers-color-scheme: dark) {
+  .auth-page,
+  .auth-card {
+    background: #fef7f0 !important;
+    color: #2d1b0e !important;
+  }
+  
+  .auth-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(255, 107, 53, 0.1) !important;
+  }
+  
+  .auth-title {
+    color: #2d1b0e !important;
+  }
+  
+  .auth-subtitle {
+    color: #6b5b4d !important;
+  }
+  
+  .auth-footer p {
+    color: #6b5b4d !important;
+  }
+  
+  .auth-link {
+    color: #ff6b35 !important;
+  }
+  
+  .auth-link:hover {
+    color: #e55a2b !important;
+  }
+}
+
+/* Override shared component styles in auth pages */
+[data-theme="dark"] .auth-page input,
+[data-theme="dark"] .auth-card input,
+.auth-page[data-theme="dark"] input,
+.auth-card[data-theme="dark"] input {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  color: #2d1b0e !important;
+}
+
+[data-theme="dark"] .auth-page button,
+[data-theme="dark"] .auth-card button,
+.auth-page[data-theme="dark"] button,
+.auth-card[data-theme="dark"] button {
+  background: #ff6b35 !important;
+  color: #ffffff !important;
+  border: 1px solid #ff6b35 !important;
+}
+
+/* System dark mode overrides for inputs and buttons */
+@media (prefers-color-scheme: dark) {
+  .auth-page input,
+  .auth-card input {
+    background: #ffffff !important;
+    border: 1px solid #e5e5e5 !important;
+    color: #2d1b0e !important;
+  }
+  
+  .auth-page button,
+  .auth-card button {
+    background: #ff6b35 !important;
+    color: #ffffff !important;
+    border: 1px solid #ff6b35 !important;
+  }
+}
 
 /* Focus states for accessibility */
 .auth-link:focus {
