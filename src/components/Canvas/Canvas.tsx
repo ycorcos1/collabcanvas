@@ -513,6 +513,17 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
       })();
       
+      // Debug logging for production
+      if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+        console.log('🎯 HandleShapeSelect Debug:', { 
+          shapeId, 
+          eventShiftKey: event?.shiftKey, 
+          refShiftKey: shiftKeyRef.current, 
+          stateShiftKey: isShiftPressed,
+          finalShiftPressed: isCurrentlyShiftPressed 
+        });
+      }
+      
       selectShape(shapeId, isCurrentlyShiftPressed);
     },
     [selectShape, isShiftPressed]
