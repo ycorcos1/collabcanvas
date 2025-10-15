@@ -78,14 +78,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.warn("Incomplete Firebase user data received:", {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        displayName: firebaseUser.displayName
+        displayName: firebaseUser.displayName,
       });
       return null;
     }
 
     // Safe email parsing with fallback
-    const emailFallback = firebaseUser.email.includes('@') 
-      ? firebaseUser.email.split("@")[0] 
+    const emailFallback = firebaseUser.email.includes("@")
+      ? firebaseUser.email.split("@")[0]
       : `user_${firebaseUser.uid.slice(-6)}`;
 
     return {
@@ -102,14 +102,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Track user activity for potential session timeout features
       // Currently used for monitoring but not enforcing timeouts
     };
-    
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    events.forEach(event => {
+
+    const events = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+    events.forEach((event) => {
       document.addEventListener(event, updateActivity, { passive: true });
     });
 
     return () => {
-      events.forEach(event => {
+      events.forEach((event) => {
         document.removeEventListener(event, updateActivity);
       });
     };
@@ -122,11 +129,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     try {
-      setRecoveryAttempts(prev => prev + 1);
-      
+      setRecoveryAttempts((prev) => prev + 1);
+
       // Force token refresh
       await firebaseUser.getIdToken(true);
-      
+
       // Verify user data is complete after refresh
       const user = firebaseUserToUser(firebaseUser);
       if (user) {
@@ -141,7 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.warn("Session recovery failed:", error);
     }
-    
+
     return false;
   };
 
@@ -162,10 +169,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } else {
               // Try session recovery first
               const recovered = await attemptSessionRecovery(firebaseUser);
-              
+
               if (!recovered) {
                 // Invalid user data - sign out to prevent crashes
-                console.warn("Invalid user data received, signing out for safety");
+                console.warn(
+                  "Invalid user data received, signing out for safety"
+                );
                 const { signOutUser } = await import("../../services/auth");
                 await signOutUser();
                 setAuthState({
@@ -185,12 +194,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } catch (error: any) {
           console.error("Auth state change error:", error);
-          
+
           // Check if this is a recoverable error
-          if (error.code === 'auth/network-request-failed' && recoveryAttempts < 3) {
+          if (
+            error.code === "auth/network-request-failed" &&
+            recoveryAttempts < 3
+          ) {
             // Network error - try recovery
             setTimeout(() => {
-              setRecoveryAttempts(prev => prev + 1);
+              setRecoveryAttempts((prev) => prev + 1);
             }, 2000 * (recoveryAttempts + 1)); // Exponential backoff
           } else {
             setAuthState({
