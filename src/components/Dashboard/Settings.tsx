@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAuth } from "../Auth/AuthProvider";
 import { useTheme } from "../../hooks/useTheme";
 import { Button, Input, Avatar } from "../shared";
@@ -23,6 +23,8 @@ export const Settings: React.FC = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProfileSave = async () => {
     setIsSaving(true);
@@ -62,6 +64,47 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const handlePhotoUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      // For now, create a local URL for preview
+      // TODO: Implement Firebase Storage upload
+      const imageUrl = URL.createObjectURL(file);
+      console.log('Photo selected:', file.name, 'Preview URL:', imageUrl);
+      
+      // TODO: Upload to Firebase Storage and update user profile
+      alert('Photo upload functionality will be implemented with Firebase Storage');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const themeOptions = [
     { value: "light", label: "Light", icon: "☀" },
     { value: "dark", label: "Dark", icon: "☾" },
@@ -93,9 +136,22 @@ export const Settings: React.FC = () => {
                 name={user?.displayName || user?.email || "User"}
                 size="lg"
               />
-              <Button variant="ghost" size="sm">
-                Change Photo
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handlePhotoUpload}
+                loading={isUploadingPhoto}
+                disabled={isUploadingPhoto}
+              >
+                {isUploadingPhoto ? "Uploading..." : "Change Photo"}
               </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
             </div>
 
             <div className="profile-form">
