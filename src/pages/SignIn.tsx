@@ -34,7 +34,6 @@ export const SignIn: React.FC = () => {
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">
-            <span className="logo-icon">🌅</span>
             <h1 className="logo-text">HØRIZON</h1>
           </div>
           <h2 className="auth-title">Welcome back</h2>

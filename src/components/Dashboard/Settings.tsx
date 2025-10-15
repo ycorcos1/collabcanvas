@@ -5,7 +5,7 @@ import { Button, Input, Avatar } from "../shared";
 
 /**
  * Settings Page - User preferences and account management
- * 
+ *
  * Features:
  * - Profile management (name, email, avatar)
  * - Theme selection (light/dark/system)
@@ -16,10 +16,10 @@ import { Button, Input, Avatar } from "../shared";
 export const Settings: React.FC = () => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  
+
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || "",
-    email: user?.email || ""
+    email: user?.email || "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,7 +40,7 @@ export const Settings: React.FC = () => {
   const handleProfileCancel = () => {
     setProfileData({
       displayName: user?.displayName || "",
-      email: user?.email || ""
+      email: user?.email || "",
     });
     setIsEditing(false);
   };
@@ -52,16 +52,20 @@ export const Settings: React.FC = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your projects.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your projects."
+      )
+    ) {
       // TODO: Implement account deletion
       console.log("Delete account requested");
     }
   };
 
   const themeOptions = [
-    { value: "light", label: "Sunrise", icon: "🌅" },
-    { value: "dark", label: "Sunset", icon: "🌇" },
-    { value: "auto", label: "System", icon: "💻" }
+    { value: "light", label: "Light", icon: "☀" },
+    { value: "dark", label: "Dark", icon: "☾" },
+    { value: "auto", label: "System", icon: "⚙" },
   ] as const;
 
   return (
@@ -100,16 +104,26 @@ export const Settings: React.FC = () => {
                   <Input
                     label="Display Name"
                     value={profileData.displayName}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        displayName: e.target.value,
+                      }))
+                    }
                     placeholder="Enter your display name"
                     fullWidth
                   />
-                  
+
                   <Input
                     label="Email"
                     type="email"
                     value={profileData.email}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
                     placeholder="Enter your email"
                     fullWidth
                     disabled // Email changes require re-authentication
@@ -139,7 +153,7 @@ export const Settings: React.FC = () => {
                     <label>Display Name</label>
                     <span>{user?.displayName || "Not set"}</span>
                   </div>
-                  
+
                   <div className="profile-field">
                     <label>Email</label>
                     <span>{user?.email}</span>
@@ -171,7 +185,9 @@ export const Settings: React.FC = () => {
                 {themeOptions.map((option) => (
                   <button
                     key={option.value}
-                    className={`theme-option ${theme === option.value ? "active" : ""}`}
+                    className={`theme-option ${
+                      theme === option.value ? "active" : ""
+                    }`}
                     onClick={() => setTheme(option.value)}
                   >
                     <span className="theme-icon">{option.icon}</span>

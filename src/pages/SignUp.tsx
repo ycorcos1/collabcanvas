@@ -34,13 +34,11 @@ export const SignUp: React.FC = () => {
     }
   };
 
-
   return (
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">
-            <span className="logo-icon">🌅</span>
             <h1 className="logo-text">HØRIZON</h1>
           </div>
           <h2 className="auth-title">Create your account</h2>
@@ -52,10 +50,16 @@ export const SignUp: React.FC = () => {
             label="Display Name"
             type="text"
             value={formData.displayName}
-            onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, displayName: e.target.value }))
+            }
             placeholder="Enter your display name"
             disabled={isLoading}
-            error={localError && localError.includes("Display name") ? localError : undefined}
+            error={
+              localError && localError.includes("Display name")
+                ? localError
+                : undefined
+            }
             fullWidth
           />
 
@@ -63,10 +67,16 @@ export const SignUp: React.FC = () => {
             label="Email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, email: e.target.value }))
+            }
             placeholder="Enter your email"
             disabled={isLoading}
-            error={error || (localError && !localError.includes("Display name")) ? (error || localError) || undefined : undefined}
+            error={
+              error || (localError && !localError.includes("Display name"))
+                ? error || localError || undefined
+                : undefined
+            }
             fullWidth
           />
 
@@ -74,7 +84,9 @@ export const SignUp: React.FC = () => {
             label="Password"
             type="password"
             value={formData.password}
-            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, password: e.target.value }))
+            }
             placeholder="Enter your password (min 6 characters)"
             disabled={isLoading}
             fullWidth

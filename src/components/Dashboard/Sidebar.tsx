@@ -47,22 +47,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       path: "/dashboard/recent",
       label: "Recent",
-      icon: "🕒",
+      icon: "⏰",
     },
     {
       path: "/dashboard/all",
       label: "All Projects",
-      icon: "📁",
+      icon: "📂",
     },
     {
       path: "/dashboard/trash",
       label: "Trash",
-      icon: "🗑️",
+      icon: "🗂",
     },
     {
       path: "/dashboard/settings",
       label: "Settings",
-      icon: "⚙️",
+      icon: "⚙",
     },
   ];
 

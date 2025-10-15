@@ -63,7 +63,8 @@ export const RecentProjects: React.FC = () => {
 
       <h2>Welcome to HØRIZON!</h2>
       <p>
-        You don't have any projects yet. Create your first project to start designing and collaborating with your team in real-time.
+        You don't have any projects yet. Create your first project to start
+        designing and collaborating with your team in real-time.
       </p>
 
       <div className="empty-actions">
@@ -79,16 +80,22 @@ export const RecentProjects: React.FC = () => {
 
       <div className="empty-features">
         <div className="feature-item">
-          <span className="feature-icon">🎨</span>
-          <span className="feature-text">Draw shapes and collaborate in real-time</span>
+          <span className="feature-icon">✏</span>
+          <span className="feature-text">
+            Draw shapes and collaborate in real-time
+          </span>
         </div>
         <div className="feature-item">
-          <span className="feature-icon">👥</span>
-          <span className="feature-text">See other users' cursors and selections</span>
+          <span className="feature-icon">👤</span>
+          <span className="feature-text">
+            See other users' cursors and selections
+          </span>
         </div>
         <div className="feature-item">
-          <span className="feature-icon">💾</span>
-          <span className="feature-text">Auto-save and sync across devices</span>
+          <span className="feature-icon">💿</span>
+          <span className="feature-text">
+            Auto-save and sync across devices
+          </span>
         </div>
       </div>
     </div>

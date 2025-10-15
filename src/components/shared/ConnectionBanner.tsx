@@ -40,7 +40,7 @@ export const ConnectionBanner: React.FC<ConnectionBannerProps> = ({
     <div className={`connection-banner connection-banner-${type}`} role="alert">
       <div className="connection-banner-content">
         <div className="connection-banner-icon">
-          {type === 'error' ? '❌' : type === 'info' ? 'ℹ️' : '⚠️'}
+          {type === 'error' ? '✗' : type === 'info' ? 'ℹ' : '⚠'}
         </div>
         
         <div className="connection-banner-message">

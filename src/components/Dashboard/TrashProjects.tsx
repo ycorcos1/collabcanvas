@@ -4,7 +4,7 @@ import { Button } from "../shared";
 
 /**
  * Trash Projects View - Shows deleted projects with recovery options
- * 
+ *
  * Features:
  * - View deleted projects
  * - Recover individual projects
@@ -23,11 +23,11 @@ export const TrashProjects: React.FC = () => {
     permanentlyDeleteProject,
     batchRecover,
     batchDelete,
-    refresh
+    refresh,
   } = useProjects({
     includeDeleted: true,
     orderBy: "updatedAt",
-    orderDirection: "desc"
+    orderDirection: "desc",
   });
 
   const handleRecoverProject = async (projectId: string) => {
@@ -35,15 +35,19 @@ export const TrashProjects: React.FC = () => {
   };
 
   const handlePermanentlyDeleteProject = async (projectId: string) => {
-    if (window.confirm("Are you sure you want to permanently delete this project? This action cannot be undone.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to permanently delete this project? This action cannot be undone."
+      )
+    ) {
       await permanentlyDeleteProject(projectId);
     }
   };
 
   const handleSelectProject = (projectId: string) => {
-    setSelectedProjects(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId)
+    setSelectedProjects((prev) =>
+      prev.includes(projectId)
+        ? prev.filter((id) => id !== projectId)
         : [...prev, projectId]
     );
   };
@@ -52,14 +56,20 @@ export const TrashProjects: React.FC = () => {
     if (selectedProjects.length === trashedProjects.length) {
       setSelectedProjects([]);
     } else {
-      setSelectedProjects(trashedProjects.map(p => p.id));
+      setSelectedProjects(trashedProjects.map((p) => p.id));
     }
   };
 
   const handleBulkRecover = async () => {
     if (selectedProjects.length === 0) return;
-    
-    if (window.confirm(`Recover ${selectedProjects.length} project${selectedProjects.length !== 1 ? 's' : ''}?`)) {
+
+    if (
+      window.confirm(
+        `Recover ${selectedProjects.length} project${
+          selectedProjects.length !== 1 ? "s" : ""
+        }?`
+      )
+    ) {
       await batchRecover(selectedProjects);
       setSelectedProjects([]);
     }
@@ -67,8 +77,14 @@ export const TrashProjects: React.FC = () => {
 
   const handleBulkDelete = async () => {
     if (selectedProjects.length === 0) return;
-    
-    if (window.confirm(`Permanently delete ${selectedProjects.length} project${selectedProjects.length !== 1 ? 's' : ''}? This action cannot be undone.`)) {
+
+    if (
+      window.confirm(
+        `Permanently delete ${selectedProjects.length} project${
+          selectedProjects.length !== 1 ? "s" : ""
+        }? This action cannot be undone.`
+      )
+    ) {
       await batchDelete(selectedProjects);
       setSelectedProjects([]);
     }
@@ -76,9 +92,13 @@ export const TrashProjects: React.FC = () => {
 
   const handleEmptyTrash = async () => {
     if (trashedProjects.length === 0) return;
-    
-    if (window.confirm(`Permanently delete all ${trashedProjects.length} projects in trash? This action cannot be undone.`)) {
-      await batchDelete(trashedProjects.map(p => p.id));
+
+    if (
+      window.confirm(
+        `Permanently delete all ${trashedProjects.length} projects in trash? This action cannot be undone.`
+      )
+    ) {
+      await batchDelete(trashedProjects.map((p) => p.id));
       setSelectedProjects([]);
     }
   };
@@ -86,9 +106,9 @@ export const TrashProjects: React.FC = () => {
   // Custom project card for trash with different actions
   const TrashProjectCard: React.FC<{ project: any }> = ({ project }) => {
     const isSelected = selectedProjects.includes(project.id);
-    
+
     return (
-      <div className={`trash-project-card ${isSelected ? 'selected' : ''}`}>
+      <div className={`trash-project-card ${isSelected ? "selected" : ""}`}>
         <div className="project-selection">
           <input
             type="checkbox"
@@ -96,7 +116,7 @@ export const TrashProjects: React.FC = () => {
             onChange={() => handleSelectProject(project.id)}
           />
         </div>
-        
+
         <div className="project-thumbnail">
           {project.thumbnailUrl ? (
             <img src={project.thumbnailUrl} alt={`${project.name} thumbnail`} />
@@ -111,7 +131,8 @@ export const TrashProjects: React.FC = () => {
           <h3 className="project-name">{project.name}</h3>
           <div className="project-meta">
             <span className="project-deleted">
-              Deleted {new Date(project.deletedAt.toDate()).toLocaleDateString()}
+              Deleted{" "}
+              {new Date(project.deletedAt.toDate()).toLocaleDateString()}
             </span>
           </div>
 
@@ -139,10 +160,11 @@ export const TrashProjects: React.FC = () => {
   // Empty state
   const EmptyTrashState = () => (
     <div className="trash-empty">
-      <div className="empty-trash-icon">🗑️</div>
+      <div className="empty-trash-icon">🗂</div>
       <h3>Trash is empty</h3>
       <p>
-        Deleted projects will appear here. You can recover them or delete them permanently.
+        Deleted projects will appear here. You can recover them or delete them
+        permanently.
       </p>
     </div>
   );
@@ -169,10 +191,7 @@ export const TrashProjects: React.FC = () => {
         </div>
 
         {trashedProjects.length > 0 && (
-          <Button
-            variant="danger"
-            onClick={handleEmptyTrash}
-          >
+          <Button variant="danger" onClick={handleEmptyTrash}>
             Empty Trash
           </Button>
         )}
@@ -194,16 +213,10 @@ export const TrashProjects: React.FC = () => {
 
           {selectedProjects.length > 0 && (
             <div className="bulk-actions">
-              <Button
-                variant="secondary"
-                onClick={handleBulkRecover}
-              >
+              <Button variant="secondary" onClick={handleBulkRecover}>
                 Recover Selected ({selectedProjects.length})
               </Button>
-              <Button
-                variant="danger"
-                onClick={handleBulkDelete}
-              >
+              <Button variant="danger" onClick={handleBulkDelete}>
                 Delete Selected ({selectedProjects.length})
               </Button>
             </div>
@@ -230,9 +243,7 @@ export const TrashProjects: React.FC = () => {
       {/* Info */}
       {trashedProjects.length > 0 && (
         <div className="trash-info">
-          <p>
-            💡 Projects in trash are automatically deleted after 30 days
-          </p>
+          <p>💡 Projects in trash are automatically deleted after 30 days</p>
         </div>
       )}
     </div>

@@ -37,10 +37,10 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
   }, [id, duration, onClose]);
 
   const typeIcons = {
-    success: '✅',
-    error: '❌',
-    warning: '⚠️',
-    info: 'ℹ️',
+    success: '✓',
+    error: '✗',
+    warning: '⚠',
+    info: 'ℹ',
   };
 
   return (

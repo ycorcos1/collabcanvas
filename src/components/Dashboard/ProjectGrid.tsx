@@ -57,7 +57,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
       <div className="project-grid-empty">
         {emptyState || (
           <div className="empty-state-default">
-            <div className="empty-icon">📁</div>
+            <div className="empty-icon">📂</div>
             <h3>No projects yet</h3>
             <p>Create your first project to get started</p>
           </div>

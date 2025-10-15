@@ -5,7 +5,7 @@ import { Button, Input } from "../shared";
 
 /**
  * All Projects View - Shows all user projects with search and pagination
- * 
+ *
  * Features:
  * - Search functionality
  * - Pagination with load more
@@ -14,7 +14,9 @@ import { Button, Input } from "../shared";
  */
 export const AllProjects: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "name">("updatedAt");
+  const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "name">(
+    "updatedAt"
+  );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const {
@@ -26,12 +28,12 @@ export const AllProjects: React.FC = () => {
     renameProject,
     deleteProject,
     loadMore,
-    refresh
+    refresh,
   } = useProjects({
     searchQuery,
     orderBy: sortBy,
     orderDirection: sortDirection,
-    limit: 12
+    limit: 12,
   });
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,30 +56,31 @@ export const AllProjects: React.FC = () => {
   };
 
   const getSortIcon = (field: "updatedAt" | "createdAt" | "name") => {
-    if (sortBy !== field) return "↕️";
+    if (sortBy !== field) return "↕";
     return sortDirection === "asc" ? "↑" : "↓";
   };
 
   const getSortLabel = (field: "updatedAt" | "createdAt" | "name") => {
     switch (field) {
-      case "updatedAt": return "Last Modified";
-      case "createdAt": return "Date Created";
-      case "name": return "Name";
+      case "updatedAt":
+        return "Last Modified";
+      case "createdAt":
+        return "Date Created";
+      case "name":
+        return "Name";
     }
   };
 
   // Empty state for search results
   const EmptySearchState = () => (
     <div className="all-projects-empty">
-      <div className="empty-search-icon">🔍</div>
+      <div className="empty-search-icon">⌕</div>
       <h3>No projects found</h3>
       <p>
-        No projects match your search for "{searchQuery}". Try adjusting your search terms.
+        No projects match your search for "{searchQuery}". Try adjusting your
+        search terms.
       </p>
-      <Button
-        variant="ghost"
-        onClick={() => setSearchQuery("")}
-      >
+      <Button variant="ghost" onClick={() => setSearchQuery("")}>
         Clear Search
       </Button>
     </div>
@@ -86,10 +89,11 @@ export const AllProjects: React.FC = () => {
   // Empty state for no projects
   const EmptyProjectsState = () => (
     <div className="all-projects-empty">
-      <div className="empty-projects-icon">📁</div>
+      <div className="empty-projects-icon">📂</div>
       <h3>No projects yet</h3>
       <p>
-        You haven't created any projects yet. Head to the Recent tab to create your first project.
+        You haven't created any projects yet. Head to the Recent tab to create
+        your first project.
       </p>
     </div>
   );
@@ -125,7 +129,7 @@ export const AllProjects: React.FC = () => {
             placeholder="Search projects..."
             value={searchQuery}
             onChange={handleSearchChange}
-            icon="🔍"
+            icon="⌕"
           />
         </div>
 
@@ -136,7 +140,9 @@ export const AllProjects: React.FC = () => {
             {(["updatedAt", "createdAt", "name"] as const).map((field) => (
               <button
                 key={field}
-                className={`sort-button ${sortBy === field ? "sort-button-active" : ""}`}
+                className={`sort-button ${
+                  sortBy === field ? "sort-button-active" : ""
+                }`}
                 onClick={() => handleSortChange(field)}
               >
                 {getSortLabel(field)} {getSortIcon(field)}
@@ -150,9 +156,7 @@ export const AllProjects: React.FC = () => {
       <ProjectGrid
         projects={projects}
         isLoading={isLoading && projects.length === 0}
-        emptyState={
-          searchQuery ? <EmptySearchState /> : <EmptyProjectsState />
-        }
+        emptyState={searchQuery ? <EmptySearchState /> : <EmptyProjectsState />}
         onOpenProject={openProject}
         onRenameProject={renameProject}
         onDeleteProject={deleteProject}
