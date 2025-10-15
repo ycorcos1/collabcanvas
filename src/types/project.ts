@@ -1,7 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
 /**
- * Project data structure for CollabCanvas v1.0
+ * Project data structure for HØRIZON v1.0
  * 
  * Enhanced from MVP to support:
  * - URL slugs for human-readable URLs

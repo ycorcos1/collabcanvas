@@ -34,7 +34,7 @@ const SignUpPage: React.FC = () => {
             fontWeight: 'var(--font-bold)'
           }}
         >
-          CollabCanvas
+          HØRIZON
         </Link>
         
         <Link 

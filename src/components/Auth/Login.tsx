@@ -39,7 +39,7 @@ export const Login: React.FC = () => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1 className="login-title">CollabCanvas</h1>
+        <h1 className="login-title">HØRIZON</h1>
         <p className="login-subtitle">Real-time collaborative canvas</p>
 
         <form onSubmit={handleSubmit} className="login-form">

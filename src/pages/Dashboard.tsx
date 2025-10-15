@@ -108,7 +108,7 @@ export const Dashboard: React.FC = () => {
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
-          <h1>CollabCanvas</h1>
+          <h1>HØRIZON</h1>
         </div>
         <div className="header-right">
           <span className="user-info">

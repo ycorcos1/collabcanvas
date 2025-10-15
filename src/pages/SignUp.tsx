@@ -39,7 +39,11 @@ export const SignUp: React.FC = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <h1 className="auth-title">Create your account</h1>
+          <div className="auth-logo">
+            <span className="logo-icon">🌅</span>
+            <h1 className="logo-text">HØRIZON</h1>
+          </div>
+          <h2 className="auth-title">Create your account</h2>
           <p className="auth-subtitle">Join HØRIZON and start collaborating</p>
         </div>
 
