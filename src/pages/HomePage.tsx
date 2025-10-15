@@ -14,7 +14,7 @@ const HomePage: React.FC = () => {
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
-      background: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%)'
+      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%)' /* Fixed gradient colors */
     }}>
       {/* Header */}
       <header style={{
@@ -48,7 +48,7 @@ const HomePage: React.FC = () => {
             to="/signup"
             style={{ 
               backgroundColor: 'white', 
-              color: 'var(--brand-primary)',
+              color: '#ff6b35', /* Fixed brand color */
               border: 'none'
             }}
           >
@@ -92,7 +92,7 @@ const HomePage: React.FC = () => {
             size="lg"
             style={{
               backgroundColor: 'white',
-              color: 'var(--brand-primary)',
+              color: '#ff6b35', /* Fixed brand color */
               border: 'none',
               fontSize: 'var(--text-lg)',
               padding: 'var(--space-4) var(--space-8)'
