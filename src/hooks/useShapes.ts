@@ -29,7 +29,7 @@ export const useShapes = () => {
 
   // Multi-select state - persisted across page refreshes using sessionStorage
   const [selectedShapeIds, setSelectedShapeIds] = useState<string[]>(() => {
-    const saved = sessionStorage.getItem("collabcanvas-selected-shapes");
+    const saved = sessionStorage.getItem("horizon-selected-shapes");
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -46,11 +46,11 @@ export const useShapes = () => {
   useEffect(() => {
     if (selectedShapeIds.length > 0) {
       sessionStorage.setItem(
-        "collabcanvas-selected-shapes",
+        "horizon-selected-shapes",
         JSON.stringify(selectedShapeIds)
       );
     } else {
-      sessionStorage.removeItem("collabcanvas-selected-shapes");
+      sessionStorage.removeItem("horizon-selected-shapes");
     }
   }, [selectedShapeIds]);
 

@@ -53,16 +53,16 @@ export const Dashboard: React.FC = () => {
 
   // Persist selected tool across page refreshes (using sessionStorage)
   const [selectedTool, setSelectedTool] = useState<Shape["type"] | null>(() => {
-    const saved = sessionStorage.getItem("collabcanvas-selected-tool");
+    const saved = sessionStorage.getItem("horizon-selected-tool");
     return saved ? (saved as Shape["type"]) : null;
   });
 
   // Save selected tool to sessionStorage when it changes
   useEffect(() => {
     if (selectedTool) {
-      sessionStorage.setItem("collabcanvas-selected-tool", selectedTool);
+      sessionStorage.setItem("horizon-selected-tool", selectedTool);
     } else {
-      sessionStorage.removeItem("collabcanvas-selected-tool");
+      sessionStorage.removeItem("horizon-selected-tool");
     }
   }, [selectedTool]);
 

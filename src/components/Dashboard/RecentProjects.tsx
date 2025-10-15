@@ -61,7 +61,7 @@ export const RecentProjects: React.FC = () => {
         </div>
       </div>
 
-      <h2>Welcome to CollabCanvas!</h2>
+      <h2>Welcome to HØRIZON!</h2>
       <p>
         You don't have any projects yet. Create your first project to start designing and collaborating with your team in real-time.
       </p>

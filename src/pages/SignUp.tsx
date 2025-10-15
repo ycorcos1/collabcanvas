@@ -40,7 +40,7 @@ export const SignUp: React.FC = () => {
       <div className="auth-card">
         <div className="auth-header">
           <h1 className="auth-title">Create your account</h1>
-          <p className="auth-subtitle">Join CollabCanvas and start collaborating</p>
+          <p className="auth-subtitle">Join HØRIZON and start collaborating</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">

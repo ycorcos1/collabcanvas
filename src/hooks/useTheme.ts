@@ -9,7 +9,7 @@ interface UseThemeReturn {
   toggleTheme: () => void;
 }
 
-const STORAGE_KEY = 'collabcanvas-theme';
+const STORAGE_KEY = 'horizon-theme';
 
 /**
  * Custom hook for managing theme state with system preference detection

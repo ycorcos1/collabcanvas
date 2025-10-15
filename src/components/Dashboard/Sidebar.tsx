@@ -73,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Logo Section */}
       <div className="sidebar-header">
         <Link to="/dashboard/recent" className="sidebar-logo" onClick={onClose}>
-          <h1>CollabCanvas</h1>
+          <h1>HØRIZON</h1>
         </Link>
       </div>
 

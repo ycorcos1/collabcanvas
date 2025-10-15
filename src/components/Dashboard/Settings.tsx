@@ -59,8 +59,8 @@ export const Settings: React.FC = () => {
   };
 
   const themeOptions = [
-    { value: "light", label: "Light", icon: "☀️" },
-    { value: "dark", label: "Dark", icon: "🌙" },
+    { value: "light", label: "Sunrise", icon: "🌅" },
+    { value: "dark", label: "Sunset", icon: "🌇" },
     { value: "auto", label: "System", icon: "💻" }
   ] as const;
 
@@ -161,7 +161,7 @@ export const Settings: React.FC = () => {
         <div className="settings-section">
           <div className="section-header">
             <h2>Appearance</h2>
-            <p>Customize how CollabCanvas looks</p>
+            <p>Customize how HØRIZON looks</p>
           </div>
 
           <div className="appearance-card">
@@ -227,7 +227,7 @@ export const Settings: React.FC = () => {
               <div className="account-action">
                 <div className="action-info">
                   <h3>Sign Out</h3>
-                  <p>Sign out of your CollabCanvas account</p>
+                  <p>Sign out of your HØRIZON account</p>
                 </div>
                 <Button variant="secondary" onClick={handleSignOut}>
                   Sign Out

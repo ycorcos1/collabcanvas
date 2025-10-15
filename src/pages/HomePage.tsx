@@ -31,7 +31,7 @@ const HomePage: React.FC = () => {
           fontWeight: 'var(--font-bold)',
           margin: 0
         }}>
-          CollabCanvas
+          HØRIZON
         </h1>
         
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>

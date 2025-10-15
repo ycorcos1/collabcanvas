@@ -29,13 +29,12 @@ export const SignIn: React.FC = () => {
     }
   };
 
-
   return (
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
           <h1 className="auth-title">Welcome back</h1>
-          <p className="auth-subtitle">Sign in to your CollabCanvas account</p>
+          <p className="auth-subtitle">Sign in to your HØRIZON account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -43,7 +42,9 @@ export const SignIn: React.FC = () => {
             label="Email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, email: e.target.value }))
+            }
             placeholder="Enter your email"
             disabled={isLoading}
             error={error || localError || undefined}
@@ -54,7 +55,9 @@ export const SignIn: React.FC = () => {
             label="Password"
             type="password"
             value={formData.password}
-            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, password: e.target.value }))
+            }
             placeholder="Enter your password"
             disabled={isLoading}
             fullWidth

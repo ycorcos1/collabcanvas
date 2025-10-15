@@ -1,114 +1,114 @@
-/* Theme System - Light and Dark Mode */
+/* HØRIZON Theme System - Sunrise Inspired Colors */
 
-/* Light Theme (Default) */
+/* Sunrise Theme (Default) */
 :root {
-  /* Brand Colors */
-  --brand-primary: #0066ff;
-  --brand-secondary: #4d94ff;
-  --brand-dark: #0052cc;
+  /* Brand Colors - Sunrise Gradient */
+  --brand-primary: #ff6b35; /* Vibrant sunrise orange */
+  --brand-secondary: #ff8c42; /* Warm morning orange */
+  --brand-dark: #e55a2b; /* Deep sunrise */
 
-  /* Background Colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  --bg-elevated: #ffffff;
-  --bg-overlay: rgba(0, 0, 0, 0.5);
+  /* Background Colors - Dawn Sky */
+  --bg-primary: #fef7f0; /* Soft morning cream */
+  --bg-secondary: #fdf2e9; /* Light peachy dawn */
+  --bg-tertiary: #fce7d6; /* Gentle sunrise glow */
+  --bg-elevated: #ffffff; /* Pure white clouds */
+  --bg-overlay: rgba(45, 27, 14, 0.6); /* Warm dark overlay */
 
-  /* Text Colors */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #94a3b8;
-  --text-inverse: #ffffff;
-  --text-placeholder: #94a3b8;
+  /* Text Colors - Horizon Silhouettes */
+  --text-primary: #2d1b0e; /* Deep dawn shadow */
+  --text-secondary: #8b4513; /* Warm earth brown */
+  --text-tertiary: #cd853f; /* Golden hour bronze */
+  --text-inverse: #ffffff; /* Bright morning light */
+  --text-placeholder: #deb887; /* Burlywood placeholder */
 
-  /* Border Colors */
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
-  --border-focus: #0066ff;
-  --border-error: #dc2626;
+  /* Border Colors - Soft Horizon Lines */
+  --border-primary: #f4d5ae; /* Gentle golden border */
+  --border-secondary: #e6b887; /* Warm sand border */
+  --border-focus: #ff6b35; /* Focused sunrise orange */
+  --border-error: #dc143c; /* Crimson sunrise */
 
-  /* Interactive Colors */
-  --interactive-primary: #0066ff;
-  --interactive-primary-hover: #0052cc;
-  --interactive-primary-active: #003d99;
-  --interactive-secondary: #f1f5f9;
-  --interactive-secondary-hover: #e2e8f0;
-  --interactive-secondary-active: #cbd5e1;
+  /* Interactive Colors - Sunrise Energy */
+  --interactive-primary: #ff6b35; /* Primary sunrise orange */
+  --interactive-primary-hover: #e55a2b; /* Deeper sunrise */
+  --interactive-primary-active: #cc4a1f; /* Active sunrise */
+  --interactive-secondary: #fdf2e9; /* Soft morning touch */
+  --interactive-secondary-hover: #f4d5ae; /* Golden hover */
+  --interactive-secondary-active: #e6b887; /* Active golden */
 
-  /* Status Colors */
-  --status-success: #16a34a;
-  --status-success-bg: #dcfce7;
-  --status-warning: #f59e0b;
-  --status-warning-bg: #fef3c7;
-  --status-error: #dc2626;
-  --status-error-bg: #fecaca;
-  --status-info: #0ea5e9;
-  --status-info-bg: #e0f2fe;
+  /* Status Colors - Natural Dawn Elements */
+  --status-success: #228b22; /* Fresh morning green */
+  --status-success-bg: #f0fff0; /* Light mint dawn */
+  --status-warning: #ffa500; /* Golden sun warning */
+  --status-warning-bg: #fff8dc; /* Cornsilk morning */
+  --status-error: #dc143c; /* Crimson sunrise */
+  --status-error-bg: #ffe4e1; /* Misty rose */
+  --status-info: #4169e1; /* Royal morning blue */
+  --status-info-bg: #e6f3ff; /* Light sky blue */
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
-  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+  /* Shadows - Warm Morning Light */
+  --shadow-sm: 0 1px 2px rgba(255, 107, 53, 0.1);
+  --shadow-md: 0 4px 6px rgba(255, 107, 53, 0.15);
+  --shadow-lg: 0 10px 15px rgba(255, 107, 53, 0.2);
+  --shadow-xl: 0 20px 25px rgba(255, 107, 53, 0.25);
+  --shadow-2xl: 0 25px 50px rgba(255, 107, 53, 0.3);
 
-  /* Canvas Specific */
-  --canvas-bg: #fafafa;
-  --canvas-grid: #e5e7eb;
-  --canvas-selection: #0066ff;
+  /* Canvas Specific - Creative Sunrise Canvas */
+  --canvas-bg: #fef9f5; /* Warm canvas background */
+  --canvas-grid: #f4d5ae; /* Golden grid lines */
+  --canvas-selection: #ff6b35; /* Sunrise selection */
 }
 
-/* Dark Theme */
+/* Sunset Theme (Dark Mode) */
 [data-theme="dark"] {
-  /* Background Colors */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-elevated: #1e293b;
-  --bg-overlay: rgba(0, 0, 0, 0.7);
+  /* Background Colors - Evening Sky */
+  --bg-primary: #1a0f0a; /* Deep twilight */
+  --bg-secondary: #2d1b14; /* Warm evening shadow */
+  --bg-tertiary: #3d2518; /* Dusk horizon */
+  --bg-elevated: #2d1b14; /* Evening clouds */
+  --bg-overlay: rgba(26, 15, 10, 0.8); /* Deep evening overlay */
 
-  /* Text Colors */
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #64748b;
-  --text-inverse: #0f172a;
-  --text-placeholder: #64748b;
+  /* Text Colors - Evening Light */
+  --text-primary: #fef7f0; /* Soft evening light */
+  --text-secondary: #deb887; /* Golden evening glow */
+  --text-tertiary: #cd853f; /* Warm bronze */
+  --text-inverse: #1a0f0a; /* Deep twilight */
+  --text-placeholder: #8b7355; /* Muted golden */
 
-  /* Border Colors */
-  --border-primary: #334155;
-  --border-secondary: #475569;
-  --border-focus: #4d94ff;
-  --border-error: #ef4444;
+  /* Border Colors - Evening Horizon */
+  --border-primary: #4a3426; /* Warm evening border */
+  --border-secondary: #5d4037; /* Rich earth border */
+  --border-focus: #ff8c42; /* Warm evening orange */
+  --border-error: #ff6b6b; /* Soft evening red */
 
-  /* Interactive Colors */
-  --interactive-primary: #4d94ff;
-  --interactive-primary-hover: #6ba6ff;
-  --interactive-primary-active: #3b82f6;
-  --interactive-secondary: #334155;
-  --interactive-secondary-hover: #475569;
-  --interactive-secondary-active: #64748b;
+  /* Interactive Colors - Sunset Glow */
+  --interactive-primary: #ff8c42; /* Warm sunset orange */
+  --interactive-primary-hover: #ffab70; /* Lighter sunset */
+  --interactive-primary-active: #e55a2b; /* Deep sunset */
+  --interactive-secondary: #3d2518; /* Evening shadow */
+  --interactive-secondary-hover: #4a3426; /* Warm hover */
+  --interactive-secondary-active: #5d4037; /* Active earth */
 
-  /* Status Colors */
-  --status-success: #22c55e;
-  --status-success-bg: rgba(34, 197, 94, 0.1);
-  --status-warning: #fbbf24;
-  --status-warning-bg: rgba(251, 191, 36, 0.1);
-  --status-error: #ef4444;
-  --status-error-bg: rgba(239, 68, 68, 0.1);
-  --status-info: #38bdf8;
-  --status-info-bg: rgba(56, 189, 248, 0.1);
+  /* Status Colors - Evening Nature */
+  --status-success: #4caf50; /* Evening green */
+  --status-success-bg: rgba(76, 175, 80, 0.15); /* Soft green glow */
+  --status-warning: #ffb74d; /* Golden evening warning */
+  --status-warning-bg: rgba(255, 183, 77, 0.15); /* Soft golden glow */
+  --status-error: #ff6b6b; /* Soft evening red */
+  --status-error-bg: rgba(255, 107, 107, 0.15); /* Soft red glow */
+  --status-info: #64b5f6; /* Evening sky blue */
+  --status-info-bg: rgba(100, 181, 246, 0.15); /* Soft blue glow */
 
-  /* Shadows (darker for dark mode) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
-  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.7);
+  /* Shadows - Evening Depth */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.7);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.8);
 
-  /* Canvas Specific */
-  --canvas-bg: #1e293b;
-  --canvas-grid: #334155;
-  --canvas-selection: #4d94ff;
+  /* Canvas Specific - Evening Canvas */
+  --canvas-bg: #2d1b14; /* Warm evening canvas */
+  --canvas-grid: #4a3426; /* Evening grid lines */
+  --canvas-selection: #ff8c42; /* Sunset selection */
 }
 
 /* Theme Transitions */
