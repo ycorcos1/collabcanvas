@@ -4,6 +4,7 @@
 @import './variables.css';
 @import './themes.css';
 @import './reset.css';
+@import './auth.css';
 
 /* Global application styles */
 #root {

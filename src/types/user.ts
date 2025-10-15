@@ -3,6 +3,7 @@ export interface User {
   email: string;
   displayName: string;
   color: string;
+  photoURL?: string; // Optional profile photo URL
 }
 
 export interface AuthState {

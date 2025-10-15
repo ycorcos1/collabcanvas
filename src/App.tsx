@@ -6,7 +6,7 @@ import { AppRouter } from "./routes/AppRouter";
 
 /**
  * Main App component with routing infrastructure
- * 
+ *
  * Architecture:
  * - ErrorBoundary: Catches and handles React errors
  * - AuthProvider: Manages authentication state

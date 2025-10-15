@@ -1,7 +1,7 @@
 import React from "react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/Auth/AuthProvider";
-import "../components/Auth/Login.css";
+import { Input, Button } from "../components/shared";
 
 export const SignUp: React.FC = () => {
   const navigate = useNavigate();
@@ -34,75 +34,67 @@ export const SignUp: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1 className="login-title">CollabCanvas</h1>
-        <p className="login-subtitle">Real-time collaborative canvas</p>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1 className="auth-title">Create your account</h1>
+          <p className="auth-subtitle">Join CollabCanvas and start collaborating</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-              disabled={isLoading}
-              placeholder="Enter your email"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <Input
+            label="Display Name"
+            type="text"
+            value={formData.displayName}
+            onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+            placeholder="Enter your display name"
+            disabled={isLoading}
+            error={localError && localError.includes("Display name") ? localError : undefined}
+            fullWidth
+          />
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-              disabled={isLoading}
-              placeholder="Enter your password"
-              minLength={6}
-            />
-          </div>
+          <Input
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            placeholder="Enter your email"
+            disabled={isLoading}
+            error={error || (localError && !localError.includes("Display name")) ? (error || localError) || undefined : undefined}
+            fullWidth
+          />
 
-          <div className="form-group">
-            <label htmlFor="displayName">Display Name</label>
-            <input
-              type="text"
-              id="displayName"
-              name="displayName"
-              value={formData.displayName}
-              onChange={handleInputChange}
-              required
-              disabled={isLoading}
-              placeholder="Enter your display name"
-            />
-          </div>
+          <Input
+            label="Password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+            placeholder="Enter your password (min 6 characters)"
+            disabled={isLoading}
+            fullWidth
+          />
 
-          {(error || localError) && (
-            <div className="error-message">{error || localError}</div>
-          )}
-
-          <button type="submit" className="auth-button" disabled={isLoading}>
-            {isLoading ? "Loading..." : "Sign Up"}
-          </button>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={isLoading}
+            disabled={isLoading}
+          >
+            Create Account
+          </Button>
         </form>
 
-        <div className="auth-toggle">
-          Already have an account?
-          <Link to="/signin" className="toggle-button">
-            Sign In
-          </Link>
+        <div className="auth-footer">
+          <p>
+            Already have an account?{" "}
+            <Link to="/signin" className="auth-link">
+              Sign in
+            </Link>
+          </p>
         </div>
       </div>
     </div>
