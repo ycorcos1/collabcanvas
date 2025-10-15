@@ -249,13 +249,19 @@ export async function getProjects(
  * Get recent projects (last 5)
  */
 export async function getRecentProjects(userId: string): Promise<Project[]> {
-  const result = await getProjects(userId, {
-    limit: 5,
-    orderBy: "lastAccessedAt",
-    orderDirection: "desc",
-  });
+  try {
+    const result = await getProjects(userId, {
+      limit: 5,
+      orderBy: "lastAccessedAt",
+      orderDirection: "desc",
+    });
 
-  return result.projects;
+    return result.projects;
+  } catch (error) {
+    console.error("Error getting recent projects:", error);
+    // Return empty array for new users instead of throwing error
+    return [];
+  }
 }
 
 /**
