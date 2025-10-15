@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
+import { ThemeInitializer } from "../ThemeInitializer";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <div className="dashboard-layout">
+      {/* Initialize theme for authenticated users */}
+      <ThemeInitializer />
+      
       {/* Mobile Menu Button */}
       <button
         className="mobile-menu-button"

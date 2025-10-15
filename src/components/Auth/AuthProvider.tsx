@@ -275,6 +275,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       sessionStorage.removeItem("horizon-selected-shapes");
       sessionStorage.removeItem("horizon-canvas-state");
 
+      // Reset theme to light mode for auth pages
+      const root = document.documentElement;
+      root.removeAttribute("data-theme");
+      root.classList.remove("light", "dark");
+      root.classList.add("light");
+
       const { signOutUser } = await import("../../services/auth");
       await signOutUser();
     } catch (error: any) {

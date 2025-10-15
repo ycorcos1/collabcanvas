@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
+import { ThemeInitializer } from '../components/ThemeInitializer';
 
 /**
  * Canvas Page - Individual project canvas view
@@ -29,6 +30,9 @@ const CanvasPage: React.FC = () => {
       flexDirection: 'column',
       backgroundColor: 'var(--bg-primary)'
     }}>
+      {/* Initialize theme for authenticated users */}
+      <ThemeInitializer />
+      
       {/* Temporary Top Bar */}
       <header style={{
         padding: 'var(--space-4) var(--space-6)',
