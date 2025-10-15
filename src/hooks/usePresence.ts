@@ -12,10 +12,13 @@ export const usePresence = () => {
     if (!user) return;
 
     let isActive = true;
+    const currentUserId = user.id; // Capture user properties to avoid null access during cleanup
+    const currentUserName = user.displayName;
+    const currentUserColor = user.color;
 
     // Set current user as online with error handling
     presenceService
-      .setUserOnline(user.id, user.displayName, user.color)
+      .setUserOnline(currentUserId, currentUserName, currentUserColor)
       .then(() => {
         // User successfully set as online
       })
@@ -31,7 +34,7 @@ export const usePresence = () => {
 
         // Filter out current user from the online users list since we show them separately
         const otherUsers = users.filter((u) => {
-          return u.userId !== user.id;
+          return u.userId !== currentUserId;
         });
 
         setOnlineUsers(otherUsers);
@@ -51,7 +54,7 @@ export const usePresence = () => {
     // Update activity periodically with error handling
     const activityInterval = setInterval(() => {
       try {
-        presenceService.updateUserActivity(user.id);
+        presenceService.updateUserActivity(currentUserId);
       } catch (error) {
         console.error("Error updating user activity:", error);
       }
@@ -62,7 +65,7 @@ export const usePresence = () => {
       try {
         unsubscribe();
         clearInterval(activityInterval);
-        presenceService.setUserOffline(user.id);
+        presenceService.setUserOffline(currentUserId);
       } catch (error) {
         console.error("Error during presence cleanup:", error);
       }

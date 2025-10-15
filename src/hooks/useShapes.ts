@@ -382,9 +382,11 @@ export const useShapes = () => {
   useEffect(() => {
     if (!user) return;
 
+    const currentUserId = user.id; // Capture user ID to avoid null access during cleanup
+
     // Clear selections when component unmounts
     return () => {
-      shapesService.clearUserSelections(user.id).catch((error) => {
+      shapesService.clearUserSelections(currentUserId).catch((error) => {
         console.error("Error clearing user selections:", error);
       });
     };

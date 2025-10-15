@@ -497,41 +497,49 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   return (
     <div className={`canvas-container ${selectedTool ? "creating-shape" : ""}`}>
-      {/* Loading indicator */}
-      {isLoading && (
+      {/* Don't render canvas content if user is not authenticated */}
+      {!user ? (
         <div className="canvas-loading">
           <div className="loading-spinner"></div>
-          <p>Loading canvas...</p>
+          <p>Signing out...</p>
         </div>
-      )}
+      ) : (
+        <>
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="canvas-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading canvas...</p>
+            </div>
+          )}
 
-      {/* Multi-select indicator with debug info */}
-      {(isShiftPressed || shiftKeyRef.current) && (
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            backgroundColor: "rgba(0, 123, 255, 0.8)",
-            color: "white",
-            padding: "8px 12px",
-            borderRadius: "4px",
-            fontSize: "14px",
-            fontWeight: "bold",
-            zIndex: 1000,
-            pointerEvents: "none",
-          }}
-        >
-          Multi-select mode (State: {isShiftPressed ? '✓' : '✗'}, Ref: {shiftKeyRef.current ? '✓' : '✗'})
-        </div>
-      )}
+          {/* Multi-select indicator with debug info */}
+          {(isShiftPressed || shiftKeyRef.current) && (
+            <div
+              style={{
+                position: "absolute",
+                top: "10px",
+                left: "10px",
+                backgroundColor: "rgba(0, 123, 255, 0.8)",
+                color: "white",
+                padding: "8px 12px",
+                borderRadius: "4px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                zIndex: 1000,
+                pointerEvents: "none",
+              }}
+            >
+              Multi-select mode (State: {isShiftPressed ? '✓' : '✗'}, Ref: {shiftKeyRef.current ? '✓' : '✗'})
+            </div>
+          )}
 
-      {/* Error indicator */}
-      {error && (
-        <div className="canvas-error">
-          <p>Error: {error}</p>
-        </div>
-      )}
+          {/* Error indicator */}
+          {error && (
+            <div className="canvas-error">
+              <p>Error: {error}</p>
+            </div>
+          )}
 
       <Stage
         ref={stageRef}
@@ -649,6 +657,8 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       {/* Multiplayer cursors overlay */}
       <MultipleCursors canvasState={canvasState} stageRef={stageRef} />
+        </>
+      )}
     </div>
   );
 };

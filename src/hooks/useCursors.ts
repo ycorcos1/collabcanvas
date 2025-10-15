@@ -12,17 +12,18 @@ export const useCursors = () => {
     if (!user) return;
 
     let isActive = true;
+    const currentUserId = user.id; // Capture user ID to avoid null access during cleanup
 
     // Set up disconnection cleanup with error handling
     try {
-      cursorsService.setupCursorDisconnection(user.id);
+      cursorsService.setupCursorDisconnection(currentUserId);
     } catch (error) {
       console.error("Failed to setup cursor disconnection:", error);
     }
 
     // Subscribe to other users' cursors with error handling
     const unsubscribe = cursorsService.subscribeToCursors(
-      user.id,
+      currentUserId,
       (newCursors) => {
         if (isActive) {
           setCursors(newCursors);
@@ -41,7 +42,7 @@ export const useCursors = () => {
       isActive = false;
       try {
         unsubscribe();
-        cursorsService.removeCursor(user.id);
+        cursorsService.removeCursor(currentUserId);
       } catch (error) {
         console.error("Error during cursor cleanup:", error);
       }
