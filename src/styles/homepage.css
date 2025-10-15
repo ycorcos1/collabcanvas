@@ -4,19 +4,28 @@
  * Beautiful animated sunrise effects for the hero section
  */
 
-/* Sun pulsing animation */
+/* Sun pulsing animation with sunrise colors */
 @keyframes sunPulse {
   0%, 100% {
     transform: scale(1);
     box-shadow: 
-      0 0 60px rgba(255, 235, 153, 0.6), 
-      0 0 120px rgba(255, 140, 66, 0.4);
+      0 0 60px rgba(255, 204, 51, 0.7), 
+      0 0 120px rgba(255, 107, 53, 0.5),
+      0 0 180px rgba(229, 90, 43, 0.3);
   }
-  50% {
+  33% {
+    transform: scale(1.03);
+    box-shadow: 
+      0 0 70px rgba(255, 182, 193, 0.6), 
+      0 0 140px rgba(255, 160, 122, 0.4),
+      0 0 200px rgba(255, 107, 53, 0.3);
+  }
+  66% {
     transform: scale(1.05);
     box-shadow: 
-      0 0 80px rgba(255, 235, 153, 0.8), 
-      0 0 160px rgba(255, 140, 66, 0.6);
+      0 0 80px rgba(255, 218, 185, 0.7), 
+      0 0 160px rgba(255, 204, 51, 0.6),
+      0 0 220px rgba(229, 90, 43, 0.4);
   }
 }
 
@@ -74,17 +83,29 @@
   animation-delay: -0.5s;
 }
 
-/* Particle variations */
-.floating-particle:nth-child(3n) {
-  background: rgba(255, 235, 153, 0.4);
+/* Enhanced particle variations with sunrise colors */
+.floating-particle:nth-child(6n) {
+  background: rgba(255, 182, 193, 0.7) !important; /* Light pink */
 }
 
-.floating-particle:nth-child(3n+1) {
-  background: rgba(255, 140, 66, 0.3);
+.floating-particle:nth-child(6n+1) {
+  background: rgba(255, 160, 122, 0.6) !important; /* Light salmon */
 }
 
-.floating-particle:nth-child(3n+2) {
-  background: rgba(255, 255, 255, 0.6);
+.floating-particle:nth-child(6n+2) {
+  background: rgba(255, 218, 185, 0.5) !important; /* Peach puff */
+}
+
+.floating-particle:nth-child(6n+3) {
+  background: rgba(255, 204, 51, 0.6) !important; /* Golden */
+}
+
+.floating-particle:nth-child(6n+4) {
+  background: rgba(255, 107, 53, 0.5) !important; /* Orange */
+}
+
+.floating-particle:nth-child(6n+5) {
+  background: rgba(229, 90, 43, 0.4) !important; /* Deep orange */
 }
 
 /* Responsive adjustments */

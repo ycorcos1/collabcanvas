@@ -15,7 +15,7 @@ const HomePage: React.FC = () => {
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
-      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%)' /* Fixed gradient colors */
+      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c42 25%, #ffb366 50%, #ffd699 75%, #ffe6cc 100%)' /* Enhanced sunrise gradient */
     }}>
       {/* Header */}
       <header style={{
@@ -87,8 +87,8 @@ const HomePage: React.FC = () => {
             width: '120px',
             height: '120px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, #fff9e6 0%, #ffeb99 30%, #ffd700 70%, #ff8c42 100%)',
-            boxShadow: '0 0 60px rgba(255, 235, 153, 0.6), 0 0 120px rgba(255, 140, 66, 0.4)',
+            background: 'radial-gradient(circle, #fff9e6 0%, #ffe066 15%, #ffcc33 30%, #ff9933 50%, #ff6b35 70%, #e55a2b 85%, #cc4125 100%)',
+            boxShadow: '0 0 60px rgba(255, 204, 51, 0.7), 0 0 120px rgba(255, 107, 53, 0.5), 0 0 180px rgba(229, 90, 43, 0.3)',
             animation: 'sunPulse 4s ease-in-out infinite, sunFloat 6s ease-in-out infinite'
           }} />
           
@@ -103,7 +103,7 @@ const HomePage: React.FC = () => {
                 right: '15%',
                 width: '2px',
                 height: '40px',
-                background: 'linear-gradient(to bottom, rgba(255, 235, 153, 0.8), transparent)',
+                background: 'linear-gradient(to bottom, rgba(255, 204, 51, 0.9), rgba(255, 107, 53, 0.6), transparent)',
                 transformOrigin: '1px 60px',
                 transform: `rotate(${i * 45}deg)`,
                 animation: `rayRotate 8s linear infinite`
@@ -121,7 +121,14 @@ const HomePage: React.FC = () => {
                 width: `${Math.random() * 6 + 2}px`,
                 height: `${Math.random() * 6 + 2}px`,
                 borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.6)',
+                background: `${
+                  i % 6 === 0 ? 'rgba(255, 182, 193, 0.7)' :  // Light pink
+                  i % 6 === 1 ? 'rgba(255, 160, 122, 0.6)' :  // Light salmon
+                  i % 6 === 2 ? 'rgba(255, 218, 185, 0.5)' :  // Peach puff
+                  i % 6 === 3 ? 'rgba(255, 204, 51, 0.6)' :   // Golden
+                  i % 6 === 4 ? 'rgba(255, 107, 53, 0.5)' :   // Orange
+                  'rgba(229, 90, 43, 0.4)'                    // Deep orange
+                }`,
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animation: `particleFloat ${3 + Math.random() * 4}s ease-in-out infinite`,
@@ -137,7 +144,29 @@ const HomePage: React.FC = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'radial-gradient(ellipse at 85% 20%, rgba(255, 235, 153, 0.1) 0%, transparent 50%)',
+            background: 'radial-gradient(ellipse at 85% 20%, rgba(255, 182, 193, 0.15) 0%, rgba(255, 204, 51, 0.1) 30%, rgba(255, 107, 53, 0.08) 60%, transparent 80%)',
+            pointerEvents: 'none'
+          }} />
+          
+          {/* Additional Atmospheric Layers */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(45deg, rgba(255, 160, 122, 0.1) 0%, transparent 40%), linear-gradient(-45deg, rgba(255, 218, 185, 0.08) 0%, transparent 35%)',
+            pointerEvents: 'none'
+          }} />
+          
+          {/* Subtle Color Wash */}
+          <div style={{
+            position: 'absolute',
+            top: '60%',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(to top, rgba(255, 182, 193, 0.05) 0%, rgba(255, 218, 185, 0.03) 50%, transparent 100%)',
             pointerEvents: 'none'
           }} />
         </div>
