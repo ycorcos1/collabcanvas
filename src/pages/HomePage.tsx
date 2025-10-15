@@ -15,7 +15,7 @@ const HomePage: React.FC = () => {
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
-      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c42 25%, #ffb366 50%, #ffd699 75%, #ffe6cc 100%)' /* Enhanced sunrise gradient */
+      background: 'linear-gradient(135deg, #4a1a4a 0%, #6b2c5c 15%, #8b3a6b 30%, #b8527a 45%, #e06b89 60%, #ff8c42 75%, #ffb366 85%, #ffd699 95%, #ffe6cc 100%)' /* Realistic sunrise gradient from purple to cream */
     }}>
       {/* Header */}
       <header style={{
@@ -112,7 +112,7 @@ const HomePage: React.FC = () => {
           ))}
           
           {/* Floating Particles */}
-          {[...Array(12)].map((_, i) => (
+          {[...Array(20)].map((_, i) => (
             <div
               key={i}
               className="floating-particle"
@@ -122,16 +122,42 @@ const HomePage: React.FC = () => {
                 height: `${Math.random() * 6 + 2}px`,
                 borderRadius: '50%',
                 background: `${
-                  i % 6 === 0 ? 'rgba(255, 182, 193, 0.7)' :  // Light pink
-                  i % 6 === 1 ? 'rgba(255, 160, 122, 0.6)' :  // Light salmon
-                  i % 6 === 2 ? 'rgba(255, 218, 185, 0.5)' :  // Peach puff
-                  i % 6 === 3 ? 'rgba(255, 204, 51, 0.6)' :   // Golden
-                  i % 6 === 4 ? 'rgba(255, 107, 53, 0.5)' :   // Orange
-                  'rgba(229, 90, 43, 0.4)'                    // Deep orange
+                  i % 8 === 0 ? 'rgba(138, 43, 226, 0.4)' :   // Blue violet (far from sun)
+                  i % 8 === 1 ? 'rgba(147, 112, 219, 0.5)' :  // Medium slate blue
+                  i % 8 === 2 ? 'rgba(221, 160, 221, 0.6)' :  // Plum (medium distance)
+                  i % 8 === 3 ? 'rgba(255, 182, 193, 0.7)' :  // Light pink
+                  i % 8 === 4 ? 'rgba(255, 160, 122, 0.6)' :  // Light salmon
+                  i % 8 === 5 ? 'rgba(255, 218, 185, 0.5)' :  // Peach puff
+                  i % 8 === 6 ? 'rgba(255, 204, 51, 0.6)' :   // Golden (close to sun)
+                  'rgba(255, 255, 224, 0.8)'                  // Light yellow (closest to sun)
                 }`,
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animation: `particleFloat ${3 + Math.random() * 4}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 2}s`
+              }}
+            />
+          ))}
+          
+          {/* Additional Light Particles Near Sun */}
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={`light-${i}`}
+              className="floating-particle light-particle"
+              style={{
+                position: 'absolute',
+                width: `${Math.random() * 4 + 3}px`,
+                height: `${Math.random() * 4 + 3}px`,
+                borderRadius: '50%',
+                background: `${
+                  i % 4 === 0 ? 'rgba(255, 255, 224, 0.9)' :   // Light yellow (most common)
+                  i % 4 === 1 ? 'rgba(255, 248, 220, 0.8)' :   // Cornsilk
+                  i % 4 === 2 ? 'rgba(255, 218, 185, 0.7)' :   // Peach puff
+                  'rgba(255, 204, 51, 0.8)'                    // Golden
+                }`,
+                left: `${70 + Math.random() * 25}%`, // Concentrated near sun area
+                top: `${10 + Math.random() * 30}%`,  // Near sun vertical area
+                animation: `particleFloat ${2 + Math.random() * 3}s ease-in-out infinite`,
                 animationDelay: `${Math.random() * 2}s`
               }}
             />
@@ -144,7 +170,7 @@ const HomePage: React.FC = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'radial-gradient(ellipse at 85% 20%, rgba(255, 182, 193, 0.15) 0%, rgba(255, 204, 51, 0.1) 30%, rgba(255, 107, 53, 0.08) 60%, transparent 80%)',
+            background: 'radial-gradient(ellipse at 85% 20%, rgba(255, 255, 224, 0.2) 0%, rgba(255, 204, 51, 0.15) 20%, rgba(255, 182, 193, 0.1) 40%, rgba(221, 160, 221, 0.08) 60%, rgba(138, 43, 226, 0.05) 80%, transparent 100%)',
             pointerEvents: 'none'
           }} />
           
@@ -155,7 +181,7 @@ const HomePage: React.FC = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'linear-gradient(45deg, rgba(255, 160, 122, 0.1) 0%, transparent 40%), linear-gradient(-45deg, rgba(255, 218, 185, 0.08) 0%, transparent 35%)',
+            background: 'linear-gradient(45deg, rgba(221, 160, 221, 0.1) 0%, rgba(255, 160, 122, 0.08) 30%, transparent 50%), linear-gradient(-45deg, rgba(147, 112, 219, 0.08) 0%, rgba(255, 218, 185, 0.06) 25%, transparent 40%)',
             pointerEvents: 'none'
           }} />
           
@@ -166,7 +192,7 @@ const HomePage: React.FC = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'linear-gradient(to top, rgba(255, 182, 193, 0.05) 0%, rgba(255, 218, 185, 0.03) 50%, transparent 100%)',
+            background: 'linear-gradient(to top, rgba(138, 43, 226, 0.08) 0%, rgba(221, 160, 221, 0.05) 30%, rgba(255, 182, 193, 0.03) 60%, transparent 100%)',
             pointerEvents: 'none'
           }} />
         </div>
