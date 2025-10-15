@@ -40,8 +40,14 @@ export const Dashboard: React.FC = () => {
     getShapeSelector,
   } = useShapes();
 
-  // Redirect if not logged in
+  // Enhanced auth validation with error handling
   if (!isLoading && !user) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  // Additional safety check for incomplete user data
+  if (user && (!user.id || !user.email)) {
+    console.warn("Incomplete user data detected, redirecting to sign-in");
     return <Navigate to="/signin" replace />;
   }
 
@@ -105,7 +111,9 @@ export const Dashboard: React.FC = () => {
           <h1>CollabCanvas</h1>
         </div>
         <div className="header-right">
-          <span className="user-info">Welcome, {user.displayName}</span>
+          <span className="user-info">
+            Welcome, {user?.displayName || 'User'}
+          </span>
           <button className="sign-out-button" onClick={handleSignOut}>
             Sign Out
           </button>

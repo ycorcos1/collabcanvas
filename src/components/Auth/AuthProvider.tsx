@@ -69,27 +69,142 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error: null,
   });
 
-  const firebaseUserToUser = (firebaseUser: FirebaseUser): User => ({
-    id: firebaseUser.uid,
-    email: firebaseUser.email!,
-    displayName: firebaseUser.displayName || firebaseUser.email!.split("@")[0],
-    color: getUserColor(firebaseUser.uid),
-  });
+  // Track session recovery attempts
+  const [recoveryAttempts, setRecoveryAttempts] = useState(0);
+
+  const firebaseUserToUser = (firebaseUser: FirebaseUser): User | null => {
+    // Defensive checks for incomplete Firebase user data
+    if (!firebaseUser.uid || !firebaseUser.email) {
+      console.warn("Incomplete Firebase user data received:", {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName
+      });
+      return null;
+    }
+
+    // Safe email parsing with fallback
+    const emailFallback = firebaseUser.email.includes('@') 
+      ? firebaseUser.email.split("@")[0] 
+      : `user_${firebaseUser.uid.slice(-6)}`;
+
+    return {
+      id: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName || emailFallback,
+      color: getUserColor(firebaseUser.uid),
+    };
+  };
+
+  // Activity tracking for session management (for future use)
+  useEffect(() => {
+    const updateActivity = () => {
+      // Track user activity for potential session timeout features
+      // Currently used for monitoring but not enforcing timeouts
+    };
+    
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, updateActivity, { passive: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, updateActivity);
+      });
+    };
+  }, []);
+
+  // Session recovery logic
+  const attemptSessionRecovery = async (firebaseUser: FirebaseUser | null) => {
+    if (!firebaseUser || recoveryAttempts >= 3) {
+      return false;
+    }
+
+    try {
+      setRecoveryAttempts(prev => prev + 1);
+      
+      // Force token refresh
+      await firebaseUser.getIdToken(true);
+      
+      // Verify user data is complete after refresh
+      const user = firebaseUserToUser(firebaseUser);
+      if (user) {
+        setAuthState({
+          user,
+          isLoading: false,
+          error: null,
+        });
+        setRecoveryAttempts(0); // Reset on success
+        return true;
+      }
+    } catch (error) {
+      console.warn("Session recovery failed:", error);
+    }
+    
+    return false;
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser: FirebaseUser | null) => {
-        setAuthState({
-          user: firebaseUser ? firebaseUserToUser(firebaseUser) : null,
-          isLoading: false,
-          error: null,
-        });
+        try {
+          if (firebaseUser) {
+            const user = firebaseUserToUser(firebaseUser);
+            if (user) {
+              setAuthState({
+                user,
+                isLoading: false,
+                error: null,
+              });
+              setRecoveryAttempts(0); // Reset recovery attempts on successful auth
+            } else {
+              // Try session recovery first
+              const recovered = await attemptSessionRecovery(firebaseUser);
+              
+              if (!recovered) {
+                // Invalid user data - sign out to prevent crashes
+                console.warn("Invalid user data received, signing out for safety");
+                const { signOutUser } = await import("../../services/auth");
+                await signOutUser();
+                setAuthState({
+                  user: null,
+                  isLoading: false,
+                  error: "Session expired. Please sign in again.",
+                });
+              }
+            }
+          } else {
+            setAuthState({
+              user: null,
+              isLoading: false,
+              error: null,
+            });
+            setRecoveryAttempts(0); // Reset recovery attempts when signed out
+          }
+        } catch (error: any) {
+          console.error("Auth state change error:", error);
+          
+          // Check if this is a recoverable error
+          if (error.code === 'auth/network-request-failed' && recoveryAttempts < 3) {
+            // Network error - try recovery
+            setTimeout(() => {
+              setRecoveryAttempts(prev => prev + 1);
+            }, 2000 * (recoveryAttempts + 1)); // Exponential backoff
+          } else {
+            setAuthState({
+              user: null,
+              isLoading: false,
+              error: "Authentication error. Please refresh and try again.",
+            });
+          }
+        }
       }
     );
 
     return unsubscribe;
-  }, []);
+  }, [recoveryAttempts]);
 
   const signIn = async (email: string, password: string) => {
     try {
