@@ -13,6 +13,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   icon?: React.ReactNode;
   /** Icon to display after text */
   iconRight?: React.ReactNode;
+  /** Component to render as (for Link integration) */
+  as?: React.ElementType;
+  /** Additional props when using 'as' prop */
+  to?: string;
 }
 
 /**
@@ -38,6 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       className = '',
       disabled,
+      as: Component = 'button',
       ...props
     },
     ref
@@ -60,7 +65,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const isDisabled = disabled || loading;
 
     return (
-      <button
+      <Component
         ref={ref}
         className={classes}
         disabled={isDisabled}
@@ -73,7 +78,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {!loading && icon && <span className="btn-icon">{icon}</span>}
         {children && <span className="btn-text">{children}</span>}
         {!loading && iconRight && <span className="btn-icon">{iconRight}</span>}
-      </button>
+      </Component>
     );
   }
 );
