@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useProjects } from "../../hooks/useProjects";
 import { ProjectGrid } from "./ProjectGrid";
 import { Button, Input } from "../shared";
@@ -13,6 +14,7 @@ import { Button, Input } from "../shared";
  * - Bulk actions (future)
  */
 export const AllProjects: React.FC = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "name">(
     "updatedAt"
@@ -27,6 +29,7 @@ export const AllProjects: React.FC = () => {
     openProject,
     renameProject,
     deleteProject,
+    createNewProject,
     loadMore,
     refresh,
   } = useProjects({
@@ -46,6 +49,23 @@ export const AllProjects: React.FC = () => {
     } else {
       setSortBy(field);
       setSortDirection("desc");
+    }
+  };
+
+  const handleCreateProject = async () => {
+    try {
+      const project = await createNewProject({
+        name: "Untitled Project",
+        description: "",
+        isPublic: false,
+      });
+
+      if (project) {
+        // Navigate to the new project
+        navigate(`/canvas/${project.slug}`);
+      }
+    } catch (err) {
+      console.error("Error creating project:", err);
     }
   };
 
@@ -86,15 +106,56 @@ export const AllProjects: React.FC = () => {
     </div>
   );
 
-  // Empty state for no projects
+  // Empty state for no projects - same as Recent Projects welcome state
   const EmptyProjectsState = () => (
-    <div className="all-projects-empty">
-      <div className="empty-projects-icon">📂</div>
-      <h3>No projects yet</h3>
+    <div className="all-projects-empty-welcome">
+      <div className="empty-illustration">
+        <div className="empty-canvas">
+          <div className="empty-shapes">
+            <div className="empty-shape shape-1"></div>
+            <div className="empty-shape shape-2"></div>
+            <div className="empty-shape shape-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <h2>Welcome to HØRIZON!</h2>
       <p>
-        You haven't created any projects yet. Head to the Recent tab to create
-        your first project.
+        You don't have any projects yet. Create your first project to start
+        designing and collaborating with your team in real-time.
       </p>
+
+      <div className="empty-actions">
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={handleCreateProject}
+          icon="+"
+        >
+          Create Your First Project
+        </Button>
+      </div>
+
+      <div className="empty-features">
+        <div className="feature-item">
+          <span className="feature-icon">✏</span>
+          <span className="feature-text">
+            Draw shapes and collaborate in real-time
+          </span>
+        </div>
+        <div className="feature-item">
+          <span className="feature-icon">👤</span>
+          <span className="feature-text">
+            See other users' cursors and selections
+          </span>
+        </div>
+        <div className="feature-item">
+          <span className="feature-icon">💿</span>
+          <span className="feature-text">
+            Auto-save and sync across devices
+          </span>
+        </div>
+      </div>
     </div>
   );
 
@@ -155,7 +216,7 @@ export const AllProjects: React.FC = () => {
       {/* Projects Grid */}
       <ProjectGrid
         projects={projects}
-        isLoading={isLoading && projects.length === 0}
+        isLoading={isLoading && projects.length === 0 && !error}
         emptyState={searchQuery ? <EmptySearchState /> : <EmptyProjectsState />}
         onOpenProject={openProject}
         onRenameProject={renameProject}
@@ -310,6 +371,121 @@ style.textContent = `
     margin: 0 0 var(--space-6) 0;
   }
 
+  /* Welcome state styles - same as Recent Projects */
+  .all-projects-empty-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-16) var(--space-8);
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .empty-illustration {
+    margin-bottom: var(--space-8);
+  }
+
+  .empty-canvas {
+    width: 200px;
+    height: 120px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto var(--space-6);
+  }
+
+  .empty-shapes {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .empty-shape {
+    position: absolute;
+    border-radius: var(--radius-sm);
+    opacity: 0.6;
+  }
+
+  .shape-1 {
+    width: 40px;
+    height: 30px;
+    background-color: var(--brand-primary);
+    top: -20px;
+    left: -20px;
+    transform: rotate(-15deg);
+  }
+
+  .shape-2 {
+    width: 30px;
+    height: 30px;
+    background-color: #FF6B6B;
+    top: -10px;
+    right: -15px;
+    border-radius: var(--radius-full);
+  }
+
+  .shape-3 {
+    width: 35px;
+    height: 25px;
+    background-color: #4ECDC4;
+    bottom: -15px;
+    left: -10px;
+    transform: rotate(20deg);
+  }
+
+  .all-projects-empty-welcome h2 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-4) 0;
+  }
+
+  .all-projects-empty-welcome p {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
+    margin: 0 0 var(--space-6) 0;
+  }
+
+  .empty-actions {
+    margin-bottom: var(--space-8);
+  }
+
+  .empty-features {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
+  }
+
+  .feature-icon {
+    font-size: var(--text-xl);
+    width: 32px;
+    text-align: center;
+  }
+
+  .feature-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
+  }
+
   .all-projects-load-more {
     display: flex;
     justify-content: center;
@@ -389,6 +565,15 @@ style.textContent = `
 
     .all-projects-empty {
       padding: var(--space-12) var(--space-4);
+    }
+
+    .all-projects-empty-welcome {
+      padding: var(--space-12) var(--space-4);
+    }
+
+    .empty-canvas {
+      width: 160px;
+      height: 100px;
     }
   }
 
