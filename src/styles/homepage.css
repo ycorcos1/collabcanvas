@@ -1,0 +1,127 @@
+/**
+ * Homepage Sunrise Animation Styles
+ * 
+ * Beautiful animated sunrise effects for the hero section
+ */
+
+/* Sun pulsing animation */
+@keyframes sunPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 0 60px rgba(255, 235, 153, 0.6), 
+      0 0 120px rgba(255, 140, 66, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 
+      0 0 80px rgba(255, 235, 153, 0.8), 
+      0 0 160px rgba(255, 140, 66, 0.6);
+  }
+}
+
+/* Sun floating animation */
+@keyframes sunFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Sun rays rotation */
+@keyframes rayRotate {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0.6;
+  }
+}
+
+/* Floating particles animation */
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-10px) translateX(-5px);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-30px) translateX(15px);
+    opacity: 0.5;
+  }
+}
+
+/* Enhanced sun rays with staggered animation */
+.sun-ray:nth-child(odd) {
+  animation-delay: -1s;
+}
+
+.sun-ray:nth-child(even) {
+  animation-delay: -0.5s;
+}
+
+/* Particle variations */
+.floating-particle:nth-child(3n) {
+  background: rgba(255, 235, 153, 0.4);
+}
+
+.floating-particle:nth-child(3n+1) {
+  background: rgba(255, 140, 66, 0.3);
+}
+
+.floating-particle:nth-child(3n+2) {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .animated-sun {
+    width: 80px !important;
+    height: 80px !important;
+    top: 15% !important;
+    right: 10% !important;
+  }
+  
+  .sun-ray {
+    height: 25px !important;
+    transform-origin: 1px 40px !important;
+  }
+  
+  .floating-particle {
+    width: 3px !important;
+    height: 3px !important;
+  }
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animated-sun,
+  .sun-ray,
+  .floating-particle {
+    animation: none !important;
+  }
+  
+  .animated-sun {
+    opacity: 0.8;
+  }
+}
+
+/* Performance optimization */
+.sunrise-animation * {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}

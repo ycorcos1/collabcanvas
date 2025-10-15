@@ -11,16 +11,14 @@
   align-items: center;
   justify-content: center;
   background: #fef7f0; /* Fixed light background */
-  padding: 0; /* Remove all padding */
+  padding: var(--space-4);
 }
 
 .auth-card {
   background: #ffffff; /* White elevated card */
   border: 1px solid rgba(255, 107, 53, 0.1); /* Subtle brand-colored border */
   border-radius: 20px; /* Rounded corners */
-  box-shadow: 
-    0 10px 25px rgba(0, 0, 0, 0.1),
-    0 20px 48px rgba(0, 0, 0, 0.1),
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 20px 48px rgba(0, 0, 0, 0.1),
     0 1px 4px rgba(255, 107, 53, 0.1); /* Elevated shadow with brand accent */
   padding: var(--space-6) var(--space-8); /* Reduced vertical padding */
   width: 100%;
@@ -33,9 +31,7 @@
 /* Subtle hover effect for elevated card */
 .auth-card:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 15px 35px rgba(0, 0, 0, 0.12),
-    0 25px 55px rgba(0, 0, 0, 0.12),
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12), 0 25px 55px rgba(0, 0, 0, 0.12),
     0 2px 8px rgba(255, 107, 53, 0.15);
 }
 
@@ -107,7 +103,7 @@
 /* Mobile responsive */
 @media (max-width: 480px) {
   .auth-page {
-    padding: 0; /* No padding on mobile either */
+    padding: var(--space-2);
   }
 
   .auth-card {
@@ -143,9 +139,7 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    box-shadow: 
-      0 10px 25px rgba(0, 0, 0, 0.1),
-      0 20px 48px rgba(0, 0, 0, 0.1),
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 20px 48px rgba(0, 0, 0, 0.1),
       0 1px 4px rgba(255, 107, 53, 0.1);
   }
 }
