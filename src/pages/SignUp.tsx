@@ -47,7 +47,7 @@ export const SignUp: React.FC = () => {
   };
 
   return (
-    <div className="auth-page">
+    <div className="auth-page" data-theme="light">
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">
