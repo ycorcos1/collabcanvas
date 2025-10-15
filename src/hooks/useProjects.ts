@@ -106,8 +106,17 @@ export const useProjects = (
         setHasInitialized(true);
       }
     },
-    [user, options, nextCursor]
+    [user, nextCursor, options.searchQuery, options.orderBy, options.orderDirection, options.limit, options.includeDeleted]
   );
+
+  // Reset initialization when search/filter options change
+  useEffect(() => {
+    setHasInitialized(false);
+    setProjects([]);
+    setError(null);
+    setHasMore(false);
+    setNextCursor(null);
+  }, [options.searchQuery, options.orderBy, options.orderDirection, options.includeDeleted]);
 
   // Load projects on mount and when user changes
   useEffect(() => {

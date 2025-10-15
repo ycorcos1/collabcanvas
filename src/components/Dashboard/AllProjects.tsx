@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects } from "../../hooks/useProjects";
 import { ProjectGrid } from "./ProjectGrid";
@@ -21,6 +21,14 @@ export const AllProjects: React.FC = () => {
   );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  // Memoize options to prevent unnecessary re-renders
+  const projectOptions = useMemo(() => ({
+    searchQuery,
+    orderBy: sortBy,
+    orderDirection: sortDirection,
+    limit: 12,
+  }), [searchQuery, sortBy, sortDirection]);
+
   const {
     projects,
     isLoading,
@@ -33,12 +41,7 @@ export const AllProjects: React.FC = () => {
     createNewProject,
     loadMore,
     refresh,
-  } = useProjects({
-    searchQuery,
-    orderBy: sortBy,
-    orderDirection: sortDirection,
-    limit: 12,
-  });
+  } = useProjects(projectOptions);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -160,7 +163,7 @@ export const AllProjects: React.FC = () => {
     </div>
   );
 
-  if (error) {
+  if (error && hasInitialized) {
     return (
       <div className="all-projects-error">
         <h2>Unable to load projects</h2>
