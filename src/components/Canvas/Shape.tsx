@@ -93,7 +93,11 @@ export const Shape: React.FC<ShapeProps> = React.memo(
 
     const handleClick = useCallback(
       (e: KonvaEventObject<MouseEvent>) => {
+        // Multiple event prevention methods for production compatibility
         e.cancelBubble = true;
+        e.evt.stopPropagation?.();
+        e.evt.preventDefault?.();
+        
         // Don't allow selection if locked by another user
         if (isLockedByOther) {
           return;

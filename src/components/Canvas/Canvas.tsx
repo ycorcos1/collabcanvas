@@ -391,8 +391,20 @@ export const Canvas: React.FC<CanvasProps> = ({
           e.target.constructor.name !== "Group");
 
       if (isBackgroundClick) {
-        // Always deselect shape when clicking on background
-        selectShape(null);
+        // Only deselect if not holding shift (for multi-select)
+        // Also add a small delay to ensure shape clicks are processed first
+        setTimeout(() => {
+          // Check if shift is still being held - if so, don't clear selection
+          const currentShiftPressed = 
+            shiftKeyRef.current || 
+            isShiftPressed || 
+            e.evt?.shiftKey;
+            
+          if (!currentShiftPressed) {
+            // Only clear selection if shift is not being held
+            selectShape(null);
+          }
+        }, 10); // Small delay to let shape clicks process first
 
         // Only start shape creation if a tool is selected and within canvas bounds
         if (
