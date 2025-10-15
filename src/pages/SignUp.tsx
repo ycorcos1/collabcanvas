@@ -68,7 +68,7 @@ export const SignUp: React.FC = () => {
             placeholder="Enter your display name"
             disabled={isLoading}
             error={
-              localError && localError.includes("Display name")
+              localError && localError.includes("Display name is required")
                 ? localError
                 : undefined
             }
@@ -85,9 +85,7 @@ export const SignUp: React.FC = () => {
             placeholder="Enter your email"
             disabled={isLoading}
             error={
-              error || (localError && !localError.includes("Display name"))
-                ? error || localError || undefined
-                : undefined
+              error && !localError ? error : undefined
             }
             fullWidth
           />
@@ -101,6 +99,11 @@ export const SignUp: React.FC = () => {
             }
             placeholder="Enter your password (min 6 characters)"
             disabled={isLoading}
+            error={
+              localError && localError.includes("Password must be at least 6 characters")
+                ? localError
+                : undefined
+            }
             fullWidth
           />
 
