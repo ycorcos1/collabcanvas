@@ -177,7 +177,9 @@ const CanvasPage: React.FC = () => {
   };
 
   // Handle shape creation from sidebar
-  const handleCreateShapeFromSidebar = async (type: "rectangle" | "circle" | "text" | "drawing") => {
+  const handleCreateShapeFromSidebar = async (
+    type: "rectangle" | "circle" | "text" | "drawing"
+  ) => {
     if (!user) return;
 
     // Create shape at center of canvas
@@ -187,7 +189,7 @@ const CanvasPage: React.FC = () => {
     };
 
     let shapeData;
-    
+
     switch (type) {
       case "rectangle":
         shapeData = {
@@ -197,7 +199,7 @@ const CanvasPage: React.FC = () => {
           width: 100,
           height: 50,
           color: "#FF0000",
-          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
           createdBy: user.id,
         };
         break;
@@ -209,7 +211,7 @@ const CanvasPage: React.FC = () => {
           width: 50,
           height: 50,
           color: "#FF0000",
-          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
           createdBy: user.id,
         };
         break;
@@ -224,7 +226,7 @@ const CanvasPage: React.FC = () => {
           text: "Text",
           fontSize: 16,
           fontFamily: "Arial",
-          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
           createdBy: user.id,
         };
         break;
@@ -237,9 +239,14 @@ const CanvasPage: React.FC = () => {
           width: 100,
           height: 1,
           color: "#FF0000",
-          points: [canvasCenter.x - 50, canvasCenter.y, canvasCenter.x + 50, canvasCenter.y],
+          points: [
+            canvasCenter.x - 50,
+            canvasCenter.y,
+            canvasCenter.x + 50,
+            canvasCenter.y,
+          ],
           strokeWidth: 3,
-          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
           createdBy: user.id,
         };
         break;

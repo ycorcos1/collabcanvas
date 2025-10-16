@@ -54,12 +54,29 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   } | null>(null);
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
   const [editingObjectName, setEditingObjectName] = useState("");
-  const [pages, setPages] = useState([{ id: "page1", name: "Page 1" }]);
-  const [objectNames, setObjectNames] = useState<Record<string, string>>({});
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editingPageName, setEditingPageName] = useState("");
+  const [pageMenuId, setPageMenuId] = useState<string | null>(null);
+  const [objectMenuId, setObjectMenuId] = useState<string | null>(null);
+  const [copiedPage, setCopiedPage] = useState<{ id: string; name: string } | null>(null);
+  
+  // Persistent state management
+  const [pages, setPages] = useState<{ id: string; name: string }[]>(() => {
+    const saved = localStorage.getItem("canvas-pages");
+    return saved ? JSON.parse(saved) : [{ id: "page1", name: "Page 1" }];
+  });
+  
+  const [objectNames, setObjectNames] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem("canvas-object-names");
+    return saved ? JSON.parse(saved) : {};
+  });
 
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const objectTypeMenuRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const pageMenuRef = useRef<HTMLDivElement>(null);
+  const objectMenuRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Generate object names with "Object #" format
   const getObjectName = (shape: Shape) => {
@@ -80,6 +97,15 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     }))
     .sort((a, b) => b.zIndex - a.zIndex); // Sort by z-index (highest first)
 
+  // Persistence effects
+  useEffect(() => {
+    localStorage.setItem("canvas-pages", JSON.stringify(pages));
+  }, [pages]);
+
+  useEffect(() => {
+    localStorage.setItem("canvas-object-names", JSON.stringify(objectNames));
+  }, [objectNames]);
+
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -91,6 +117,12 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       }
       if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
         setContextMenu(null);
+      }
+      if (pageMenuRef.current && !pageMenuRef.current.contains(event.target as Node)) {
+        setPageMenuId(null);
+      }
+      if (objectMenuRef.current && !objectMenuRef.current.contains(event.target as Node)) {
+        setObjectMenuId(null);
       }
     };
 
@@ -172,10 +204,101 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const handleAddPage = () => {
     const newPageNumber = pages.length + 1;
     const newPage = {
-      id: `page${newPageNumber}`,
+      id: `page${Date.now()}`, // Use timestamp for unique ID
       name: `Page ${newPageNumber}`
     };
     setPages([...pages, newPage]);
+  };
+
+  const handlePageMenuClick = (pageId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setPageMenuId(pageMenuId === pageId ? null : pageId);
+  };
+
+  const handleObjectMenuClick = (objectId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setObjectMenuId(objectMenuId === objectId ? null : objectId);
+  };
+
+  const handleRenamePage = (pageId: string) => {
+    const page = pages.find((p: { id: string; name: string }) => p.id === pageId);
+    if (page) {
+      setEditingPageId(pageId);
+      setEditingPageName(page.name);
+    }
+    setPageMenuId(null);
+  };
+
+  const handlePageRenameSubmit = () => {
+    if (editingPageId && editingPageName.trim()) {
+      setPages((prev: { id: string; name: string }[]) => prev.map((page: { id: string; name: string }) => 
+        page.id === editingPageId 
+          ? { ...page, name: editingPageName.trim() }
+          : page
+      ));
+    }
+    setEditingPageId(null);
+    setEditingPageName("");
+  };
+
+  const handleCopyPage = (pageId: string) => {
+    const page = pages.find((p: { id: string; name: string }) => p.id === pageId);
+    if (page) {
+      setCopiedPage(page);
+    }
+    setPageMenuId(null);
+  };
+
+  const handleDeletePage = (pageId: string) => {
+    if (pages.length > 1) { // Don't delete the last page
+      setPages((prev: { id: string; name: string }[]) => prev.filter((page: { id: string; name: string }) => page.id !== pageId));
+    }
+    setPageMenuId(null);
+  };
+
+  const handleCopyObjectFromMenu = (objectId: string) => {
+    setCopiedPage(null); // Clear page clipboard
+    // Also trigger the main copy functionality
+    onSelectShape(objectId);
+    if (onCopy) onCopy();
+    setObjectMenuId(null);
+  };
+
+  const handleDeleteObjectFromMenu = (objectId: string) => {
+    onSelectShape(objectId);
+    if (onDeleteSelected) onDeleteSelected();
+    setObjectMenuId(null);
+  };
+
+  const handleSidebarRightClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    // Check if we have something to paste
+    if (copiedPage || hasClipboardContent) {
+      const rect = sidebarRef.current?.getBoundingClientRect();
+      if (rect) {
+        setContextMenu({
+          x: event.clientX,
+          y: event.clientY,
+          objectId: 'sidebar-paste', // Special ID for sidebar paste
+        });
+      }
+    }
+  };
+
+  const handleSidebarPaste = () => {
+    if (copiedPage) {
+      // Paste page
+      const newPage = {
+        id: `page${Date.now()}`,
+        name: `${copiedPage.name} Copy`
+      };
+      setPages((prev: { id: string; name: string }[]) => [...prev, newPage]);
+    } else if (hasClipboardContent && onPaste) {
+      // Paste object
+      onPaste();
+    }
+    setContextMenu(null);
   };
 
   const handleCreateObject = (type: "rectangle" | "circle" | "text" | "drawing") => {
@@ -224,7 +347,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   };
 
   return (
-    <div className="left-sidebar">
+    <div className="left-sidebar" ref={sidebarRef} onContextMenu={handleSidebarRightClick}>
       {/* File Options Menu */}
       <div className="sidebar-section file-section">
         <div className="file-menu-container" ref={fileMenuRef}>
@@ -385,13 +508,76 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       <div className="sidebar-content">
         {activeTab === "pages" && (
           <div className="pages-panel">
-            {pages.map((page, index) => (
+            {pages.map((page: { id: string; name: string }, index: number) => (
               <div key={page.id} className={`page-item ${index === 0 ? "active" : ""}`}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14,2 14,8 20,8" />
-                </svg>
-                <span>{page.name}</span>
+                <div className="page-content">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14,2 14,8 20,8" />
+                  </svg>
+                  <div className="page-info">
+                    {editingPageId === page.id ? (
+                      <input
+                        type="text"
+                        value={editingPageName}
+                        onChange={(e) => setEditingPageName(e.target.value)}
+                        onBlur={handlePageRenameSubmit}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handlePageRenameSubmit();
+                          if (e.key === 'Escape') {
+                            setEditingPageId(null);
+                            setEditingPageName("");
+                          }
+                        }}
+                        autoFocus
+                        className="page-name-input"
+                      />
+                    ) : (
+                      <span className="page-name">{page.name}</span>
+                    )}
+                  </div>
+                  <div className="page-menu-container">
+                    <button
+                      className="page-menu-button"
+                      onClick={(e) => handlePageMenuClick(page.id, e)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="12" cy="5" r="1"/>
+                        <circle cx="12" cy="19" r="1"/>
+                      </svg>
+                    </button>
+                    {pageMenuId === page.id && (
+                      <div className="page-dropdown-menu" ref={pageMenuRef}>
+                        <button onClick={() => handleRenamePage(page.id)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          Rename
+                        </button>
+                        <button onClick={() => handleCopyPage(page.id)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                          </svg>
+                          Copy
+                        </button>
+                        <button 
+                          onClick={() => handleDeletePage(page.id)}
+                          disabled={pages.length <= 1}
+                          className="delete-button"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -445,6 +631,46 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                           className="object-color-preview"
                           style={{ backgroundColor: object.color }}
                         />
+                        <div className="object-menu-container">
+                          <button
+                            className="object-menu-button"
+                            onClick={(e) => handleObjectMenuClick(object.id, e)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="1"/>
+                              <circle cx="12" cy="5" r="1"/>
+                              <circle cx="12" cy="19" r="1"/>
+                            </svg>
+                          </button>
+                          {objectMenuId === object.id && (
+                            <div className="object-dropdown-menu" ref={objectMenuRef}>
+                              <button onClick={() => handleRenameObject(object.id)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Rename
+                              </button>
+                              <button onClick={() => handleCopyObjectFromMenu(object.id)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                                Copy
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteObjectFromMenu(object.id)}
+                                className="delete-button"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="3,6 5,6 21,6"/>
+                                  <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                                </svg>
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -467,52 +693,66 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             zIndex: 10000
           }}
         >
-          <button onClick={() => handleRenameObject(contextMenu.objectId)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Rename
-          </button>
-          <button onClick={() => { 
-            onSelectShape(contextMenu.objectId);
-            if (onCopy) onCopy(); 
-            setContextMenu(null);
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy
-          </button>
-          <button 
-            onClick={() => { 
-              if (onPaste) onPaste(); 
-              setContextMenu(null);
-            }}
-            disabled={!hasClipboardContent}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-            </svg>
-            Paste
-          </button>
-          <div className="menu-divider" />
-          <button 
-            onClick={() => { 
-              onSelectShape(contextMenu.objectId);
-              if (onDeleteSelected) onDeleteSelected(); 
-              setContextMenu(null);
-            }}
-            className="delete-button"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3,6 5,6 21,6"/>
-              <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
-            </svg>
-            Delete
-          </button>
+          {contextMenu.objectId === 'sidebar-paste' ? (
+            // Sidebar paste menu
+            <button onClick={handleSidebarPaste}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              </svg>
+              {copiedPage ? `Paste Page "${copiedPage.name}"` : 'Paste Object'}
+            </button>
+          ) : (
+            // Object context menu
+            <>
+              <button onClick={() => handleRenameObject(contextMenu.objectId)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Rename
+              </button>
+              <button onClick={() => { 
+                onSelectShape(contextMenu.objectId);
+                if (onCopy) onCopy(); 
+                setContextMenu(null);
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy
+              </button>
+              <button 
+                onClick={() => { 
+                  if (onPaste) onPaste(); 
+                  setContextMenu(null);
+                }}
+                disabled={!hasClipboardContent}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                </svg>
+                Paste
+              </button>
+              <div className="menu-divider" />
+              <button 
+                onClick={() => { 
+                  onSelectShape(contextMenu.objectId);
+                  if (onDeleteSelected) onDeleteSelected(); 
+                  setContextMenu(null);
+                }}
+                className="delete-button"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3,6 5,6 21,6"/>
+                  <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                </svg>
+                Delete
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
