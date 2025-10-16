@@ -37,13 +37,18 @@ export async function uploadProfilePhoto(file: File): Promise<string> {
   try {
     console.log("Starting photo upload process...");
     
-    // Compress the image first
-    const compressedFile = await compressImage(file, 200, 0.7);
-    console.log("Image compressed successfully");
+    // Compress the image more aggressively to keep data URL small
+    const compressedFile = await compressImage(file, 80, 0.5);
+    console.log("Image compressed successfully", `Original: ${file.size} bytes, Compressed: ${compressedFile.size} bytes`);
     
     // Convert to base64 data URL
     const dataURL = await fileToDataURL(compressedFile);
-    console.log("Image converted to data URL");
+    console.log("Image converted to data URL", `Length: ${dataURL.length} characters`);
+    
+    // Check if data URL is too long for Firebase Auth (limit is around 2000 characters)
+    if (dataURL.length > 2000) {
+      throw new Error("Image is too large even after compression. Please try a smaller image or different format.");
+    }
     
     // Update the user's profile with the data URL
     await updateProfile(user, {
@@ -110,19 +115,27 @@ export async function compressImage(
     const img = new Image();
 
     img.onload = () => {
-      // Calculate new dimensions
-      const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-      canvas.width = img.width * ratio;
-      canvas.height = img.height * ratio;
+      // Calculate new dimensions (ensure square aspect ratio for avatars)
+      const size = Math.min(maxWidth, img.width, img.height);
+      canvas.width = size;
+      canvas.height = size;
 
-      // Draw and compress
-      ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Draw and compress (crop to center square)
+      const sourceSize = Math.min(img.width, img.height);
+      const sourceX = (img.width - sourceSize) / 2;
+      const sourceY = (img.height - sourceSize) / 2;
+      
+      ctx?.drawImage(
+        img, 
+        sourceX, sourceY, sourceSize, sourceSize,  // source
+        0, 0, size, size  // destination
+      );
       
       canvas.toBlob(
         (blob) => {
           if (blob) {
             const compressedFile = new File([blob], file.name, {
-              type: file.type,
+              type: 'image/jpeg', // Force JPEG for better compression
               lastModified: Date.now(),
             });
             resolve(compressedFile);
@@ -130,7 +143,7 @@ export async function compressImage(
             resolve(file); // Fallback to original file
           }
         },
-        file.type,
+        'image/jpeg', // Force JPEG format for better compression
         quality
       );
     };
