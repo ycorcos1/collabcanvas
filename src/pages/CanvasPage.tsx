@@ -9,7 +9,6 @@ import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCanvas } from "../hooks/useCanvas";
-import { useCanvasDimensions } from "../hooks/useCanvasDimensions";
 import { exportCanvas } from "../utils/exportUtils";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
@@ -81,19 +80,22 @@ const CanvasPage: React.FC = () => {
 
   // Canvas state management
   const { canvasState, zoomIn, zoomOut, zoomReset } = useCanvas();
-  const { dimensions: canvasDimensions } = useCanvasDimensions();
 
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
 
   // Removed layers panel state - now integrated in left sidebar
 
-  // Canvas background state
-  const [canvasBackground, setCanvasBackground] = useState("#ffffff");
+  // Canvas background state with persistence
+  const [canvasBackground, setCanvasBackground] = useState(() => {
+    return sessionStorage.getItem("canvas-background-color") || "#ffffff";
+  });
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
-  // Cursor mode state
-  const [cursorMode, setCursorMode] = useState("move");
+  // Cursor mode state with persistence
+  const [cursorMode, setCursorMode] = useState(() => {
+    return sessionStorage.getItem("canvas-cursor-mode") || "move";
+  });
 
   // Project naming state
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -107,6 +109,43 @@ const CanvasPage: React.FC = () => {
       sessionStorage.removeItem("horizon-selected-tool");
     }
   }, [selectedTool]);
+
+  // Persist cursor mode to session storage
+  useEffect(() => {
+    sessionStorage.setItem("canvas-cursor-mode", cursorMode);
+  }, [cursorMode]);
+
+  // Persist canvas background to session storage
+  useEffect(() => {
+    sessionStorage.setItem("canvas-background-color", canvasBackground);
+  }, [canvasBackground]);
+
+  // Persist selected shapes to session storage
+  useEffect(() => {
+    sessionStorage.setItem("canvas-selected-shapes", JSON.stringify(selectedShapeIds));
+  }, [selectedShapeIds]);
+
+  // Restore selected shapes on component mount
+  useEffect(() => {
+    const savedSelection = sessionStorage.getItem("canvas-selected-shapes");
+    if (savedSelection && shapes.length > 0) {
+      try {
+        const parsedSelection = JSON.parse(savedSelection);
+        if (Array.isArray(parsedSelection)) {
+          // Only restore selections that still exist in current shapes
+          const validSelections = parsedSelection.filter(id => 
+            shapes.some(shape => shape.id === id)
+          );
+          if (validSelections.length > 0) {
+            // Use the selectShape function to restore selections
+            validSelections.forEach(id => selectShape(id, true));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to restore shape selection:", error);
+      }
+    }
+  }, [shapes, selectShape]); // Only run when shapes are loaded
 
   // Validate slug parameter
   if (!slug) {
@@ -176,94 +215,6 @@ const CanvasPage: React.FC = () => {
     setCursorMode(mode);
   };
 
-  // Handle shape creation from sidebar
-  const handleCreateShapeFromSidebar = async (
-    type: "rectangle" | "circle" | "text" | "drawing"
-  ) => {
-    if (!user) return;
-
-    // Create shape at center of canvas
-    const canvasCenter = {
-      x: canvasDimensions.width / 2,
-      y: canvasDimensions.height / 2,
-    };
-
-    let shapeData;
-
-    switch (type) {
-      case "rectangle":
-        shapeData = {
-          type: "rectangle" as const,
-          x: canvasCenter.x - 50,
-          y: canvasCenter.y - 25,
-          width: 100,
-          height: 50,
-          color: "#FF0000",
-          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
-          createdBy: user.id,
-        };
-        break;
-      case "circle":
-        shapeData = {
-          type: "circle" as const,
-          x: canvasCenter.x - 25,
-          y: canvasCenter.y - 25,
-          width: 50,
-          height: 50,
-          color: "#FF0000",
-          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
-          createdBy: user.id,
-        };
-        break;
-      case "text":
-        shapeData = {
-          type: "text" as const,
-          x: canvasCenter.x - 50,
-          y: canvasCenter.y - 15,
-          width: 100,
-          height: 30,
-          color: "#FF0000",
-          text: "Text",
-          fontSize: 16,
-          fontFamily: "Arial",
-          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
-          createdBy: user.id,
-        };
-        break;
-      case "drawing":
-        // For drawing, create a simple line
-        shapeData = {
-          type: "drawing" as const,
-          x: canvasCenter.x - 50,
-          y: canvasCenter.y,
-          width: 100,
-          height: 1,
-          color: "#FF0000",
-          points: [
-            canvasCenter.x - 50,
-            canvasCenter.y,
-            canvasCenter.x + 50,
-            canvasCenter.y,
-          ],
-          strokeWidth: 3,
-          zIndex: Math.max(...shapes.map((s) => s.zIndex), 0) + 1,
-          createdBy: user.id,
-        };
-        break;
-      default:
-        return;
-    }
-
-    try {
-      const newShape = await createShape(shapeData);
-      if (newShape) {
-        // Select the newly created shape
-        selectShape(newShape.id);
-      }
-    } catch (error) {
-      console.error("Failed to create shape from sidebar:", error);
-    }
-  };
 
   // Handle shape renaming from sidebar
   const handleRenameShape = (id: string, newName: string) => {
@@ -480,7 +431,6 @@ const CanvasPage: React.FC = () => {
           onCopy={handleCopy}
           onPaste={handlePaste}
           onDeleteSelected={deleteSelectedShapes}
-          onCreateShape={handleCreateShapeFromSidebar}
           onRenameShape={handleRenameShape}
           canUndo={canUndo}
           canRedo={canRedo}

@@ -22,7 +22,6 @@ interface LeftSidebarProps {
   onCopy?: () => void;
   onPaste?: () => void;
   onDeleteSelected?: () => void;
-  onCreateShape?: (type: "rectangle" | "circle" | "text" | "drawing") => void;
   onRenameShape?: (id: string, newName: string) => void;
   canUndo?: boolean;
   canRedo?: boolean;
@@ -38,15 +37,16 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onCopy,
   onPaste,
   onDeleteSelected,
-  onCreateShape,
   onRenameShape,
   canUndo = false,
   canRedo = false,
   hasClipboardContent = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<"pages" | "objects">("objects");
+  const [activeTab, setActiveTab] = useState<"pages" | "objects">(() => {
+    const saved = localStorage.getItem("sidebar-active-tab");
+    return (saved as "pages" | "objects") || "objects";
+  });
   const [showFileMenu, setShowFileMenu] = useState(false);
-  const [showObjectTypeMenu, setShowObjectTypeMenu] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -72,7 +72,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   });
 
   const fileMenuRef = useRef<HTMLDivElement>(null);
-  const objectTypeMenuRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const pageMenuRef = useRef<HTMLDivElement>(null);
   const objectMenuRef = useRef<HTMLDivElement>(null);
@@ -106,14 +105,16 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     localStorage.setItem("canvas-object-names", JSON.stringify(objectNames));
   }, [objectNames]);
 
+  // Persist active tab
+  useEffect(() => {
+    localStorage.setItem("sidebar-active-tab", activeTab);
+  }, [activeTab]);
+
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (fileMenuRef.current && !fileMenuRef.current.contains(event.target as Node)) {
         setShowFileMenu(false);
-      }
-      if (objectTypeMenuRef.current && !objectTypeMenuRef.current.contains(event.target as Node)) {
-        setShowObjectTypeMenu(false);
       }
       if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
         setContextMenu(null);
@@ -301,12 +302,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     setContextMenu(null);
   };
 
-  const handleCreateObject = (type: "rectangle" | "circle" | "text" | "drawing") => {
-    if (onCreateShape) {
-      onCreateShape(type);
-    }
-    setShowObjectTypeMenu(false);
-  };
 
   const getObjectIcon = (type: string) => {
     switch (type) {
@@ -458,51 +453,20 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </svg>
           Objects
         </button>
-        <button
-          className="add-button"
-          onClick={activeTab === "pages" ? handleAddPage : () => setShowObjectTypeMenu(true)}
-          title={`Add new ${activeTab === "pages" ? "page" : "object"}`}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+        {activeTab === "pages" && (
+          <button
+            className="add-button"
+            onClick={handleAddPage}
+            title="Add new page"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        )}
       </div>
 
-      {/* Object Type Menu */}
-      {showObjectTypeMenu && (
-        <div className="object-type-menu" ref={objectTypeMenuRef}>
-          <div className="object-type-header">Choose object type:</div>
-          <button onClick={() => handleCreateObject("rectangle")}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
-            Rectangle
-          </button>
-          <button onClick={() => handleCreateObject("circle")}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="9" />
-            </svg>
-            Circle
-          </button>
-          <button onClick={() => handleCreateObject("text")}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="4,7 4,4 20,4 20,7" />
-              <line x1="9" y1="20" x2="15" y2="20" />
-              <line x1="12" y1="4" x2="12" y2="20" />
-            </svg>
-            Text
-          </button>
-          <button onClick={() => handleCreateObject("drawing")}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 5l4 4L8 20l-4-1 1-4L16 4z"/>
-              <path d="M13 7l4 4"/>
-            </svg>
-            Drawing
-          </button>
-        </div>
-      )}
 
       {/* Content Area */}
       <div className="sidebar-content">
