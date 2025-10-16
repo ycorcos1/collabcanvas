@@ -5,8 +5,9 @@ import {
   collection, 
   query, 
   where, 
-  orderBy, 
-  getDocs
+  getDocs,
+  QuerySnapshot,
+  DocumentData
 } from 'firebase/firestore';
 import { firestore as db } from '../services/firebase';
 
@@ -64,40 +65,55 @@ export const useSharedProjects = () => {
 
       if (!user) {
         setSharedProjects([]);
+        setIsLoading(false);
         return;
       }
 
-      // Query projects where user is owner or collaborator
-      const projectsRef = collection(db, 'projects');
-      
-      // Get projects where user is owner
-      const ownedProjectsQuery = query(
-        projectsRef,
-        where('ownerId', '==', user.id),
-        where('collaborators', '!=', []), // Has collaborators
-        where('deletedAt', '==', null),
-        orderBy('updatedAt', 'desc')
-      );
+      // Initialize empty results
+      let ownedSnapshot: QuerySnapshot<DocumentData> | { docs: any[] } = { docs: [] };
+      let collaboratedSnapshot: QuerySnapshot<DocumentData> | { docs: any[] } = { docs: [] };
 
-      // Get projects where user is collaborator
-      const collaboratedProjectsQuery = query(
-        projectsRef,
-        where('collaborators', 'array-contains', user.id),
-        where('deletedAt', '==', null),
-        orderBy('updatedAt', 'desc')
-      );
+      try {
+        // Query projects where user is owner or collaborator
+        const projectsRef = collection(db, 'projects');
+        
+        try {
+          // Try to get projects where user is owner (we'll filter for collaborators client-side)
+          const ownedProjectsQuery = query(
+            projectsRef,
+            where('ownerId', '==', user.id),
+            where('deletedAt', '==', null)
+          );
+          ownedSnapshot = await getDocs(ownedProjectsQuery);
+        } catch (ownedError: any) {
+          console.warn('Could not fetch owned projects:', ownedError.message);
+          // Keep empty snapshot
+        }
 
-      const [ownedSnapshot, collaboratedSnapshot] = await Promise.all([
-        getDocs(ownedProjectsQuery),
-        getDocs(collaboratedProjectsQuery)
-      ]);
+        try {
+          // Try to get projects where user is collaborator
+          const collaboratedProjectsQuery = query(
+            projectsRef,
+            where('collaborators', 'array-contains', user.id),
+            where('deletedAt', '==', null)
+          );
+          collaboratedSnapshot = await getDocs(collaboratedProjectsQuery);
+        } catch (collaboratedError: any) {
+          console.warn('Could not fetch collaborated projects:', collaboratedError.message);
+          // Keep empty snapshot
+        }
+      } catch (dbError: any) {
+        console.warn('Database access issue:', dbError.message);
+        // Continue with empty snapshots
+      }
 
       const sharedProjectsMap = new Map<string, SharedProject>();
 
-      // Process owned projects with collaborators
-      ownedSnapshot.forEach((doc) => {
+      // Process owned projects with collaborators (filter client-side)
+      ownedSnapshot.docs.forEach((doc: any) => {
         const project = { id: doc.id, ...doc.data() } as Project;
-        if (project.collaborators.length > 0) {
+        // Only include projects that have collaborators
+        if (project.collaborators && project.collaborators.length > 0) {
           sharedProjectsMap.set(project.id, {
             ...project,
             hostUserId: project.ownerId,
@@ -109,7 +125,7 @@ export const useSharedProjects = () => {
       });
 
       // Process collaborated projects
-      collaboratedSnapshot.forEach((doc) => {
+      collaboratedSnapshot.docs.forEach((doc: any) => {
         const project = { id: doc.id, ...doc.data() } as Project;
         if (!sharedProjectsMap.has(project.id)) {
           sharedProjectsMap.set(project.id, {
@@ -137,22 +153,31 @@ export const useSharedProjects = () => {
         email: user.email || '' 
       });
 
-      // Update projects with user details
-      const finalSharedProjects = Array.from(sharedProjectsMap.values()).map(project => ({
-        ...project,
-        hostUserName: userDetailsMap.get(project.hostUserId)?.name || 'Unknown User',
-        collaboratorDetails: project.collaborators.map(userId => ({
-          userId,
-          userName: userDetailsMap.get(userId)?.name || 'Unknown User',
-          userEmail: userDetailsMap.get(userId)?.email || '',
-          joinedAt: Date.now(), // In real app, this would come from a collaborations subcollection
+      // Update projects with user details and sort by updatedAt
+      const finalSharedProjects = Array.from(sharedProjectsMap.values())
+        .map(project => ({
+          ...project,
+          hostUserName: userDetailsMap.get(project.hostUserId)?.name || 'Unknown User',
+          collaboratorDetails: project.collaborators.map(userId => ({
+            userId,
+            userName: userDetailsMap.get(userId)?.name || 'Unknown User',
+            userEmail: userDetailsMap.get(userId)?.email || '',
+            joinedAt: Date.now(), // In real app, this would come from a collaborations subcollection
+          }))
         }))
-      }));
+        .sort((a, b) => {
+          // Sort by updatedAt descending (most recent first)
+          const aTime = a.updatedAt?.toMillis() || 0;
+          const bTime = b.updatedAt?.toMillis() || 0;
+          return bTime - aTime;
+        });
 
       setSharedProjects(finalSharedProjects);
-    } catch (err) {
-      console.error('Error loading shared projects:', err);
-      setError('Failed to load shared projects');
+    } catch (err: any) {
+      console.warn('Could not load shared projects:', err);
+      // For now, just show empty state instead of errors
+      // This will be improved once we have proper Firestore setup
+      setSharedProjects([]);
     } finally {
       setIsLoading(false);
     }
@@ -165,37 +190,46 @@ export const useSharedProjects = () => {
         return;
       }
 
-      // Query collaboration requests for current user
+      // Query collaboration requests for current user (simplified to avoid index requirements)
       const requestsRef = collection(db, 'collaborationRequests');
-      const requestsQuery = query(
-        requestsRef,
-        where('toUserId', '==', user.id),
-        where('status', '==', 'pending'),
-        orderBy('createdAt', 'desc')
-      );
+      
+      try {
+        const requestsQuery = query(
+          requestsRef,
+          where('toUserEmail', '==', user.email),
+          where('status', '==', 'pending')
+        );
 
-      const requestsSnapshot = await getDocs(requestsQuery);
-      const requests: CollaborationRequest[] = [];
+        const requestsSnapshot = await getDocs(requestsQuery);
+        const requests: CollaborationRequest[] = [];
 
-      requestsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        requests.push({
-          id: doc.id,
-          projectId: data.projectId,
-          projectName: data.projectName,
-          fromUserId: data.fromUserId,
-          fromUserName: data.fromUserName,
-          fromUserEmail: data.fromUserEmail,
-          toUserId: data.toUserId,
-          message: data.message,
-          createdAt: data.createdAt?.toMillis() || Date.now(),
-          status: data.status,
+        requestsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          requests.push({
+            id: doc.id,
+            projectId: data.projectId,
+            projectName: data.projectName,
+            fromUserId: data.fromUserId,
+            fromUserName: data.fromUserName,
+            fromUserEmail: data.fromUserEmail,
+            toUserId: data.toUserId,
+            message: data.message,
+            createdAt: data.createdAt?.toMillis() || Date.now(),
+            status: data.status,
+          });
         });
-      });
 
-      setCollaborationRequests(requests);
+        // Sort requests by createdAt descending (most recent first)
+        const sortedRequests = requests.sort((a, b) => b.createdAt - a.createdAt);
+        
+        setCollaborationRequests(sortedRequests);
+      } catch (requestsError) {
+        console.warn('Could not fetch collaboration requests:', requestsError);
+        setCollaborationRequests([]);
+      }
     } catch (err) {
       console.error('Error loading collaboration requests:', err);
+      setCollaborationRequests([]);
     }
   };
 
