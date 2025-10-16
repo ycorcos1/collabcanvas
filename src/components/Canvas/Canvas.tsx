@@ -8,6 +8,7 @@ import { useCursors } from "../../hooks/useCursors";
 import { useAuth } from "../Auth/AuthProvider";
 import { Shape } from "./Shape";
 import { TextBox } from "./TextBox";
+import { DrawingPath } from "./DrawingPath";
 import { MultipleCursors } from "../Cursors/MultipleCursors";
 import { ContextMenu } from "../ContextMenu/ContextMenu";
 import { Shape as ShapeType } from "../../types/shape";
@@ -121,6 +122,12 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Text editing state
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
+
+  // Drawing state
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [currentDrawing, setCurrentDrawing] = useState<number[]>([]);
+  const [drawingColor] = useState("#FF0000");
+  const [drawingStrokeWidth] = useState(3);
 
   // Debug state changes
   useEffect(() => {
@@ -398,6 +405,13 @@ export const Canvas: React.FC<CanvasProps> = ({
           return;
         }
 
+        // Handle brush tool - start drawing
+        if (cursorMode === "brush" && pos.x >= 0 && pos.x <= canvasDimensions.width && pos.y >= 0 && pos.y <= canvasDimensions.height) {
+          setIsDrawingMode(true);
+          setCurrentDrawing([pos.x, pos.y]);
+          return;
+        }
+
         // Only start shape creation if a tool is selected and within canvas bounds
         if (
           selectedTool &&
@@ -439,6 +453,13 @@ export const Canvas: React.FC<CanvasProps> = ({
       // Update cursor position for multiplayer
       updateCursorPosition(pos.x, pos.y);
 
+      // Handle drawing mode
+      if (isDrawingMode && currentDrawing.length > 0) {
+        const newPoints = [...currentDrawing, pos.x, pos.y];
+        setCurrentDrawing(newPoints);
+        return;
+      }
+
       // Update preview shape if drawing
       if (isDrawing && drawStartPos && previewShape) {
         const startX = drawStartPos.x;
@@ -466,12 +487,43 @@ export const Canvas: React.FC<CanvasProps> = ({
         setPreviewShape(newPreviewShape);
       }
     },
-    [user, updateCursorPosition, isDrawing, drawStartPos, previewShape]
+    [user, updateCursorPosition, isDrawing, drawStartPos, previewShape, isDrawingMode, currentDrawing, canvasDimensions]
   );
 
   // Handle mouse up - finalize shape creation
   const handleMouseUp = useCallback(
     async (_e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
+      // Handle drawing completion
+      if (isDrawingMode && currentDrawing.length > 2) {
+        // Calculate bounding box for the drawing
+        const minX = Math.min(...currentDrawing.filter((_, i) => i % 2 === 0));
+        const maxX = Math.max(...currentDrawing.filter((_, i) => i % 2 === 0));
+        const minY = Math.min(...currentDrawing.filter((_, i) => i % 2 === 1));
+        const maxY = Math.max(...currentDrawing.filter((_, i) => i % 2 === 1));
+
+        const drawingShape = {
+          type: "drawing" as const,
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          color: drawingColor,
+          points: currentDrawing,
+          strokeWidth: drawingStrokeWidth,
+          createdBy: user!.id,
+        };
+
+        try {
+          await createShape(drawingShape);
+        } catch (error) {
+          console.error("Failed to create drawing:", error);
+        }
+
+        setIsDrawingMode(false);
+        setCurrentDrawing([]);
+        return;
+      }
+
       if (isDrawing && previewShape && drawStartPos) {
         setIsDrawing(false);
         setDrawStartPos(null);
@@ -498,7 +550,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         setPreviewShape(null);
       }
     },
-    [isDrawing, previewShape, drawStartPos, createShape, user]
+    [isDrawing, previewShape, drawStartPos, createShape, user, isDrawingMode, currentDrawing, drawingColor, drawingStrokeWidth]
   );
 
   // Handle shape selection with multiple shift detection methods
@@ -746,6 +798,18 @@ export const Canvas: React.FC<CanvasProps> = ({
               );
             }
 
+            // Render drawing shapes
+            if (shape.type === "drawing" && shape.points) {
+              return (
+                <DrawingPath
+                  key={shape.id}
+                  points={shape.points}
+                  stroke={shape.color}
+                  strokeWidth={shape.strokeWidth || 3}
+                />
+              );
+            }
+
             // Render regular shapes
             return (
               <Shape
@@ -789,6 +853,15 @@ export const Canvas: React.FC<CanvasProps> = ({
                 listening={false}
               />
             ))}
+
+          {/* Current drawing preview */}
+          {isDrawingMode && currentDrawing.length > 2 && (
+            <DrawingPath
+              points={currentDrawing}
+              stroke={drawingColor}
+              strokeWidth={drawingStrokeWidth}
+            />
+          )}
         </Layer>
       </Stage>
 

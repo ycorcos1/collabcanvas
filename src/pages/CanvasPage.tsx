@@ -243,7 +243,7 @@ const CanvasPage: React.FC = () => {
 
     // First copy the selected shapes
     handleCopy();
-    
+
     // Then delete them
     await deleteSelectedShapes();
   }, [selectedShapeIds, handleCopy, deleteSelectedShapes]);

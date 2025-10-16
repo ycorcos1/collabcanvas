@@ -295,9 +295,9 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           stroke="currentColor"
           strokeWidth="2"
         >
-          <path d="M9.06 11.9c.8-.8.8-2.07 0-2.86l-5.66-5.66a2 2 0 0 0-2.83 0l-.7.7a2 2 0 0 0 0 2.83L5.54 12.6c.79.8 2.07.8 2.86 0L9.06 11.9z"/>
-          <path d="M17 5h-4l-2 2h4l2-2z"/>
-          <path d="M19 3l2 2-2 2-2-2 2-2z"/>
+          <path d="M15 5l4 4L8 20l-4-1 1-4L16 4z"/>
+          <path d="M13 7l4 4"/>
+          <path d="M8 13l-2 8 8-2"/>
         </svg>
       ),
     },
@@ -410,11 +410,6 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     if (onCursorModeChange) {
       onCursorModeChange("brush");
     }
-    
-    // Show notification that drawing is not fully implemented
-    setTimeout(() => {
-      alert(`${mode === 'brush' ? 'Brush' : 'Eraser'} tool is not yet fully implemented. This feature will be added in a future update.`);
-    }, 100);
   };
 
   const handleTextSelect = () => {

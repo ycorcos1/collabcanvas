@@ -3,11 +3,14 @@ import { CanvasState } from "../types/canvas";
 
 export const useCanvas = () => {
   // Persist canvas state across page refreshes (using sessionStorage)
+  // Note: Zoom (scale) always resets to 100% (1.0) on refresh/logout as per requirements
   const [canvasState, setCanvasState] = useState<CanvasState>(() => {
     const saved = sessionStorage.getItem("collabcanvas-canvas-state");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Always reset scale to 1 (100%) on page load
+        return { ...parsed, scale: 1 };
       } catch {
         // If parsing fails, use default state
         return { x: 0, y: 0, scale: 1 };

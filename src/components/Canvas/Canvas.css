@@ -37,7 +37,7 @@
 
 /* Brush tool cursor */
 .canvas-container.cursor-brush {
-  cursor: crosshair; /* Will be replaced with custom brush cursor */
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"><circle cx="12" cy="12" r="3" fill="red" opacity="0.5"/></svg>') 12 12, crosshair;
 }
 
 /* Loading and error states */

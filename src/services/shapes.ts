@@ -36,6 +36,9 @@ const firestoreToShape = (docData: DocumentData): Shape => ({
   text: docData.text,
   fontSize: docData.fontSize,
   fontFamily: docData.fontFamily,
+  // Drawing properties
+  points: docData.points,
+  strokeWidth: docData.strokeWidth,
   // Selection fields
   selectedBy: docData.selectedBy,
   selectedByName: docData.selectedByName,
@@ -62,6 +65,10 @@ const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => {
   if (shape.text !== undefined) data.text = shape.text;
   if (shape.fontSize !== undefined) data.fontSize = shape.fontSize;
   if (shape.fontFamily !== undefined) data.fontFamily = shape.fontFamily;
+  
+  // Add drawing properties if they exist
+  if (shape.points !== undefined) data.points = shape.points;
+  if (shape.strokeWidth !== undefined) data.strokeWidth = shape.strokeWidth;
   
   return data;
 };
