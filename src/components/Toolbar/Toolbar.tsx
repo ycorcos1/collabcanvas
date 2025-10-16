@@ -25,6 +25,14 @@ interface ToolbarProps {
   onExportSVG?: () => void;
   onExportSelectedPNG?: () => void;
   onExportSelectedSVG?: () => void;
+  onAlignLeft?: () => void;
+  onAlignRight?: () => void;
+  onAlignCenterH?: () => void;
+  onAlignTop?: () => void;
+  onAlignBottom?: () => void;
+  onAlignCenterV?: () => void;
+  onDistributeH?: () => void;
+  onDistributeV?: () => void;
 }
 
 /**
@@ -55,6 +63,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onExportSVG,
   onExportSelectedPNG,
   onExportSelectedSVG,
+  onAlignLeft,
+  onAlignRight,
+  onAlignCenterH,
+  onAlignTop,
+  onAlignBottom,
+  onAlignCenterV,
+  onDistributeH,
+  onDistributeV,
 }) => {
   const {
     dimensions,
@@ -67,7 +83,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   // Local state for temporary dimension values during editing
   const [tempWidth, setTempWidth] = useState(dimensions.width.toString());
   const [tempHeight, setTempHeight] = useState(dimensions.height.toString());
-  
+
   // Color picker state
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const colorButtonRef = useRef<HTMLButtonElement>(null);
@@ -188,14 +204,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       {/* Color Section */}
       <div className="toolbar-section">
         <h3>Color</h3>
-        
+
         <button
           ref={colorButtonRef}
           className="tool-button color-button"
           onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
           title="Select Color"
         >
-          <div className="color-preview" style={{ backgroundColor: selectedColor }} />
+          <div
+            className="color-preview"
+            style={{ backgroundColor: selectedColor }}
+          />
           <span>Color</span>
         </button>
       </div>
@@ -211,9 +230,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             disabled={!canUndo}
             title="Undo (Cmd+Z)"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 7v6h6"/>
-              <path d="m21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M3 7v6h6" />
+              <path d="m21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" />
             </svg>
             Undo
           </button>
@@ -227,8 +253,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             disabled={!canRedo}
             title="Redo (Cmd+Shift+Z)"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="m21 7-6-6v6h-6a9 9 0 0 0-9 9 9 9 0 0 0 9 9h6v-6"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="m21 7-6-6v6h-6a9 9 0 0 0-9 9 9 9 0 0 0 9 9h6v-6" />
             </svg>
             Redo
           </button>
@@ -242,9 +275,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             disabled={!hasSelectedShapes}
             title="Duplicate (Cmd+D)"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
             Duplicate
           </button>
@@ -315,12 +355,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             onClick={onExportPNG}
             title="Export Canvas as PNG"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10,9 9,9 8,9"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14,2 14,8 20,8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10,9 9,9 8,9" />
             </svg>
             PNG
           </button>
@@ -333,11 +380,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             onClick={onExportSVG}
             title="Export Canvas as SVG"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <circle cx="10" cy="12" r="2"/>
-              <path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14,2 14,8 20,8" />
+              <circle cx="10" cy="12" r="2" />
+              <path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22" />
             </svg>
             SVG
           </button>
@@ -351,10 +405,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             disabled={!hasSelectedShapes}
             title="Export Selected as PNG"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <rect x="8" y="12" width="8" height="4" rx="1"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14,2 14,8 20,8" />
+              <rect x="8" y="12" width="8" height="4" rx="1" />
             </svg>
             PNG Selected
           </button>
@@ -368,16 +429,155 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             disabled={!hasSelectedShapes}
             title="Export Selected as SVG"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <circle cx="10" cy="15" r="1"/>
-              <circle cx="14" cy="15" r="1"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14,2 14,8 20,8" />
+              <circle cx="10" cy="15" r="1" />
+              <circle cx="14" cy="15" r="1" />
             </svg>
             SVG Selected
           </button>
         )}
       </div>
+
+      {/* Alignment Section */}
+      {hasSelectedShapes && (
+        <div className="toolbar-section">
+          <h3>Align</h3>
+
+          {/* Horizontal Alignment */}
+          <div className="alignment-group">
+            <span className="alignment-label">Horizontal:</span>
+            <div className="alignment-buttons">
+              {onAlignLeft && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onAlignLeft}
+                  title="Align Left"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="15" y2="12"/>
+                    <line x1="3" y1="18" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
+              {onAlignCenterH && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onAlignCenterH}
+                  title="Align Center Horizontal"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="2" x2="12" y2="22"/>
+                    <rect x="8" y="6" width="8" height="4"/>
+                    <rect x="6" y="14" width="12" height="4"/>
+                  </svg>
+                </button>
+              )}
+              {onAlignRight && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onAlignRight}
+                  title="Align Right"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="9" y1="12" x2="21" y2="12"/>
+                    <line x1="6" y1="18" x2="21" y2="18"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Vertical Alignment */}
+          <div className="alignment-group">
+            <span className="alignment-label">Vertical:</span>
+            <div className="alignment-buttons">
+              {onAlignTop && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onAlignTop}
+                  title="Align Top"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="6" y1="3" x2="6" y2="21"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                    <line x1="18" y1="3" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
+              {onAlignCenterV && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onAlignCenterV}
+                  title="Align Center Vertical"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <rect x="6" y="8" width="4" height="8"/>
+                    <rect x="14" y="6" width="4" height="12"/>
+                  </svg>
+                </button>
+              )}
+              {onAlignBottom && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onAlignBottom}
+                  title="Align Bottom"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="6" y1="3" x2="6" y2="21"/>
+                    <line x1="12" y1="9" x2="12" y2="21"/>
+                    <line x1="18" y1="6" x2="18" y2="21"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Distribution */}
+          <div className="alignment-group">
+            <span className="alignment-label">Distribute:</span>
+            <div className="alignment-buttons">
+              {onDistributeH && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onDistributeH}
+                  title="Distribute Horizontally"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="8" width="4" height="8"/>
+                    <rect x="10" y="6" width="4" height="12"/>
+                    <rect x="17" y="8" width="4" height="8"/>
+                  </svg>
+                </button>
+              )}
+              {onDistributeV && (
+                <button
+                  className="tool-button alignment-btn"
+                  onClick={onDistributeV}
+                  title="Distribute Vertically"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="8" y="3" width="8" height="4"/>
+                    <rect x="6" y="10" width="12" height="4"/>
+                    <rect x="8" y="17" width="8" height="4"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="toolbar-section">
         <h3>Canvas Size</h3>
@@ -479,7 +679,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Current: {dimensions.width} × {dimensions.height}
         </div>
       </div>
-      
+
       {/* Color Picker */}
       {onColorChange && (
         <ColorPicker

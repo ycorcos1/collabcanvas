@@ -28,6 +28,7 @@ const firestoreToShape = (docData: DocumentData): Shape => ({
   width: docData.width,
   height: docData.height,
   color: docData.color,
+  zIndex: docData.zIndex || 0, // Default to 0 if not set
   createdBy: docData.createdBy,
   createdAt: docData.createdAt?.toMillis?.() || docData.createdAt,
   updatedAt: docData.updatedAt?.toMillis?.() || docData.updatedAt,
@@ -46,6 +47,7 @@ const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => ({
   width: shape.width,
   height: shape.height,
   color: shape.color,
+  zIndex: shape.zIndex,
   createdBy: shape.createdBy,
   createdAt: Timestamp.fromMillis(shape.createdAt),
   updatedAt: Timestamp.fromMillis(shape.updatedAt),

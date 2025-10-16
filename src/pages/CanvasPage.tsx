@@ -10,6 +10,17 @@ import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { exportCanvas, exportSelectedShapes } from "../utils/exportUtils";
+import {
+  alignLeft,
+  alignRight,
+  alignCenterHorizontal,
+  alignTop,
+  alignBottom,
+  alignCenterVertical,
+  distributeHorizontally,
+  distributeVertically,
+} from "../utils/alignmentUtils";
+import { LayersPanel } from "../components/LayersPanel/LayersPanel";
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
 import "./CanvasPage.css";
@@ -76,6 +87,9 @@ const CanvasPage: React.FC = () => {
 
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
+
+  // Layers panel state
+  const [isLayersPanelOpen, setIsLayersPanelOpen] = useState(false);
 
   // Persist selected tool in session storage
   useEffect(() => {
@@ -305,6 +319,120 @@ const CanvasPage: React.FC = () => {
     }
   }, [shapes, selectedShapeIds, projectName]);
 
+  // Z-index management functions
+  const handleBringToFront = useCallback(async (shapeIds: string[]) => {
+    const maxZIndex = Math.max(...shapes.map(s => s.zIndex), 0);
+    for (const id of shapeIds) {
+      await updateShape(id, { zIndex: maxZIndex + 1 });
+    }
+  }, [shapes, updateShape]);
+
+  const handleSendToBack = useCallback(async (shapeIds: string[]) => {
+    const minZIndex = Math.min(...shapes.map(s => s.zIndex), 0);
+    for (const id of shapeIds) {
+      await updateShape(id, { zIndex: minZIndex - 1 });
+    }
+  }, [shapes, updateShape]);
+
+  const handleBringForward = useCallback(async (shapeIds: string[]) => {
+    for (const id of shapeIds) {
+      const shape = shapes.find(s => s.id === id);
+      if (shape) {
+        await updateShape(id, { zIndex: shape.zIndex + 1 });
+      }
+    }
+  }, [shapes, updateShape]);
+
+  const handleSendBackward = useCallback(async (shapeIds: string[]) => {
+    for (const id of shapeIds) {
+      const shape = shapes.find(s => s.id === id);
+      if (shape) {
+        await updateShape(id, { zIndex: shape.zIndex - 1 });
+      }
+    }
+  }, [shapes, updateShape]);
+
+  // Alignment functions
+  const handleAlignLeft = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = alignLeft(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.x !== undefined) {
+        await updateShape(update.id, { x: update.x });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
+  const handleAlignRight = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = alignRight(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.x !== undefined) {
+        await updateShape(update.id, { x: update.x });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
+  const handleAlignCenterH = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = alignCenterHorizontal(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.x !== undefined) {
+        await updateShape(update.id, { x: update.x });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
+  const handleAlignTop = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = alignTop(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.y !== undefined) {
+        await updateShape(update.id, { y: update.y });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
+  const handleAlignBottom = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = alignBottom(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.y !== undefined) {
+        await updateShape(update.id, { y: update.y });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
+  const handleAlignCenterV = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = alignCenterVertical(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.y !== undefined) {
+        await updateShape(update.id, { y: update.y });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
+  const handleDistributeH = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = distributeHorizontally(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.x !== undefined) {
+        await updateShape(update.id, { x: update.x });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
+  const handleDistributeV = useCallback(async () => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    const updates = distributeVertically(selectedShapes);
+    for (const update of updates) {
+      if (update.id && update.y !== undefined) {
+        await updateShape(update.id, { y: update.y });
+      }
+    }
+  }, [shapes, selectedShapeIds, updateShape]);
+
   // Push shapes to history when they change
   useEffect(() => {
     pushState(shapes);
@@ -391,6 +519,14 @@ const CanvasPage: React.FC = () => {
           onExportSVG={handleExportSVG}
           onExportSelectedPNG={handleExportSelectedPNG}
           onExportSelectedSVG={handleExportSelectedSVG}
+          onAlignLeft={handleAlignLeft}
+          onAlignRight={handleAlignRight}
+          onAlignCenterH={handleAlignCenterH}
+          onAlignTop={handleAlignTop}
+          onAlignBottom={handleAlignBottom}
+          onAlignCenterV={handleAlignCenterV}
+          onDistributeH={handleDistributeH}
+          onDistributeV={handleDistributeV}
         />
 
         {/* Canvas */}
@@ -409,6 +545,20 @@ const CanvasPage: React.FC = () => {
             getShapeSelector={getShapeSelector}
           />
         </div>
+
+        {/* Layers Panel */}
+        <LayersPanel
+          shapes={shapes}
+          selectedShapeIds={selectedShapeIds}
+          onSelectShape={selectShape}
+          onUpdateShape={updateShape}
+          onBringToFront={handleBringToFront}
+          onSendToBack={handleSendToBack}
+          onBringForward={handleBringForward}
+          onSendBackward={handleSendBackward}
+          isOpen={isLayersPanelOpen}
+          onToggle={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
+        />
       </main>
 
       {/* Status Bar */}

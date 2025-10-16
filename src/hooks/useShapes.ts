@@ -157,10 +157,14 @@ export const useShapes = () => {
       try {
         setError(null);
 
+        // Calculate next z-index (highest current + 1)
+        const maxZIndex = shapes.length > 0 ? Math.max(...shapes.map(s => s.zIndex)) : 0;
+        
         // Optimistically add the shape to local state
         const newShape: Shape = {
           id: tempId,
           ...shapeData,
+          zIndex: shapeData.zIndex ?? maxZIndex + 1, // Use provided zIndex or next highest
           createdAt: Date.now(),
           updatedAt: Date.now(),
         };

@@ -18,6 +18,7 @@ export interface Shape {
   width: number; // Width in pixels
   height: number; // Height in pixels
   color: string; // Fill color (hex format)
+  zIndex: number; // Layer order (higher values appear on top)
   createdBy: string; // User ID who created the shape
   createdAt: number; // Creation timestamp (Unix time)
   updatedAt: number; // Last modification timestamp
@@ -40,6 +41,7 @@ export interface ShapeUpdate {
   width?: number;
   height?: number;
   color?: string;
+  zIndex?: number;
   updatedAt: number;
 }
 

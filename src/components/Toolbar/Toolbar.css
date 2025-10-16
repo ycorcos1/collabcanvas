@@ -207,3 +207,38 @@
 .color-button:hover .color-preview {
   border-color: var(--border-focus);
 }
+
+/* Alignment Tools Styles */
+.alignment-group {
+  margin-bottom: var(--space-3);
+}
+
+.alignment-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.alignment-buttons {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.alignment-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alignment-btn svg {
+  width: 16px;
+  height: 16px;
+}
