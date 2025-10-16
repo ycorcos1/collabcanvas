@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useAuth } from "../Auth/AuthProvider";
 import { useTheme } from "../../hooks/useTheme";
-import { Button, Input, Avatar } from "../shared";
+import { Button, Input, Avatar, Modal } from "../shared";
 import { uploadProfilePhoto } from "../../services/storage";
 
 /**
@@ -25,6 +25,10 @@ export const Settings: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState<string | null>(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [avatarKey, setAvatarKey] = useState(0); // Force avatar re-render
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProfileSave = async () => {
@@ -75,19 +79,50 @@ export const Settings: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
+    // Validate file type - only allow PNG, JPG, JPEG
+    const allowedTypes = ['image/png', 'image/jpeg'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      setErrorMessage("Please select a PNG, JPG, or JPEG image file.");
+      setShowErrorModal(true);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage("Image size must be less than 5MB.");
+      setShowErrorModal(true);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
     setIsUploadingPhoto(true);
+    setPhotoUploadStatus("Uploading...");
+    
     try {
-      console.log("Starting photo upload...");
-      
       // Upload and update user profile (compression is handled inside the function)
       await uploadProfilePhoto(file);
       
-      console.log("Photo upload completed successfully");
-      alert("Profile photo updated successfully!");
+      setPhotoUploadStatus("Photo updated successfully!");
+      
+      // Force avatar re-render by updating key
+      setAvatarKey(prev => prev + 1);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setPhotoUploadStatus(null);
+      }, 3000);
       
     } catch (error: any) {
-      console.error("Error uploading photo:", error);
-      alert(error.message || "Failed to upload photo. Please try again.");
+      setPhotoUploadStatus(null);
+      setErrorMessage(error.message || "Failed to upload photo. Please try again.");
+      setShowErrorModal(true);
     } finally {
       setIsUploadingPhoto(false);
       // Reset file input
@@ -124,23 +159,28 @@ export const Settings: React.FC = () => {
           <div className="profile-card">
             <div className="profile-avatar">
               <Avatar
+                key={avatarKey}
                 src={user?.photoURL}
                 name={user?.displayName || user?.email || "User"}
                 size="lg"
               />
-              <Button
-                variant="ghost"
+              <Button 
+                variant="ghost" 
                 size="sm"
                 onClick={handlePhotoUpload}
-                loading={isUploadingPhoto}
                 disabled={isUploadingPhoto}
               >
-                {isUploadingPhoto ? "Uploading..." : "Change Photo"}
+                Change Photo
               </Button>
+              {photoUploadStatus && (
+                <div className={`upload-status ${photoUploadStatus.includes('successfully') ? 'success' : 'uploading'}`}>
+                  {photoUploadStatus}
+                </div>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpg,image/jpeg"
                 onChange={handleFileChange}
                 style={{ display: "none" }}
               />
@@ -311,6 +351,22 @@ export const Settings: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Error Modal */}
+      <Modal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Upload Error"
+      >
+        <div style={{ padding: "var(--space-4)" }}>
+          <p>{errorMessage}</p>
+          <div style={{ marginTop: "var(--space-4)", textAlign: "right" }}>
+            <Button onClick={() => setShowErrorModal(false)}>
+              OK
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
@@ -419,6 +475,24 @@ style.textContent = `
     display: flex;
     gap: var(--space-3);
     margin-top: var(--space-2);
+  }
+
+  .upload-status {
+    font-size: var(--text-sm);
+    text-align: center;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    margin-top: var(--space-2);
+  }
+
+  .upload-status.uploading {
+    color: var(--text-secondary);
+    background-color: var(--bg-secondary);
+  }
+
+  .upload-status.success {
+    color: var(--status-success);
+    background-color: var(--status-success-bg);
   }
 
   .theme-selector {

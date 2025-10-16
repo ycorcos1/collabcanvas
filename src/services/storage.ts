@@ -35,15 +35,11 @@ export async function uploadProfilePhoto(file: File): Promise<string> {
   }
 
   try {
-    console.log("Starting photo upload process...");
-    
     // Compress the image more aggressively to keep data URL small
     const compressedFile = await compressImage(file, 80, 0.5);
-    console.log("Image compressed successfully", `Original: ${file.size} bytes, Compressed: ${compressedFile.size} bytes`);
     
     // Convert to base64 data URL
     const dataURL = await fileToDataURL(compressedFile);
-    console.log("Image converted to data URL", `Length: ${dataURL.length} characters`);
     
     // Check if data URL is too long for Firebase Auth (limit is around 2000 characters)
     if (dataURL.length > 2000) {
@@ -55,10 +51,8 @@ export async function uploadProfilePhoto(file: File): Promise<string> {
       photoURL: dataURL
     });
     
-    console.log("Profile updated successfully");
     return dataURL;
   } catch (error) {
-    console.error("Error uploading profile photo:", error);
     throw new Error(`Failed to upload photo: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
