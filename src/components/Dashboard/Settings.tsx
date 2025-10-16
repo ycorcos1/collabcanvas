@@ -365,38 +365,6 @@ export const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* Data & Privacy Section */}
-        <div className="settings-section">
-          <div className="section-header">
-            <h2>Data & Privacy</h2>
-            <p>Manage your data and privacy settings</p>
-          </div>
-
-          <div className="data-card">
-            <div className="data-actions">
-              <div className="data-action">
-                <div className="action-info">
-                  <h3>Export Data</h3>
-                  <p>Download a copy of all your projects and data</p>
-                </div>
-                <Button variant="secondary" disabled>
-                  Export (Coming Soon)
-                </Button>
-              </div>
-
-              <div className="data-action">
-                <div className="action-info">
-                  <h3>Data Usage</h3>
-                  <p>See how much storage you're using</p>
-                </div>
-                <Button variant="secondary" disabled>
-                  View Usage (Coming Soon)
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Account Actions Section */}
         <div className="settings-section">
           <div className="section-header">

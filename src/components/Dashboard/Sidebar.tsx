@@ -47,22 +47,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       path: "/dashboard/recent",
       label: "Recent",
-      icon: "⏰",
     },
     {
       path: "/dashboard/all",
       label: "All Projects",
-      icon: "📂",
     },
     {
       path: "/dashboard/trash",
       label: "Trash",
-      icon: "🗂",
     },
     {
       path: "/dashboard/settings",
       label: "Settings",
-      icon: "⚙",
     },
   ];
 
@@ -100,7 +96,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             }`}
             onClick={onClose}
           >
-            <span className="nav-icon">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
           </Link>
         ))}
