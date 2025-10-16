@@ -12,9 +12,7 @@ import { DrawingPath } from "./DrawingPath";
 import { MultipleCursors } from "../Cursors/MultipleCursors";
 import { ContextMenu } from "../ContextMenu/ContextMenu";
 import { Shape as ShapeType } from "../../types/shape";
-import {
-  getRelativePointerPosition,
-} from "../../utils/canvasHelpers";
+import { getRelativePointerPosition } from "../../utils/canvasHelpers";
 import "./Canvas.css";
 
 /**
@@ -29,7 +27,7 @@ interface CanvasProps {
   createShape: (shapeData: any) => Promise<ShapeType | null>;
   updateShape: (id: string, updates: any) => Promise<void>;
   deleteSelectedShapes: () => Promise<void>;
-  selectShape: (id: string | null, isShiftPressed?: boolean) => Promise<void>;
+  selectShape: (id: string | null) => Promise<void>;
   isShapeLockedByOther: (shapeId: string) => boolean;
   getShapeSelector: (shapeId: string) => { name: string; color: string } | null;
   cursorMode?: string;
@@ -44,7 +42,7 @@ interface CanvasProps {
  *
  * Features:
  * - Interactive shape creation (click and drag to draw)
- * - Multi-select with Shift key support
+ * - Shape selection and interaction
  * - Real-time cursor tracking across all users
  * - Zoom and pan functionality with smooth performance
  * - Dynamic canvas dimensions with real-time sync
@@ -166,50 +164,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     };
   }, []);
 
-  // Track shift key state for multi-select
-  const [isShiftPressed, setIsShiftPressed] = useState(false);
-  const shiftKeyRef = useRef(false); // Ref for immediate access
-
-  // Track shift key for multi-select - Enhanced event handling for production
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Shift" || e.shiftKey) {
-        e.preventDefault();
-        setIsShiftPressed(true);
-        shiftKeyRef.current = true;
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Shift" || !e.shiftKey) {
-        setIsShiftPressed(false);
-        shiftKeyRef.current = false;
-      }
-    };
-
-    // Use multiple event targets for maximum compatibility
-    document.addEventListener("keydown", handleKeyDown, { passive: false, capture: true });
-    document.addEventListener("keyup", handleKeyUp, { passive: false, capture: true });
-    window.addEventListener("keydown", handleKeyDown, { passive: false });
-    window.addEventListener("keyup", handleKeyUp, { passive: false });
-    
-    // Also add focus/blur handlers to reset state
-    const handleBlur = () => {
-      setIsShiftPressed(false);
-      shiftKeyRef.current = false;
-    };
-    window.addEventListener("blur", handleBlur);
-    window.addEventListener("focus", handleBlur); // Reset on focus too
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("blur", handleBlur);
-      window.removeEventListener("focus", handleBlur);
-    };
-  }, []);
+  // Removed shift key tracking functionality
 
   // Handle canvas state based on user authentication
   useEffect(() => {
@@ -382,7 +337,13 @@ export const Canvas: React.FC<CanvasProps> = ({
         selectShape(null);
 
         // Handle text tool - create text immediately on click
-        if (cursorMode === "text" && pos.x >= 0 && pos.x <= canvasDimensions.width && pos.y >= 0 && pos.y <= canvasDimensions.height) {
+        if (
+          cursorMode === "text" &&
+          pos.x >= 0 &&
+          pos.x <= canvasDimensions.width &&
+          pos.y >= 0 &&
+          pos.y <= canvasDimensions.height
+        ) {
           const textShape = {
             type: "text" as const,
             x: pos.x,
@@ -395,7 +356,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             fontFamily: "Arial",
             createdBy: user.id,
           };
-          
+
           createShape(textShape).then((newShape) => {
             if (newShape) {
               setEditingTextId(newShape.id);
@@ -406,7 +367,13 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
 
         // Handle brush tool - start drawing
-        if (cursorMode === "brush" && pos.x >= 0 && pos.x <= canvasDimensions.width && pos.y >= 0 && pos.y <= canvasDimensions.height) {
+        if (
+          cursorMode === "brush" &&
+          pos.x >= 0 &&
+          pos.x <= canvasDimensions.width &&
+          pos.y >= 0 &&
+          pos.y <= canvasDimensions.height
+        ) {
           setIsDrawingMode(true);
           setCurrentDrawing([pos.x, pos.y]);
           return;
@@ -487,7 +454,16 @@ export const Canvas: React.FC<CanvasProps> = ({
         setPreviewShape(newPreviewShape);
       }
     },
-    [user, updateCursorPosition, isDrawing, drawStartPos, previewShape, isDrawingMode, currentDrawing, canvasDimensions]
+    [
+      user,
+      updateCursorPosition,
+      isDrawing,
+      drawStartPos,
+      previewShape,
+      isDrawingMode,
+      currentDrawing,
+      canvasDimensions,
+    ]
   );
 
   // Handle mouse up - finalize shape creation
@@ -550,21 +526,25 @@ export const Canvas: React.FC<CanvasProps> = ({
         setPreviewShape(null);
       }
     },
-    [isDrawing, previewShape, drawStartPos, createShape, user, isDrawingMode, currentDrawing, drawingColor, drawingStrokeWidth]
+    [
+      isDrawing,
+      previewShape,
+      drawStartPos,
+      createShape,
+      user,
+      isDrawingMode,
+      currentDrawing,
+      drawingColor,
+      drawingStrokeWidth,
+    ]
   );
 
-  // Handle shape selection with multiple shift detection methods
+  // Handle shape selection without shift key functionality
   const handleShapeSelect = useCallback(
-    (shapeId: string, event?: MouseEvent) => {
-      // Try multiple methods to detect shift key for production reliability
-      const shiftPressed = 
-        event?.shiftKey || // From the actual mouse event (most reliable)
-        shiftKeyRef.current || // From our ref
-        isShiftPressed; // From our state
-      
-      selectShape(shapeId, shiftPressed);
+    (shapeId: string) => {
+      selectShape(shapeId);
     },
-    [selectShape, isShiftPressed]
+    [selectShape]
   );
 
   // Handle shape drag end
@@ -604,7 +584,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   const handleContextMenu = useCallback(
     (e: KonvaEventObject<PointerEvent>) => {
       e.evt.preventDefault();
-      
+
       const stage = e.target.getStage();
       if (!stage) return;
 
@@ -679,7 +659,11 @@ export const Canvas: React.FC<CanvasProps> = ({
   );
 
   return (
-    <div className={`canvas-container ${selectedTool ? "creating-shape" : `cursor-${cursorMode}`}`}>
+    <div
+      className={`canvas-container ${
+        selectedTool ? "creating-shape" : `cursor-${cursorMode}`
+      }`}
+    >
       {/* Don't render canvas content if user is not authenticated */}
       {!user ? (
         <div className="canvas-loading">
@@ -696,7 +680,6 @@ export const Canvas: React.FC<CanvasProps> = ({
             </div>
           )}
 
-
           {/* Error indicator */}
           {error && (
             <div className="canvas-error">
@@ -704,169 +687,178 @@ export const Canvas: React.FC<CanvasProps> = ({
             </div>
           )}
 
-      <Stage
-        ref={stageRef}
-        width={stageSize.width}
-        height={stageSize.height}
-        x={canvasState.x}
-        y={canvasState.y}
-        scaleX={canvasState.scale}
-        scaleY={canvasState.scale}
-        draggable={!selectedTool && !isDrawing}
-        onDragEnd={handleStageDragEnd}
-        onWheel={handleWheel}
-        onMouseDown={(e) => {
-          handleMouseDown(e);
-        }}
-        onTouchStart={(e) => {
-          handleMouseDown(e);
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onTouchEnd={handleMouseUp}
-        onContextMenu={handleContextMenu}
-        // Performance optimizations for smooth 60 FPS
-        perfectDrawEnabled={false}
-        imageSmoothingEnabled={true}
-        listening={true}
-      >
-        <Layer
-          clipX={0}
-          clipY={0}
-          clipWidth={canvasDimensions.width}
-          clipHeight={canvasDimensions.height}
-          perfectDrawEnabled={false}
-        >
-          {/* Canvas Background */}
-          <Rect
-            x={0}
-            y={0}
-            width={canvasDimensions.width}
-            height={canvasDimensions.height}
-            fill="#ffffff"
-            stroke="#d0d0d0"
-            strokeWidth={3}
-          />
-
-          {/* Grid pattern */}
-          {Array.from({ length: Math.floor(canvasDimensions.width / 100) }).map(
-            (_, i) =>
-              Array.from({
-                length: Math.floor(canvasDimensions.height / 100),
-              }).map((_, j) => (
-                <Rect
-                  key={`grid-${i}-${j}`}
-                  x={i * 100}
-                  y={j * 100}
-                  width={100}
-                  height={100}
-                  fill="transparent"
-                  stroke="#f5f5f5"
-                  strokeWidth={1}
-                  listening={false}
-                  perfectDrawEnabled={false}
-                  strokeScaleEnabled={false}
-                />
-              ))
-          )}
-
-          {/* Render all shapes */}
-          {shapes.map((shape) => {
-            const isLockedByOther = isShapeLockedByOther(shape.id);
-            const selectedByOther = getShapeSelector(shape.id);
-            const isSelected = selectedShapeIds.includes(shape.id);
-
-            // Render text shapes differently
-            if (shape.type === "text") {
-              return (
-                <TextBox
-                  key={shape.id}
-                  x={shape.x}
-                  y={shape.y}
-                  text={shape.text || "Text"}
-                  fontSize={shape.fontSize || 16}
-                  fontFamily={shape.fontFamily || "Arial"}
-                  fill={shape.color}
-                  isSelected={isSelected}
-                  isEditing={editingTextId === shape.id}
-                  onTextChange={(newText) => handleTextChange(shape.id, newText)}
-                  onEditingChange={(isEditing) => handleTextEditingChange(shape.id, isEditing)}
-                  onSelect={() => handleShapeSelect(shape.id)}
-                  onDragEnd={(x, y) => handleTextDragEnd(shape.id, x, y)}
-                  onResize={(x, y, width, height) => handleTextResize(shape.id, x, y, width, height)}
-                />
-              );
-            }
-
-            // Render drawing shapes
-            if (shape.type === "drawing" && shape.points) {
-              return (
-                <DrawingPath
-                  key={shape.id}
-                  points={shape.points}
-                  stroke={shape.color}
-                  strokeWidth={shape.strokeWidth || 3}
-                />
-              );
-            }
-
-            // Render regular shapes
-            return (
-              <Shape
-                key={shape.id}
-                shape={shape}
-                isSelected={isSelected}
-                selectedTool={selectedTool}
-                onSelect={handleShapeSelect}
-                onDragEnd={handleShapeDragEnd}
-                onResize={handleShapeResize}
-                isLockedByOther={isLockedByOther}
-                selectedByOther={selectedByOther}
-                canvasScale={canvasState.scale}
-              />
-            );
-          })}
-
-          {/* Preview shape while drawing */}
-          {previewShape &&
-            (previewShape.type === "circle" ? (
-              <Circle
-                x={previewShape.x + previewShape.width / 2}
-                y={previewShape.y + previewShape.height / 2}
-                radius={Math.min(previewShape.width, previewShape.height) / 2}
-                fill="rgba(33, 150, 243, 0.3)"
-                stroke="#2196f3"
-                strokeWidth={2}
-                dash={[5, 5]}
-                listening={false}
-              />
-            ) : (
+          <Stage
+            ref={stageRef}
+            width={stageSize.width}
+            height={stageSize.height}
+            x={canvasState.x}
+            y={canvasState.y}
+            scaleX={canvasState.scale}
+            scaleY={canvasState.scale}
+            draggable={!selectedTool && !isDrawing}
+            onDragEnd={handleStageDragEnd}
+            onWheel={handleWheel}
+            onMouseDown={(e) => {
+              handleMouseDown(e);
+            }}
+            onTouchStart={(e) => {
+              handleMouseDown(e);
+            }}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onTouchEnd={handleMouseUp}
+            onContextMenu={handleContextMenu}
+            // Performance optimizations for smooth 60 FPS
+            perfectDrawEnabled={false}
+            imageSmoothingEnabled={true}
+            listening={true}
+          >
+            <Layer
+              clipX={0}
+              clipY={0}
+              clipWidth={canvasDimensions.width}
+              clipHeight={canvasDimensions.height}
+              perfectDrawEnabled={false}
+            >
+              {/* Canvas Background */}
               <Rect
-                x={previewShape.x}
-                y={previewShape.y}
-                width={previewShape.width}
-                height={previewShape.height}
-                fill="rgba(33, 150, 243, 0.3)"
-                stroke="#2196f3"
-                strokeWidth={2}
-                dash={[5, 5]}
-                listening={false}
+                x={0}
+                y={0}
+                width={canvasDimensions.width}
+                height={canvasDimensions.height}
+                fill="#ffffff"
+                stroke="#d0d0d0"
+                strokeWidth={3}
               />
-            ))}
 
-          {/* Current drawing preview */}
-          {isDrawingMode && currentDrawing.length > 2 && (
-            <DrawingPath
-              points={currentDrawing}
-              stroke={drawingColor}
-              strokeWidth={drawingStrokeWidth}
-            />
-          )}
-        </Layer>
-      </Stage>
+              {/* Grid pattern */}
+              {Array.from({
+                length: Math.floor(canvasDimensions.width / 100),
+              }).map((_, i) =>
+                Array.from({
+                  length: Math.floor(canvasDimensions.height / 100),
+                }).map((_, j) => (
+                  <Rect
+                    key={`grid-${i}-${j}`}
+                    x={i * 100}
+                    y={j * 100}
+                    width={100}
+                    height={100}
+                    fill="transparent"
+                    stroke="#f5f5f5"
+                    strokeWidth={1}
+                    listening={false}
+                    perfectDrawEnabled={false}
+                    strokeScaleEnabled={false}
+                  />
+                ))
+              )}
 
-      {/* Multiplayer cursors overlay */}
-      <MultipleCursors canvasState={canvasState} stageRef={stageRef} />
+              {/* Render all shapes */}
+              {shapes.map((shape) => {
+                const isLockedByOther = isShapeLockedByOther(shape.id);
+                const selectedByOther = getShapeSelector(shape.id);
+                const isSelected = selectedShapeIds.includes(shape.id);
+
+                // Render text shapes differently
+                if (shape.type === "text") {
+                  return (
+                    <TextBox
+                      key={shape.id}
+                      x={shape.x}
+                      y={shape.y}
+                      text={shape.text || "Text"}
+                      fontSize={shape.fontSize || 16}
+                      fontFamily={shape.fontFamily || "Arial"}
+                      fill={shape.color}
+                      isSelected={isSelected}
+                      isEditing={editingTextId === shape.id}
+                      onTextChange={(newText) =>
+                        handleTextChange(shape.id, newText)
+                      }
+                      onEditingChange={(isEditing) =>
+                        handleTextEditingChange(shape.id, isEditing)
+                      }
+                      onSelect={() => handleShapeSelect(shape.id)}
+                      onDragEnd={(x, y) => handleTextDragEnd(shape.id, x, y)}
+                      onResize={(x, y, width, height) =>
+                        handleTextResize(shape.id, x, y, width, height)
+                      }
+                    />
+                  );
+                }
+
+                // Render drawing shapes
+                if (shape.type === "drawing" && shape.points) {
+                  return (
+                    <DrawingPath
+                      key={shape.id}
+                      points={shape.points}
+                      stroke={shape.color}
+                      strokeWidth={shape.strokeWidth || 3}
+                    />
+                  );
+                }
+
+                // Render regular shapes
+                return (
+                  <Shape
+                    key={shape.id}
+                    shape={shape}
+                    isSelected={isSelected}
+                    selectedTool={selectedTool}
+                    onSelect={handleShapeSelect}
+                    onDragEnd={handleShapeDragEnd}
+                    onResize={handleShapeResize}
+                    isLockedByOther={isLockedByOther}
+                    selectedByOther={selectedByOther}
+                    canvasScale={canvasState.scale}
+                  />
+                );
+              })}
+
+              {/* Preview shape while drawing */}
+              {previewShape &&
+                (previewShape.type === "circle" ? (
+                  <Circle
+                    x={previewShape.x + previewShape.width / 2}
+                    y={previewShape.y + previewShape.height / 2}
+                    radius={
+                      Math.min(previewShape.width, previewShape.height) / 2
+                    }
+                    fill="rgba(33, 150, 243, 0.3)"
+                    stroke="#2196f3"
+                    strokeWidth={2}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                ) : (
+                  <Rect
+                    x={previewShape.x}
+                    y={previewShape.y}
+                    width={previewShape.width}
+                    height={previewShape.height}
+                    fill="rgba(33, 150, 243, 0.3)"
+                    stroke="#2196f3"
+                    strokeWidth={2}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                ))}
+
+              {/* Current drawing preview */}
+              {isDrawingMode && currentDrawing.length > 2 && (
+                <DrawingPath
+                  points={currentDrawing}
+                  stroke={drawingColor}
+                  strokeWidth={drawingStrokeWidth}
+                />
+              )}
+            </Layer>
+          </Stage>
+
+          {/* Multiplayer cursors overlay */}
+          <MultipleCursors canvasState={canvasState} stageRef={stageRef} />
         </>
       )}
 

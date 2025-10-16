@@ -16,7 +16,7 @@ import "./LeftSidebar.css";
 interface LeftSidebarProps {
   shapes: Shape[];
   selectedShapeIds: string[];
-  onSelectShape: (id: string | null, isShiftPressed?: boolean) => void;
+  onSelectShape: (id: string | null) => void;
   onUndo?: () => void;
   onRedo?: () => void;
   onCopy?: () => void;
@@ -166,11 +166,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             break;
           case 'z':
             event.preventDefault();
-            if (event.shiftKey) {
-              if (onRedo) onRedo();
-            } else {
-              if (onUndo) onUndo();
-            }
+            if (onUndo) onUndo();
             break;
         }
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -185,9 +181,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedShapeIds, onCopy, onPaste, onUndo, onRedo, onDeleteSelected, onSave, onNewProject]);
 
-  const handleObjectClick = (objectId: string, event: React.MouseEvent) => {
-    const isShiftPressed = event.shiftKey;
-    onSelectShape(objectId, isShiftPressed);
+  const handleObjectClick = (objectId: string) => {
+    onSelectShape(objectId);
   };
 
   const handleObjectRightClick = (objectId: string, event: React.MouseEvent) => {
@@ -584,7 +579,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                         onChange={(e) => setEditingPageName(e.target.value)}
                         onBlur={handlePageRenameSubmit}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
+                          if (e.key === 'Enter') {
                             e.preventDefault();
                             handlePageRenameSubmit();
                           } else if (e.key === 'Escape') {
@@ -592,7 +587,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                             setEditingPageId(null);
                             setEditingPageName("");
                           }
-                          // Allow shift key and other keys to work normally for typing
                         }}
                         autoFocus
                         className="page-name-input"
@@ -663,7 +657,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     className={`object-item ${
                       selectedShapeIds.includes(object.id) ? "selected" : ""
                     }`}
-                    onClick={(e) => handleObjectClick(object.id, e)}
+                    onClick={() => handleObjectClick(object.id)}
                     onContextMenu={(e) => handleObjectRightClick(object.id, e)}
                   >
                     <div className="object-content">
@@ -678,7 +672,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                             onChange={(e) => setEditingObjectName(e.target.value)}
                             onBlur={handleRenameSubmit}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
+                              if (e.key === 'Enter') {
                                 e.preventDefault();
                                 handleRenameSubmit();
                               } else if (e.key === 'Escape') {
@@ -686,7 +680,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                 setEditingObjectId(null);
                                 setEditingObjectName("");
                               }
-                              // Allow shift key and other keys to work normally for typing
                             }}
                             autoFocus
                             className="object-name-input"

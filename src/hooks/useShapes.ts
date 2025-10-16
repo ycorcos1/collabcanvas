@@ -8,7 +8,7 @@ import { useAuth } from "../components/Auth/AuthProvider";
  *
  * Handles:
  * - Real-time shape synchronization via Firebase Firestore
- * - Multi-select functionality with Shift-key support
+ * - Shape selection functionality
  * - Shape creation, updates, and deletion
  * - Session persistence of selected shapes
  * - Optimistic UI updates with Firebase sync
@@ -249,14 +249,13 @@ export const useShapes = () => {
     [user, selectedShapeIds]
   );
 
-  // Multi-select shape function - supports shift key for multiple selection
+  // Shape selection function - single selection only
   /**
-   * Handles shape selection with multi-select support
-   * @param shapeId - ID of shape to select/deselect, or null to clear selection
-   * @param isShiftPressed - Whether Shift key is held for multi-select
+   * Handles shape selection
+   * @param shapeId - ID of shape to select, or null to clear selection
    */
   const selectShape = useCallback(
-    async (id: string | null, isShiftPressed: boolean = false) => {
+    async (id: string | null) => {
       if (!user) return;
 
       try {
@@ -277,42 +276,22 @@ export const useShapes = () => {
           return;
         }
 
-        if (isShiftPressed) {
-          // Shift key pressed - toggle selection
-          if (selectedShapeIds.includes(id)) {
-            // Deselect this shape
-            await shapesService.deselectShape(id);
-            setSelectedShapeIds((prev) =>
-              prev.filter((shapeId) => shapeId !== id)
-            );
-          } else {
-            // Add to selection
-            await shapesService.selectShape(
-              id,
-              user.id,
-              user.displayName,
-              user.color
-            );
-            setSelectedShapeIds((prev) => [...prev, id]);
+        // Single selection - clear others and select this one
+        // First deselect all currently selected shapes
+        for (const shapeId of selectedShapeIds) {
+          if (shapeId !== id) {
+            await shapesService.deselectShape(shapeId);
           }
-        } else {
-          // No shift key - single selection (clear others and select this one)
-          // First deselect all currently selected shapes
-          for (const shapeId of selectedShapeIds) {
-            if (shapeId !== id) {
-              await shapesService.deselectShape(shapeId);
-            }
-          }
-
-          // Select the new shape
-          await shapesService.selectShape(
-            id,
-            user.id,
-            user.displayName,
-            user.color
-          );
-          setSelectedShapeIds([id]);
         }
+
+        // Select the new shape
+        await shapesService.selectShape(
+          id,
+          user.id,
+          user.displayName,
+          user.color
+        );
+        setSelectedShapeIds([id]);
       } catch (error) {
         console.error("Error selecting shape:", error);
       }

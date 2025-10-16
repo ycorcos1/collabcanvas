@@ -4,7 +4,7 @@ import { useEffect, useCallback } from 'react';
  * Keyboard Shortcuts Hook - Handles global keyboard shortcuts
  * 
  * Features:
- * - Undo/Redo (Cmd+Z/Cmd+Shift+Z)
+ * - Undo/Redo (Cmd+Z/Cmd+Y)
  * - Delete selected shapes (Delete/Backspace)
  * - Duplicate shapes (Cmd+D)
  * - Select All (Cmd+A)
@@ -40,15 +40,21 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
 
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const cmdKey = isMac ? event.metaKey : event.ctrlKey;
-    const shiftKey = event.shiftKey;
 
     // Undo/Redo
     if (cmdKey && event.key === 'z') {
       event.preventDefault();
-      if (shiftKey && handlers.onRedo) {
-        handlers.onRedo();
-      } else if (handlers.onUndo) {
+      if (handlers.onUndo) {
         handlers.onUndo();
+      }
+      return;
+    }
+
+    // Redo with Cmd+Y
+    if (cmdKey && event.key === 'y') {
+      event.preventDefault();
+      if (handlers.onRedo) {
+        handlers.onRedo();
       }
       return;
     }
@@ -96,7 +102,7 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
     }
 
     // Arrow keys for movement (only when shapes are selected)
-    if (!cmdKey && !shiftKey) {
+    if (!cmdKey) {
       switch (event.key) {
         case 'ArrowUp':
           event.preventDefault();

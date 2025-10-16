@@ -97,7 +97,7 @@ export const TextBox: React.FC<TextBoxProps> = ({
 
       // Handle textarea events
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter') {
           e.preventDefault();
           finishEditing();
         } else if (e.key === 'Escape') {

@@ -17,7 +17,7 @@ import './LayersPanel.css';
 interface LayersPanelProps {
   shapes: Shape[];
   selectedShapeIds: string[];
-  onSelectShape: (id: string | null, isShiftPressed?: boolean) => void;
+  onSelectShape: (id: string | null) => void;
   onUpdateShape: (id: string, updates: Partial<Shape>) => void;
   onBringToFront: (shapeIds: string[]) => void;
   onSendToBack: (shapeIds: string[]) => void;
@@ -59,9 +59,8 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
     .sort((a, b) => b.zIndex - a.zIndex); // Sort by z-index (highest first)
 
   // Handle layer selection
-  const handleLayerClick = useCallback((layerId: string, event: React.MouseEvent) => {
-    const isShiftPressed = event.shiftKey;
-    onSelectShape(layerId, isShiftPressed);
+  const handleLayerClick = useCallback((layerId: string) => {
+    onSelectShape(layerId);
   }, [onSelectShape]);
 
   // Handle drag start
@@ -231,7 +230,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, layer.id)}
               onDragEnd={handleDragEnd}
-              onClick={(e) => handleLayerClick(layer.id, e)}
+              onClick={() => handleLayerClick(layer.id)}
             >
               <div className="layer-content">
                 <div className="layer-icon">

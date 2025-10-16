@@ -155,7 +155,7 @@ const CanvasPage: React.FC = () => {
           );
           if (validSelections.length > 0) {
             // Use the selectShape function to restore selections
-            validSelections.forEach((id) => selectShape(id, true));
+            validSelections.forEach((id) => selectShape(id));
           }
         }
       } catch (error) {

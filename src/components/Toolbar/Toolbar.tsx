@@ -251,7 +251,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             className={`tool-button ${!canRedo ? "disabled" : ""}`}
             onClick={onRedo}
             disabled={!canRedo}
-            title="Redo (Cmd+Shift+Z)"
+            title="Redo (Cmd+Y)"
           >
             <svg
               width="20"

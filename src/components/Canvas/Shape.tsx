@@ -122,8 +122,8 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         if (isLockedByOther) {
           return;
         }
-        // Pass the original mouse event to get shift key state
-        onSelect(shape.id, e.evt);
+        // Select the shape
+        onSelect(shape.id);
       },
       [shape.id, onSelect, isLockedByOther, selectedByOther]
     );
