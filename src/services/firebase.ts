@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase, Database } from "firebase/database";
+import { getStorage } from "firebase/storage";
 
 /**
  * Firebase Configuration and Initialization
@@ -36,6 +37,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase services for different features
 export const auth = getAuth(app); // User authentication
 export const firestore = getFirestore(app); // Persistent shape storage
+export const storage = getStorage(app); // File storage for photos
 
 // Realtime Database for live features (cursors, presence)
 let database: Database;

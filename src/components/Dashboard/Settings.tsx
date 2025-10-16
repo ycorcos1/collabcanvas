@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useAuth } from "../Auth/AuthProvider";
 import { useTheme } from "../../hooks/useTheme";
 import { Button, Input, Avatar } from "../shared";
+import { uploadProfilePhoto, compressImage } from "../../services/storage";
 
 /**
  * Settings Page - User preferences and account management
@@ -74,32 +75,21 @@ export const Settings: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
-      return;
-    }
-
     setIsUploadingPhoto(true);
     try {
-      // For now, create a local URL for preview
-      // TODO: Implement Firebase Storage upload
-      const imageUrl = URL.createObjectURL(file);
-      console.log("Photo selected:", file.name, "Preview URL:", imageUrl);
-
-      // TODO: Upload to Firebase Storage and update user profile
-      alert(
-        "Photo upload functionality will be implemented with Firebase Storage"
-      );
-    } catch (error) {
+      // Compress the image before upload
+      const compressedFile = await compressImage(file, 400, 0.8);
+      
+      // Upload to Firebase Storage and update user profile
+      await uploadProfilePhoto(compressedFile);
+      
+      // The user profile is automatically updated in the uploadProfilePhoto function
+      // The auth context should reflect the change automatically
+      alert("Profile photo updated successfully!");
+      
+    } catch (error: any) {
       console.error("Error uploading photo:", error);
-      alert("Failed to upload photo. Please try again.");
+      alert(error.message || "Failed to upload photo. Please try again.");
     } finally {
       setIsUploadingPhoto(false);
       // Reset file input
