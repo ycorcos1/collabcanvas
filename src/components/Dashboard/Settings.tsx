@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../Auth/AuthProvider";
 import { useTheme } from "../../hooks/useTheme";
 import { Button, Input, Avatar, Modal } from "../shared";
@@ -28,8 +28,13 @@ export const Settings: React.FC = () => {
   const [photoUploadStatus, setPhotoUploadStatus] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [avatarKey, setAvatarKey] = useState(0); // Force avatar re-render
+  const [currentPhotoURL, setCurrentPhotoURL] = useState<string | undefined>(user?.photoURL);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync local photo state with user state
+  useEffect(() => {
+    setCurrentPhotoURL(user?.photoURL);
+  }, [user?.photoURL]);
 
   const handleProfileSave = async () => {
     setIsSaving(true);
@@ -107,12 +112,11 @@ export const Settings: React.FC = () => {
     
     try {
       // Upload and update user profile (compression is handled inside the function)
-      await uploadProfilePhoto(file);
+      const newPhotoURL = await uploadProfilePhoto(file);
       
+      // Update local state immediately for instant UI update
+      setCurrentPhotoURL(newPhotoURL);
       setPhotoUploadStatus("Photo updated successfully!");
-      
-      // Force avatar re-render by updating key
-      setAvatarKey(prev => prev + 1);
       
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -158,12 +162,18 @@ export const Settings: React.FC = () => {
 
           <div className="profile-card">
             <div className="profile-avatar">
-              <Avatar
-                key={avatarKey}
-                src={user?.photoURL}
-                name={user?.displayName || user?.email || "User"}
-                size="lg"
-              />
+              <div className="avatar-container">
+                <Avatar
+                  src={currentPhotoURL}
+                  name={user?.displayName || user?.email || "User"}
+                  size="lg"
+                />
+                {photoUploadStatus && (
+                  <div className={`upload-status-overlay ${photoUploadStatus.includes('successfully') ? 'success' : 'uploading'}`}>
+                    {photoUploadStatus}
+                  </div>
+                )}
+              </div>
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -172,11 +182,6 @@ export const Settings: React.FC = () => {
               >
                 Change Photo
               </Button>
-              {photoUploadStatus && (
-                <div className={`upload-status ${photoUploadStatus.includes('successfully') ? 'success' : 'uploading'}`}>
-                  {photoUploadStatus}
-                </div>
-              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -477,22 +482,35 @@ style.textContent = `
     margin-top: var(--space-2);
   }
 
-  .upload-status {
-    font-size: var(--text-sm);
-    text-align: center;
-    padding: var(--space-2);
-    border-radius: var(--radius-sm);
-    margin-top: var(--space-2);
+  .avatar-container {
+    position: relative;
+    display: inline-block;
   }
 
-  .upload-status.uploading {
+  .upload-status-overlay {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--text-xs);
+    text-align: center;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .upload-status-overlay.uploading {
     color: var(--text-secondary);
     background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
   }
 
-  .upload-status.success {
+  .upload-status-overlay.success {
     color: var(--status-success);
     background-color: var(--status-success-bg);
+    border: 1px solid var(--status-success);
   }
 
   .theme-selector {
