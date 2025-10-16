@@ -7,7 +7,9 @@ import { useCanvasDimensions } from "../../hooks/useCanvasDimensions";
 import { useCursors } from "../../hooks/useCursors";
 import { useAuth } from "../Auth/AuthProvider";
 import { Shape } from "./Shape";
+import { TextBox } from "./TextBox";
 import { MultipleCursors } from "../Cursors/MultipleCursors";
+import { ContextMenu } from "../ContextMenu/ContextMenu";
 import { Shape as ShapeType } from "../../types/shape";
 import {
   getRelativePointerPosition,
@@ -30,6 +32,10 @@ interface CanvasProps {
   isShapeLockedByOther: (shapeId: string) => boolean;
   getShapeSelector: (shapeId: string) => { name: string; color: string } | null;
   cursorMode?: string;
+  onCut?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  hasClipboardContent?: boolean;
 }
 
 /**
@@ -59,6 +65,10 @@ export const Canvas: React.FC<CanvasProps> = ({
   isShapeLockedByOther,
   getShapeSelector,
   cursorMode = "move",
+  onCut,
+  onCopy,
+  onPaste,
+  hasClipboardContent = false,
 }) => {
   const { user } = useAuth();
   const { canvasState, updateCanvasState, resetCanvas, centerCanvas } =
@@ -101,6 +111,16 @@ export const Canvas: React.FC<CanvasProps> = ({
     type: ShapeType["type"];
     color: string;
   } | null>(null);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    hasSelectedShapes: boolean;
+  } | null>(null);
+
+  // Text editing state
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
 
   // Debug state changes
   useEffect(() => {
@@ -354,6 +374,30 @@ export const Canvas: React.FC<CanvasProps> = ({
         // Always deselect shape when clicking on background
         selectShape(null);
 
+        // Handle text tool - create text immediately on click
+        if (cursorMode === "text" && pos.x >= 0 && pos.x <= canvasDimensions.width && pos.y >= 0 && pos.y <= canvasDimensions.height) {
+          const textShape = {
+            type: "text" as const,
+            x: pos.x,
+            y: pos.y,
+            width: 100,
+            height: 30,
+            color: "#FF0000", // Red default color
+            text: "Text",
+            fontSize: 16,
+            fontFamily: "Arial",
+            createdBy: user.id,
+          };
+          
+          createShape(textShape).then((newShape) => {
+            if (newShape) {
+              setEditingTextId(newShape.id);
+              selectShape(newShape.id);
+            }
+          });
+          return;
+        }
+
         // Only start shape creation if a tool is selected and within canvas bounds
         if (
           selectedTool &&
@@ -380,7 +424,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         // Clicked on a shape or other element
       }
     },
-    [user, selectedTool, selectShape]
+    [user, selectedTool, selectShape, cursorMode, canvasDimensions, createShape]
   );
 
   // Handle mouse move - update preview shape or cursor
@@ -504,6 +548,84 @@ export const Canvas: React.FC<CanvasProps> = ({
     [updateShape]
   );
 
+  // Handle right-click context menu
+  const handleContextMenu = useCallback(
+    (e: KonvaEventObject<PointerEvent>) => {
+      e.evt.preventDefault();
+      
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      // Check if right-clicked on a shape
+      const clickedOnShape = e.target !== stage;
+      const hasSelectedShapes = selectedShapeIds.length > 0;
+
+      setContextMenu({
+        x: pos.x,
+        y: pos.y,
+        hasSelectedShapes: clickedOnShape && hasSelectedShapes,
+      });
+    },
+    [selectedShapeIds]
+  );
+
+  // Close context menu
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  // Context menu actions
+  const handleContextCut = useCallback(() => {
+    if (onCut) onCut();
+    setContextMenu(null);
+  }, [onCut]);
+
+  const handleContextCopy = useCallback(() => {
+    if (onCopy) onCopy();
+    setContextMenu(null);
+  }, [onCopy]);
+
+  const handleContextPaste = useCallback(() => {
+    if (onPaste) onPaste();
+    setContextMenu(null);
+  }, [onPaste]);
+
+  // Text handling functions
+  const handleTextChange = useCallback(
+    (textId: string, newText: string) => {
+      updateShape(textId, { text: newText });
+    },
+    [updateShape]
+  );
+
+  const handleTextEditingChange = useCallback(
+    (textId: string, isEditing: boolean) => {
+      if (isEditing) {
+        setEditingTextId(textId);
+      } else {
+        setEditingTextId(null);
+      }
+    },
+    []
+  );
+
+  const handleTextDragEnd = useCallback(
+    (textId: string, x: number, y: number) => {
+      updateShape(textId, { x, y });
+    },
+    [updateShape]
+  );
+
+  const handleTextResize = useCallback(
+    (textId: string, x: number, y: number, width: number, height: number) => {
+      updateShape(textId, { x, y, width, height });
+    },
+    [updateShape]
+  );
+
   return (
     <div className={`canvas-container ${selectedTool ? "creating-shape" : `cursor-${cursorMode}`}`}>
       {/* Don't render canvas content if user is not authenticated */}
@@ -550,6 +672,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onTouchEnd={handleMouseUp}
+        onContextMenu={handleContextMenu}
         // Performance optimizations for smooth 60 FPS
         perfectDrawEnabled={false}
         imageSmoothingEnabled={true}
@@ -599,12 +722,36 @@ export const Canvas: React.FC<CanvasProps> = ({
           {shapes.map((shape) => {
             const isLockedByOther = isShapeLockedByOther(shape.id);
             const selectedByOther = getShapeSelector(shape.id);
+            const isSelected = selectedShapeIds.includes(shape.id);
 
+            // Render text shapes differently
+            if (shape.type === "text") {
+              return (
+                <TextBox
+                  key={shape.id}
+                  x={shape.x}
+                  y={shape.y}
+                  text={shape.text || "Text"}
+                  fontSize={shape.fontSize || 16}
+                  fontFamily={shape.fontFamily || "Arial"}
+                  fill={shape.color}
+                  isSelected={isSelected}
+                  isEditing={editingTextId === shape.id}
+                  onTextChange={(newText) => handleTextChange(shape.id, newText)}
+                  onEditingChange={(isEditing) => handleTextEditingChange(shape.id, isEditing)}
+                  onSelect={() => handleShapeSelect(shape.id)}
+                  onDragEnd={(x, y) => handleTextDragEnd(shape.id, x, y)}
+                  onResize={(x, y, width, height) => handleTextResize(shape.id, x, y, width, height)}
+                />
+              );
+            }
+
+            // Render regular shapes
             return (
               <Shape
                 key={shape.id}
                 shape={shape}
-                isSelected={selectedShapeIds.includes(shape.id)}
+                isSelected={isSelected}
                 selectedTool={selectedTool}
                 onSelect={handleShapeSelect}
                 onDragEnd={handleShapeDragEnd}
@@ -648,6 +795,21 @@ export const Canvas: React.FC<CanvasProps> = ({
       {/* Multiplayer cursors overlay */}
       <MultipleCursors canvasState={canvasState} stageRef={stageRef} />
         </>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={handleCloseContextMenu}
+          onCut={handleContextCut}
+          onCopy={handleContextCopy}
+          onPaste={handleContextPaste}
+          canCut={contextMenu.hasSelectedShapes}
+          canCopy={contextMenu.hasSelectedShapes}
+          canPaste={!contextMenu.hasSelectedShapes && hasClipboardContent}
+        />
       )}
     </div>
   );

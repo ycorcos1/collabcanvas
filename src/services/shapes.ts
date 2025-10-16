@@ -32,6 +32,10 @@ const firestoreToShape = (docData: DocumentData): Shape => ({
   createdBy: docData.createdBy,
   createdAt: docData.createdAt?.toMillis?.() || docData.createdAt,
   updatedAt: docData.updatedAt?.toMillis?.() || docData.updatedAt,
+  // Text properties
+  text: docData.text,
+  fontSize: docData.fontSize,
+  fontFamily: docData.fontFamily,
   // Selection fields
   selectedBy: docData.selectedBy,
   selectedByName: docData.selectedByName,
@@ -40,18 +44,27 @@ const firestoreToShape = (docData: DocumentData): Shape => ({
 });
 
 // Convert Shape to Firestore document
-const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => ({
-  type: shape.type,
-  x: shape.x,
-  y: shape.y,
-  width: shape.width,
-  height: shape.height,
-  color: shape.color,
-  zIndex: shape.zIndex,
-  createdBy: shape.createdBy,
-  createdAt: Timestamp.fromMillis(shape.createdAt),
-  updatedAt: Timestamp.fromMillis(shape.updatedAt),
-});
+const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => {
+  const data: DocumentData = {
+    type: shape.type,
+    x: shape.x,
+    y: shape.y,
+    width: shape.width,
+    height: shape.height,
+    color: shape.color,
+    zIndex: shape.zIndex,
+    createdBy: shape.createdBy,
+    createdAt: Timestamp.fromMillis(shape.createdAt),
+    updatedAt: Timestamp.fromMillis(shape.updatedAt),
+  };
+  
+  // Add text properties if they exist
+  if (shape.text !== undefined) data.text = shape.text;
+  if (shape.fontSize !== undefined) data.fontSize = shape.fontSize;
+  if (shape.fontFamily !== undefined) data.fontFamily = shape.fontFamily;
+  
+  return data;
+};
 
 // Get shapes collection reference
 const getShapesCollection = () => {

@@ -237,6 +237,17 @@ const CanvasPage: React.FC = () => {
     }
   }, [shapes, selectedShapeIds, createShape]);
 
+  // Cut selected shapes (copy + delete)
+  const handleCut = useCallback(async () => {
+    if (selectedShapeIds.length === 0) return;
+
+    // First copy the selected shapes
+    handleCopy();
+    
+    // Then delete them
+    await deleteSelectedShapes();
+  }, [selectedShapeIds, handleCopy, deleteSelectedShapes]);
+
   // Move selected shapes
   const handleMoveShapes = useCallback(
     async (dx: number, dy: number) => {
@@ -387,6 +398,10 @@ const CanvasPage: React.FC = () => {
             isShapeLockedByOther={isShapeLockedByOther}
             getShapeSelector={getShapeSelector}
             cursorMode={cursorMode}
+            onCut={handleCut}
+            onCopy={handleCopy}
+            onPaste={handlePaste}
+            hasClipboardContent={clipboard.length > 0}
           />
         </main>
 

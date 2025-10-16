@@ -12,7 +12,7 @@
  */
 export interface Shape {
   id: string; // Unique identifier (Firebase document ID)
-  type: "rectangle" | "circle"; // Shape geometry type
+  type: "rectangle" | "circle" | "text"; // Shape geometry type
   x: number; // X coordinate (top-left for rectangles, center for circles)
   y: number; // Y coordinate (top-left for rectangles, center for circles)
   width: number; // Width in pixels
@@ -22,6 +22,11 @@ export interface Shape {
   createdBy: string; // User ID who created the shape
   createdAt: number; // Creation timestamp (Unix time)
   updatedAt: number; // Last modification timestamp
+
+  // Text-specific properties
+  text?: string; // Text content (for text shapes)
+  fontSize?: number; // Font size (for text shapes)
+  fontFamily?: string; // Font family (for text shapes)
 
   // Collaborative selection state - tracks which user has selected this shape
   selectedBy?: string; // User ID of current selector (for shape locking)
@@ -42,6 +47,9 @@ export interface ShapeUpdate {
   height?: number;
   color?: string;
   zIndex?: number;
+  text?: string; // New text content (for text shapes)
+  fontSize?: number; // New font size (for text shapes)
+  fontFamily?: string; // New font family (for text shapes)
   updatedAt: number;
 }
 
