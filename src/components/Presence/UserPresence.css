@@ -108,6 +108,13 @@
   flex-shrink: 0;
 }
 
+/* Avatar component styling for user presence */
+.user-avatar-component {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
 .user-name {
   font-size: 0.9rem;
   color: #333;
@@ -132,9 +139,34 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Right Panel Avatar Component Styling */
+.user-presence.right-panel-variant .user-avatar-component {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Removed avatar hover scaling effect */
 
 .user-presence.right-panel-variant .user-avatar::after {
+  content: '';
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 2px solid var(--bg-elevated);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Online indicator for Avatar component */
+.user-presence.right-panel-variant .user-avatar-component::after {
   content: '';
   position: absolute;
   bottom: 0px;

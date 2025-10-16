@@ -1,5 +1,6 @@
 import React from "react";
 import { usePresence } from "../../hooks/usePresence";
+import { Avatar } from "../shared/Avatar";
 import "./UserPresence.css";
 
 interface UserPresenceProps {
@@ -19,12 +20,13 @@ export const UserPresence: React.FC<UserPresenceProps> = ({ variant = "default" 
         {/* Current user */}
         {currentUser && (
           <div className="user-item current-user">
-            <div
-              className="user-avatar"
-              style={{ backgroundColor: currentUser.color }}
-            >
-              {currentUser.displayName.charAt(0).toUpperCase()}
-            </div>
+            <Avatar
+              src={currentUser.photoURL}
+              name={currentUser.displayName}
+              size="sm"
+              color={currentUser.color}
+              className="user-avatar-component"
+            />
             <div className="user-name">
               <span>{currentUser.displayName}</span>
               {variant === "right-panel" && (
@@ -38,12 +40,13 @@ export const UserPresence: React.FC<UserPresenceProps> = ({ variant = "default" 
         {/* Other online users */}
         {onlineUsers.map((user) => (
           <div key={user.userId} className="user-item">
-            <div
-              className="user-avatar"
-              style={{ backgroundColor: user.userColor }}
-            >
-              {user.userName.charAt(0).toUpperCase()}
-            </div>
+            <Avatar
+              src={user.photoURL}
+              name={user.userName}
+              size="sm"
+              color={user.userColor}
+              className="user-avatar-component"
+            />
             <div className="user-name">
               <span>{user.userName}</span>
               {variant === "right-panel" && (

@@ -15,6 +15,7 @@ export interface PresenceData {
   userId: string;
   userName: string;
   userColor: string;
+  photoURL?: string;
   isOnline: boolean;
   lastSeen: number;
 }

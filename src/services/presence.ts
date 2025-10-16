@@ -8,7 +8,8 @@ const CANVAS_ID = "default"; // For MVP, we'll use a single canvas
 export const setUserOnline = async (
   userId: string,
   userName: string,
-  userColor: string
+  userColor: string,
+  photoURL?: string
 ): Promise<void> => {
   try {
     const userPresenceRef = ref(database, `presence/${CANVAS_ID}/${userId}`);
@@ -17,6 +18,7 @@ export const setUserOnline = async (
       userId,
       userName,
       userColor,
+      photoURL,
       isOnline: true,
       lastSeen: Date.now(),
     };

@@ -15,10 +15,11 @@ export const usePresence = () => {
     const currentUserId = user.id; // Capture user properties to avoid null access during cleanup
     const currentUserName = user.displayName;
     const currentUserColor = user.color;
+    const currentUserPhotoURL = user.photoURL;
 
     // Set current user as online with error handling
     presenceService
-      .setUserOnline(currentUserId, currentUserName, currentUserColor)
+      .setUserOnline(currentUserId, currentUserName, currentUserColor, currentUserPhotoURL)
       .then(() => {
         // User successfully set as online
       })
@@ -71,6 +72,18 @@ export const usePresence = () => {
       }
     };
   }, [user]);
+
+  // Update presence when user profile changes (e.g., profile picture)
+  useEffect(() => {
+    if (!user) return;
+
+    // Update presence data when user profile changes
+    presenceService
+      .setUserOnline(user.id, user.displayName, user.color, user.photoURL)
+      .catch((error) => {
+        console.error("Failed to update user presence:", error);
+      });
+  }, [user?.photoURL, user?.displayName]); // Only trigger when these specific properties change
 
   const getUserCount = useCallback(() => {
     // Include current user in count
