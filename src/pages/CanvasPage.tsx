@@ -608,10 +608,11 @@ const CanvasPage: React.FC = () => {
             setIsBackgroundPickerOpen(!isBackgroundPickerOpen)
           }
           onCloseBackgroundPicker={() => setIsBackgroundPickerOpen(false)}
-          hasSelectedShapes={selectedShapeIds.length > 0}
-          selectedShapeIds={selectedShapeIds}
+          selectedShapes={shapes.filter(shape => selectedShapeIds.includes(shape.id))}
+          onUpdateShape={updateShape}
           onExportPNG={handleExportPNG}
           onExportSVG={handleExportSVG}
+          onExportPDF={handleExportPDF}
         />
       </div>
 
