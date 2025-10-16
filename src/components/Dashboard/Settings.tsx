@@ -192,9 +192,6 @@ export const Settings: React.FC = () => {
         confirmPassword: "",
       });
       setShowPasswordForm(false);
-      
-      // Show success (you could add a toast here)
-      alert("Password updated successfully!");
 
     } catch (error: any) {
       console.error("Error changing password:", error);
