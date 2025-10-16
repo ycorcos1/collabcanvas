@@ -49,6 +49,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: "Recent",
     },
     {
+      path: "/dashboard/shared",
+      label: "Shared",
+    },
+    {
       path: "/dashboard/all",
       label: "All Projects",
     },

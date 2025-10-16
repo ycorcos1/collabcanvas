@@ -10,11 +10,15 @@ interface ProjectGridProps {
   /** Empty state content */
   emptyState?: React.ReactNode;
   /** Function called when project should be opened */
-  onOpenProject: (projectId: string) => void;
+  onOpenProject?: (projectId: string) => void;
   /** Function called when project should be renamed */
-  onRenameProject: (projectId: string, newName: string) => void;
+  onRenameProject?: (projectId: string, newName: string) => void;
   /** Function called when project should be moved to trash */
-  onDeleteProject: (projectId: string) => void;
+  onDeleteProject?: (projectId: string) => void;
+  /** Show collaboration indicators for multi-user projects */
+  showCollaborationIndicators?: boolean;
+  /** Show host/collaborator indicators */
+  showHostIndicators?: boolean;
 }
 
 /**
@@ -33,6 +37,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
   onOpenProject,
   onRenameProject,
   onDeleteProject,
+  showCollaborationIndicators = false,
+  showHostIndicators = false,
 }) => {
   // Show loading skeleton
   if (isLoading) {
@@ -76,6 +82,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
           onOpen={onOpenProject}
           onRename={onRenameProject}
           onDelete={onDeleteProject}
+          showCollaborationIndicator={showCollaborationIndicators}
+          showHostIndicator={showHostIndicators}
         />
       ))}
     </div>

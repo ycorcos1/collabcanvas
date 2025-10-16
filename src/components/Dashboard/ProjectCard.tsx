@@ -7,11 +7,15 @@ interface ProjectCardProps {
   /** Project data to display */
   project: Project;
   /** Function called when project should be opened */
-  onOpen: (projectId: string) => void;
+  onOpen?: (projectId: string) => void;
   /** Function called when project should be renamed */
-  onRename: (projectId: string, newName: string) => void;
+  onRename?: (projectId: string, newName: string) => void;
   /** Function called when project should be moved to trash */
-  onDelete: (projectId: string) => void;
+  onDelete?: (projectId: string) => void;
+  /** Show collaboration indicator for multi-user projects */
+  showCollaborationIndicator?: boolean;
+  /** Show host/collaborator indicator */
+  showHostIndicator?: boolean;
 }
 
 /**
@@ -29,18 +33,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   onOpen,
   onRename,
   onDelete,
+  showCollaborationIndicator = false,
+  showHostIndicator = false,
 }) => {
   const [showActions, setShowActions] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(project.name);
 
   const handleCardClick = () => {
-    onOpen(project.id);
+    if (onOpen) {
+      onOpen(project.id);
+    }
   };
 
   const handleRenameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newName.trim() && newName.trim() !== project.name) {
+    if (newName.trim() && newName.trim() !== project.name && onRename) {
       onRename(project.id, newName.trim());
     }
     setIsRenaming(false);
@@ -58,7 +66,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         `Are you sure you want to move "${project.name}" to trash?`
       )
     ) {
-      onDelete(project.id);
+      if (onDelete) {
+        onDelete(project.id);
+      }
     }
     setShowActions(false);
   };
@@ -98,6 +108,27 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           />
         ) : null}
         {generateFallbackThumbnail()}
+        
+        {/* Collaboration Indicator */}
+        {showCollaborationIndicator && (
+          <div className="collaboration-indicator">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+        )}
+        
+        {/* Host Indicator */}
+        {showHostIndicator && (project as any).isHost && (
+          <div className="host-indicator">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+            </svg>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -335,6 +366,35 @@ style.textContent = `
   .project-rename-input:focus {
     outline: none;
     border-color: var(--interactive-primary);
+  }
+
+  /* Collaboration and Host Indicators */
+  .collaboration-indicator,
+  .host-indicator {
+    position: absolute;
+    top: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 4px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .collaboration-indicator {
+    right: 8px;
+  }
+
+  .host-indicator {
+    right: 32px;
+    background: rgba(255, 193, 7, 0.9);
+    color: #000;
+  }
+
+  .collaboration-indicator svg,
+  .host-indicator svg {
+    display: block;
   }
 `;
 

@@ -1,0 +1,226 @@
+/* Collaboration Requests Component */
+.collaboration-requests {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+  overflow: hidden;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.collaboration-requests.minimized {
+  margin-bottom: var(--space-4);
+}
+
+/* Header */
+.requests-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.requests-header:hover {
+  background: var(--bg-tertiary);
+}
+
+.requests-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.requests-title h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.request-count {
+  background: var(--interactive-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  min-width: 20px;
+  text-align: center;
+}
+
+.minimize-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.minimize-button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.minimize-button svg {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.minimize-button svg.rotated {
+  transform: rotate(180deg);
+}
+
+/* Content */
+.requests-content {
+  padding: var(--space-4);
+}
+
+.no-requests {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--text-secondary);
+}
+
+.no-requests p {
+  margin: 0;
+  font-style: italic;
+}
+
+/* Requests List */
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.request-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.request-item:hover {
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.request-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.request-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.requester-name {
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.request-time {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.request-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.requester-email {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.project-name {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.request-message {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--interactive-primary);
+}
+
+.request-message p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Actions */
+.request-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.request-button {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  border: 1px solid transparent;
+}
+
+.request-button.deny {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.request-button.deny:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.request-button.accept {
+  background: var(--interactive-primary);
+  color: white;
+}
+
+.request-button.accept:hover {
+  background: #2563eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .request-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .request-actions {
+    justify-content: flex-end;
+    margin-top: var(--space-2);
+  }
+
+  .request-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+}

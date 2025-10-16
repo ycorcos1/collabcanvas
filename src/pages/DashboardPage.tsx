@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "../components/Dashboard/DashboardLayout";
 import { RecentProjects } from "../components/Dashboard/RecentProjects";
+import { SharedProjects } from "../components/Dashboard/SharedProjects";
 import { AllProjects } from "../components/Dashboard/AllProjects";
 import { TrashProjects } from "../components/Dashboard/TrashProjects";
 import { Settings } from "../components/Dashboard/Settings";
@@ -25,6 +26,9 @@ const DashboardPage: React.FC = () => {
 
         {/* Recent projects (new implementation) */}
         <Route path="/recent" element={<RecentProjects />} />
+
+        {/* Shared projects with collaboration requests */}
+        <Route path="/shared" element={<SharedProjects />} />
 
         {/* All projects with pagination */}
         <Route path="/all" element={<AllProjects />} />

@@ -88,32 +88,18 @@ const CanvasPage: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedState, setLastSavedState] = useState<string>("");
   const [showExitPrompt, setShowExitPrompt] = useState(false);
-  // Removed sessionStartState as it's not needed
 
   // Removed layers panel state - now integrated in left sidebar
 
-  // Canvas background state with session persistence (temporary)
+  // Canvas background state with persistence
   const [canvasBackground, setCanvasBackground] = useState(() => {
-    // Try session storage first, then saved project, then default
-    const sessionBg = sessionStorage.getItem(`canvas-background-${slug}`);
-    if (sessionBg) return sessionBg;
-    
-    const savedProject = localStorage.getItem(`project-${slug}`);
-    if (savedProject) {
-      try {
-        const projectData = JSON.parse(savedProject);
-        return projectData.canvasBackground || "#ffffff";
-      } catch {
-        return "#ffffff";
-      }
-    }
-    return "#ffffff";
+    return sessionStorage.getItem("canvas-background-color") || "#ffffff";
   });
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
-  // Cursor mode state with session persistence (temporary)
+  // Cursor mode state with persistence
   const [cursorMode, setCursorMode] = useState(() => {
-    return sessionStorage.getItem(`canvas-cursor-mode-${slug}`) || "hand";
+    return sessionStorage.getItem("canvas-cursor-mode") || "move";
   });
 
   // Project naming state
@@ -131,25 +117,25 @@ const CanvasPage: React.FC = () => {
 
   // Persist cursor mode to session storage
   useEffect(() => {
-    sessionStorage.setItem(`canvas-cursor-mode-${slug}`, cursorMode);
-  }, [cursorMode, slug]);
+    sessionStorage.setItem("canvas-cursor-mode", cursorMode);
+  }, [cursorMode]);
 
-  // Persist canvas background to session storage (temporary)
+  // Persist canvas background to session storage
   useEffect(() => {
-    sessionStorage.setItem(`canvas-background-${slug}`, canvasBackground);
-  }, [canvasBackground, slug]);
+    sessionStorage.setItem("canvas-background-color", canvasBackground);
+  }, [canvasBackground]);
 
-  // Persist selected shapes to session storage (temporary)
+  // Persist selected shapes to session storage
   useEffect(() => {
     sessionStorage.setItem(
-      `canvas-selected-shapes-${slug}`,
+      "canvas-selected-shapes",
       JSON.stringify(selectedShapeIds)
     );
-  }, [selectedShapeIds, slug]);
+  }, [selectedShapeIds]);
 
   // Restore selected shapes on component mount
   useEffect(() => {
-    const savedSelection = sessionStorage.getItem(`canvas-selected-shapes-${slug}`);
+    const savedSelection = sessionStorage.getItem("canvas-selected-shapes");
     if (savedSelection && shapes.length > 0) {
       try {
         const parsedSelection = JSON.parse(savedSelection);
@@ -167,7 +153,7 @@ const CanvasPage: React.FC = () => {
         console.error("Failed to restore shape selection:", error);
       }
     }
-  }, [shapes, selectShape, slug]); // Only run when shapes are loaded
+  }, [shapes, selectShape]); // Only run when shapes are loaded
 
   // Track unsaved changes by comparing current state with last saved state
   useEffect(() => {
@@ -191,37 +177,23 @@ const CanvasPage: React.FC = () => {
     }
   }, [shapes, canvasBackground, projectName, lastSavedState]);
 
-  // Load saved project state on mount and initialize save system
+  // Load saved project state on mount
   useEffect(() => {
     const savedProject = localStorage.getItem(`project-${slug}`);
     if (savedProject) {
       try {
         const projectData = JSON.parse(savedProject);
-        const savedState = JSON.stringify({
-          shapes: projectData.shapes || [],
-          canvasBackground: projectData.canvasBackground || "#ffffff",
-          projectName: projectData.projectName || projectName,
-        });
-        setLastSavedState(savedState);
+        setLastSavedState(
+          JSON.stringify({
+            shapes: projectData.shapes || [],
+            canvasBackground: projectData.canvasBackground || "#ffffff",
+            projectName: projectData.projectName || projectName,
+          })
+        );
         setHasUnsavedChanges(false);
       } catch (error) {
         console.error("Failed to load saved project:", error);
-        // Initialize with current state if no saved project
-        const currentState = JSON.stringify({
-          shapes: [],
-          canvasBackground: "#ffffff",
-          projectName: projectName,
-        });
-        setLastSavedState(currentState);
       }
-    } else {
-      // No saved project, initialize with current state
-      const currentState = JSON.stringify({
-        shapes: [],
-        canvasBackground: "#ffffff",
-        projectName: projectName,
-      });
-      setLastSavedState(currentState);
     }
   }, [slug, projectName]);
 
@@ -238,16 +210,6 @@ const CanvasPage: React.FC = () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
-
-  // Removed unused restoreFromSavedState function
-
-  // Clear session storage when exiting without saving
-  const clearSessionStorage = useCallback(() => {
-    sessionStorage.removeItem(`canvas-background-${slug}`);
-    sessionStorage.removeItem(`canvas-cursor-mode-${slug}`);
-    sessionStorage.removeItem(`canvas-selected-shapes-${slug}`);
-    // Keep toolbar state as it should persist until logout
-  }, [slug]);
 
   // Validate slug parameter
   if (!slug) {
@@ -369,11 +331,10 @@ const CanvasPage: React.FC = () => {
 
   // Handle exit with unsaved changes
   const handleExitWithoutSaving = useCallback(() => {
-    clearSessionStorage(); // Clear temporary changes
     setHasUnsavedChanges(false);
     setShowExitPrompt(false);
     navigate("/dashboard/recent");
-  }, [navigate, clearSessionStorage]);
+  }, [navigate]);
 
   // Handle save and exit
   const handleSaveAndExit = useCallback(() => {
@@ -381,8 +342,6 @@ const CanvasPage: React.FC = () => {
     setShowExitPrompt(false);
     navigate("/dashboard/recent");
   }, [handleSaveProject, navigate]);
-
-  // Removed duplicate clearSessionStorage function
 
   // History operations
   const handleUndo = useCallback(() => {
