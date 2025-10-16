@@ -340,91 +340,6 @@ export const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* Password Section */}
-        <div className="settings-section">
-          <div className="section-header">
-            <h2>Password</h2>
-            <p>Update your account password</p>
-          </div>
-
-          <div className="password-card">
-            {!showPasswordForm ? (
-              <div className="password-actions">
-                <Button
-                  variant="secondary"
-                  onClick={() => setShowPasswordForm(true)}
-                >
-                  Change Password
-                </Button>
-              </div>
-            ) : (
-              <div className="password-form">
-                <Input
-                  label="Current Password"
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => handlePasswordInputChange("currentPassword", e.target.value)}
-                  placeholder="Enter your current password"
-                  fullWidth
-                  error={passwordError && passwordError.includes("Current password") ? passwordError : undefined}
-                />
-
-                <Input
-                  label="New Password"
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => handlePasswordInputChange("newPassword", e.target.value)}
-                  placeholder="Enter your new password (min 6 characters)"
-                  fullWidth
-                  error={passwordError && passwordError.includes("New password") ? passwordError : undefined}
-                />
-
-                <Input
-                  label="Confirm New Password"
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => handlePasswordInputChange("confirmPassword", e.target.value)}
-                  placeholder="Confirm your new password"
-                  fullWidth
-                  error={passwordError && passwordError.includes("do not match") ? passwordError : undefined}
-                />
-
-                {passwordError && !passwordError.includes("Current password") && !passwordError.includes("New password") && !passwordError.includes("do not match") && (
-                  <div className="password-error">
-                    {passwordError}
-                  </div>
-                )}
-
-                <div className="password-actions">
-                  <Button
-                    variant="primary"
-                    onClick={handlePasswordChange}
-                    loading={isChangingPassword}
-                    disabled={isChangingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
-                  >
-                    Update Password
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setShowPasswordForm(false);
-                      setPasswordData({
-                        currentPassword: "",
-                        newPassword: "",
-                        confirmPassword: "",
-                      });
-                      setPasswordError("");
-                    }}
-                    disabled={isChangingPassword}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Appearance Section */}
         <div className="settings-section">
           <div className="section-header">
@@ -494,6 +409,90 @@ export const Settings: React.FC = () => {
 
           <div className="account-card">
             <div className="account-actions">
+              <div className="account-action">
+                <div className="action-info">
+                  <h3>Change Password</h3>
+                  <p>Update your account password</p>
+                </div>
+                {!showPasswordForm ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowPasswordForm(true)}
+                  >
+                    Change Password
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setShowPasswordForm(false);
+                      setPasswordData({
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: "",
+                      });
+                      setPasswordError("");
+                    }}
+                    disabled={isChangingPassword}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
+
+              {showPasswordForm && (
+                <div className="password-form-section">
+                  <div className="password-form">
+                    <Input
+                      label="Current Password"
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => handlePasswordInputChange("currentPassword", e.target.value)}
+                      placeholder="Enter your current password"
+                      fullWidth
+                      error={passwordError && passwordError.includes("Current password") ? passwordError : undefined}
+                    />
+
+                    <Input
+                      label="New Password"
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => handlePasswordInputChange("newPassword", e.target.value)}
+                      placeholder="Enter your new password (min 6 characters)"
+                      fullWidth
+                      error={passwordError && passwordError.includes("New password") ? passwordError : undefined}
+                    />
+
+                    <Input
+                      label="Confirm New Password"
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => handlePasswordInputChange("confirmPassword", e.target.value)}
+                      placeholder="Confirm your new password"
+                      fullWidth
+                      error={passwordError && passwordError.includes("do not match") ? passwordError : undefined}
+                    />
+
+                    {passwordError && !passwordError.includes("Current password") && !passwordError.includes("New password") && !passwordError.includes("do not match") && (
+                      <div className="password-error">
+                        {passwordError}
+                      </div>
+                    )}
+
+                    <div className="password-form-actions">
+                      <Button
+                        variant="primary"
+                        onClick={handlePasswordChange}
+                        loading={isChangingPassword}
+                        disabled={isChangingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                      >
+                        Update Password
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="account-action">
                 <div className="action-info">
                   <h3>Sign Out</h3>
@@ -643,24 +642,28 @@ style.textContent = `
     margin-top: var(--space-2);
   }
 
-  .password-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
+  .password-form-section {
+    width: 100%;
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-primary);
   }
 
   .password-form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-3);
     max-width: 400px;
   }
 
-  .password-actions {
+  .password-form .form-group {
+    gap: var(--space-1);
+  }
+
+  .password-form-actions {
     display: flex;
     gap: var(--space-3);
-    margin-top: var(--space-2);
+    margin-top: var(--space-5);
   }
 
   .password-error {
