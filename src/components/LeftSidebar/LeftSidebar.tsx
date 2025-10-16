@@ -23,9 +23,14 @@ interface LeftSidebarProps {
   onPaste?: () => void;
   onDeleteSelected?: () => void;
   onRenameShape?: (id: string, newName: string) => void;
+  onSave?: () => void;
+  onNewProject?: () => void;
+  onExportPNG?: () => void;
+  onExportSVG?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
   hasClipboardContent?: boolean;
+  hasUnsavedChanges?: boolean;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -38,9 +43,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onPaste,
   onDeleteSelected,
   onRenameShape,
+  onSave,
+  onNewProject,
+  onExportPNG,
+  onExportSVG,
   canUndo = false,
   canRedo = false,
   hasClipboardContent = false,
+  hasUnsavedChanges = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"pages" | "objects">(() => {
     const saved = localStorage.getItem("sidebar-active-tab");
@@ -136,6 +146,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey) {
         switch (event.key) {
+          case 's':
+            event.preventDefault();
+            if (onSave) onSave();
+            break;
+          case 'n':
+            event.preventDefault();
+            if (onNewProject) onNewProject();
+            break;
           case 'c':
             event.preventDefault();
             if (onCopy) onCopy();
@@ -163,7 +181,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedShapeIds, onCopy, onPaste, onUndo, onRedo, onDeleteSelected]);
+  }, [selectedShapeIds, onCopy, onPaste, onUndo, onRedo, onDeleteSelected, onSave, onNewProject]);
 
   const handleObjectClick = (objectId: string, event: React.MouseEvent) => {
     const isShiftPressed = event.shiftKey;
@@ -408,13 +426,16 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           
           {showFileMenu && (
             <div className="file-dropdown">
-              <button onClick={() => { /* Save functionality */ setShowFileMenu(false); }}>
+              <button 
+                onClick={() => { if (onSave) onSave(); setShowFileMenu(false); }}
+                className={hasUnsavedChanges ? "unsaved-indicator" : ""}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                   <polyline points="17,21 17,13 7,13 7,21"/>
                   <polyline points="7,3 7,8 15,8"/>
                 </svg>
-                Save
+                Save{hasUnsavedChanges ? " *" : ""}
                 <span className="shortcut">⌘S</span>
               </button>
               <button 
@@ -463,7 +484,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 <span className="shortcut">⌘⇧Z</span>
               </button>
               <div className="menu-divider" />
-              <button onClick={() => { /* New project functionality */ setShowFileMenu(false); }}>
+              <button onClick={() => { if (onNewProject) onNewProject(); setShowFileMenu(false); }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
                   <polyline points="14,2 14,8 20,8"/>
@@ -472,6 +493,23 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 </svg>
                 New Project
                 <span className="shortcut">⌘N</span>
+              </button>
+              <div className="menu-divider" />
+              <button onClick={() => { if (onExportPNG) onExportPNG(); setShowFileMenu(false); }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7,10 12,15 17,10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export PNG
+              </button>
+              <button onClick={() => { if (onExportSVG) onExportSVG(); setShowFileMenu(false); }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7,10 12,15 17,10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export SVG
               </button>
             </div>
           )}

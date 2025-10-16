@@ -13,7 +13,6 @@ import { exportCanvas } from "../utils/exportUtils";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
 import { ModernToolbar } from "../components/ModernToolbar/ModernToolbar";
-import { RightPanel } from "../components/RightPanel/RightPanel";
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
 import "./CanvasPage.css";
@@ -84,13 +83,17 @@ const CanvasPage: React.FC = () => {
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
 
+  // Save system state
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedState, setLastSavedState] = useState<string>("");
+  const [showExitPrompt, setShowExitPrompt] = useState(false);
+
   // Removed layers panel state - now integrated in left sidebar
 
   // Canvas background state with persistence
   const [canvasBackground, setCanvasBackground] = useState(() => {
     return sessionStorage.getItem("canvas-background-color") || "#ffffff";
   });
-  const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
   // Cursor mode state with persistence
   const [cursorMode, setCursorMode] = useState(() => {
@@ -149,6 +152,62 @@ const CanvasPage: React.FC = () => {
       }
     }
   }, [shapes, selectShape]); // Only run when shapes are loaded
+
+  // Track unsaved changes by comparing current state with last saved state
+  useEffect(() => {
+    const currentState = JSON.stringify({
+      shapes: shapes.map((s) => ({
+        ...s,
+        selectedBy: undefined,
+        selectedByName: undefined,
+        selectedByColor: undefined,
+        selectedAt: undefined,
+      })),
+      canvasBackground,
+      projectName,
+    });
+
+    if (lastSavedState && currentState !== lastSavedState) {
+      setHasUnsavedChanges(true);
+    } else if (!lastSavedState) {
+      // Initialize last saved state on first load
+      setLastSavedState(currentState);
+    }
+  }, [shapes, canvasBackground, projectName, lastSavedState]);
+
+  // Load saved project state on mount
+  useEffect(() => {
+    const savedProject = localStorage.getItem(`project-${slug}`);
+    if (savedProject) {
+      try {
+        const projectData = JSON.parse(savedProject);
+        setLastSavedState(
+          JSON.stringify({
+            shapes: projectData.shapes || [],
+            canvasBackground: projectData.canvasBackground || "#ffffff",
+            projectName: projectData.projectName || projectName,
+          })
+        );
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error("Failed to load saved project:", error);
+      }
+    }
+  }, [slug, projectName]);
+
+  // Handle browser beforeunload event
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Validate slug parameter
   if (!slug) {
@@ -224,6 +283,63 @@ const CanvasPage: React.FC = () => {
     // Could be extended to save to a separate shapes metadata collection if needed
     console.log(`Renaming shape ${id} to ${newName}`);
   };
+
+  // Save project functionality
+  const handleSaveProject = useCallback(() => {
+    try {
+      const projectData = {
+        shapes: shapes.map((s) => ({
+          ...s,
+          selectedBy: undefined,
+          selectedByName: undefined,
+          selectedByColor: undefined,
+          selectedAt: undefined,
+        })),
+        canvasBackground,
+        projectName,
+        lastSaved: Date.now(),
+      };
+
+      localStorage.setItem(`project-${slug}`, JSON.stringify(projectData));
+
+      const currentState = JSON.stringify({
+        shapes: projectData.shapes,
+        canvasBackground,
+        projectName,
+      });
+
+      setLastSavedState(currentState);
+      setHasUnsavedChanges(false);
+
+      // Show brief save confirmation (optional)
+      console.log("Project saved successfully");
+    } catch (error) {
+      console.error("Failed to save project:", error);
+    }
+  }, [shapes, canvasBackground, projectName, slug]);
+
+  // Handle new project
+  const handleNewProject = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowExitPrompt(true);
+      return;
+    }
+    navigate("/dashboard/recent");
+  }, [hasUnsavedChanges, navigate]);
+
+  // Handle exit with unsaved changes
+  const handleExitWithoutSaving = useCallback(() => {
+    setHasUnsavedChanges(false);
+    setShowExitPrompt(false);
+    navigate("/dashboard/recent");
+  }, [navigate]);
+
+  // Handle save and exit
+  const handleSaveAndExit = useCallback(() => {
+    handleSaveProject();
+    setShowExitPrompt(false);
+    navigate("/dashboard/recent");
+  }, [handleSaveProject, navigate]);
 
   // History operations
   const handleUndo = useCallback(() => {
@@ -434,9 +550,14 @@ const CanvasPage: React.FC = () => {
           onPaste={handlePaste}
           onDeleteSelected={deleteSelectedShapes}
           onRenameShape={handleRenameShape}
+          onSave={handleSaveProject}
+          onNewProject={handleNewProject}
+          onExportPNG={handleExportPNG}
+          onExportSVG={handleExportSVG}
           canUndo={canUndo}
           canRedo={canRedo}
           hasClipboardContent={clipboard.length > 0}
+          hasUnsavedChanges={hasUnsavedChanges}
         />
 
         {/* Canvas Area */}
@@ -464,20 +585,24 @@ const CanvasPage: React.FC = () => {
           />
         </main>
 
-        {/* Right Panel */}
-        <RightPanel
-          canvasBackground={canvasBackground}
-          onBackgroundChange={setCanvasBackground}
-          isBackgroundPickerOpen={isBackgroundPickerOpen}
-          onToggleBackgroundPicker={() =>
-            setIsBackgroundPickerOpen(!isBackgroundPickerOpen)
-          }
-          onCloseBackgroundPicker={() => setIsBackgroundPickerOpen(false)}
-          hasSelectedShapes={selectedShapeIds.length > 0}
-          selectedShapeIds={selectedShapeIds}
-          onExportPNG={handleExportPNG}
-          onExportSVG={handleExportSVG}
-        />
+        {/* Right Panel - Background Color Only */}
+        <div className="right-panel">
+          <div className="panel-section">
+            <h3>Canvas</h3>
+            <div className="background-section">
+              <label>Background Color</label>
+              <div className="color-input-container">
+                <input
+                  type="color"
+                  value={canvasBackground}
+                  onChange={(e) => setCanvasBackground(e.target.value)}
+                  className="color-input"
+                />
+                <span className="color-value">{canvasBackground}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Modern Toolbar */}
@@ -496,6 +621,36 @@ const CanvasPage: React.FC = () => {
 
       {/* Connection Status */}
       <ConnectionStatus />
+
+      {/* Exit Prompt Modal */}
+      {showExitPrompt && (
+        <div className="exit-prompt-overlay">
+          <div className="exit-prompt-modal">
+            <h3>Unsaved Changes</h3>
+            <p>You have unsaved changes. What would you like to do?</p>
+            <div className="exit-prompt-buttons">
+              <button
+                className="exit-prompt-button secondary"
+                onClick={() => setShowExitPrompt(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="exit-prompt-button danger"
+                onClick={handleExitWithoutSaving}
+              >
+                Continue without saving
+              </button>
+              <button
+                className="exit-prompt-button primary"
+                onClick={handleSaveAndExit}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

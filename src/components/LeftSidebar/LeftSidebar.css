@@ -89,6 +89,11 @@
   color: var(--text-secondary);
 }
 
+.file-dropdown .unsaved-indicator {
+  color: #f59e0b !important;
+  font-weight: 600 !important;
+}
+
 .menu-divider {
   height: 1px;
   background: var(--border-primary);
