@@ -11,7 +11,13 @@ interface ShapeProps {
   selectedTool: ShapeType["type"] | null;
   onSelect: (id: string, event?: MouseEvent) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
-  onResize?: (id: string, x: number, y: number, width: number, height: number) => void;
+  onResize?: (
+    id: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) => void;
   isLockedByOther?: boolean; // New prop for collaborative locking
   selectedByOther?: { name: string; color: string } | null; // New prop for showing who selected it
   canvasScale: number; // New prop for canvas zoom scale
@@ -42,7 +48,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         // Only show transformer when using move tool (selectedTool === null)
         const transformer = transformerRef.current;
         const shape = shapeRef.current;
-        
+
         if (transformer && shape) {
           transformer.nodes([shape]);
           transformer.getLayer()?.batchDraw();
@@ -154,17 +160,17 @@ export const Shape: React.FC<ShapeProps> = React.memo(
       if (shapeNode && onResize) {
         const scaleX = shapeNode.scaleX();
         const scaleY = shapeNode.scaleY();
-        
+
         // Calculate new dimensions
         const newWidth = Math.max(5, shapeNode.width() * scaleX);
         const newHeight = Math.max(5, shapeNode.height() * scaleY);
-        
+
         // Reset scale to 1 and apply new dimensions
         shapeNode.scaleX(1);
         shapeNode.scaleY(1);
         shapeNode.width(newWidth);
         shapeNode.height(newHeight);
-        
+
         onResize(shape.id, shapeNode.x(), shapeNode.y(), newWidth, newHeight);
       }
     }, [onResize, shape.id]);
@@ -363,11 +369,11 @@ export const Shape: React.FC<ShapeProps> = React.memo(
     // Default to rectangle
     return (
       <Group ref={groupRef}>
-        <Rect 
+        <Rect
           ref={shapeRef as React.RefObject<Konva.Rect>}
-          {...commonProps} 
-          width={shape.width} 
-          height={shape.height} 
+          {...commonProps}
+          width={shape.width}
+          height={shape.height}
         />
         {/* User label for shapes selected by others - positioned as tab on top of outline */}
         {selectedByOther && !isSelected && (

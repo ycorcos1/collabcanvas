@@ -11,7 +11,6 @@ import { MultipleCursors } from "../Cursors/MultipleCursors";
 import { Shape as ShapeType } from "../../types/shape";
 import {
   getRelativePointerPosition,
-  generateRandomColor,
 } from "../../utils/canvasHelpers";
 import "./Canvas.css";
 
@@ -30,6 +29,7 @@ interface CanvasProps {
   selectShape: (id: string | null, isShiftPressed?: boolean) => Promise<void>;
   isShapeLockedByOther: (shapeId: string) => boolean;
   getShapeSelector: (shapeId: string) => { name: string; color: string } | null;
+  cursorMode?: string;
 }
 
 /**
@@ -58,6 +58,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   selectShape,
   isShapeLockedByOther,
   getShapeSelector,
+  cursorMode = "move",
 }) => {
   const { user } = useAuth();
   const { canvasState, updateCanvasState, resetCanvas, centerCanvas } =
@@ -367,7 +368,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             width: 0,
             height: 0,
             type: selectedTool,
-            color: generateRandomColor(),
+            color: "#FF0000", // Red default color for all shapes
           };
 
           // Start creating shape
@@ -504,7 +505,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   );
 
   return (
-    <div className={`canvas-container ${selectedTool ? "creating-shape" : ""}`}>
+    <div className={`canvas-container ${selectedTool ? "creating-shape" : `cursor-${cursorMode}`}`}>
       {/* Don't render canvas content if user is not authenticated */}
       {!user ? (
         <div className="canvas-loading">

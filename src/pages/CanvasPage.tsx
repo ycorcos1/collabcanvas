@@ -90,6 +90,9 @@ const CanvasPage: React.FC = () => {
   const [canvasBackground, setCanvasBackground] = useState("#ffffff");
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
+  // Cursor mode state
+  const [cursorMode, setCursorMode] = useState("move");
+
   // Project naming state
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [tempProjectName, setTempProjectName] = useState(projectName);
@@ -164,6 +167,11 @@ const CanvasPage: React.FC = () => {
   // Handle tool selection with validation
   const handleToolSelect = (tool: Shape["type"] | null) => {
     setSelectedTool(tool);
+  };
+
+  // Handle cursor mode changes from toolbar
+  const handleCursorModeChange = (mode: string) => {
+    setCursorMode(mode);
   };
 
   // History operations
@@ -378,6 +386,7 @@ const CanvasPage: React.FC = () => {
             selectShape={selectShape}
             isShapeLockedByOther={isShapeLockedByOther}
             getShapeSelector={getShapeSelector}
+            cursorMode={cursorMode}
           />
         </main>
 
@@ -408,6 +417,7 @@ const CanvasPage: React.FC = () => {
         onZoomIn={zoomIn}
         onZoomOut={zoomOut}
         onZoomReset={zoomReset}
+        onCursorModeChange={handleCursorModeChange}
       />
 
       {/* Connection Status */}

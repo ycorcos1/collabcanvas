@@ -4,19 +4,40 @@
   height: 100vh;
   overflow: hidden;
   background: #fafafa;
-  cursor: grab; /* Default: can drag canvas when no tool selected */
+  cursor: default; /* Default cursor */
 }
 
-.canvas-container:active {
+/* Move tool cursor */
+.canvas-container.cursor-move {
+  cursor: default;
+}
+
+/* Hand tool cursor */
+.canvas-container.cursor-hand {
+  cursor: grab;
+}
+
+.canvas-container.cursor-hand:active {
   cursor: grabbing;
 }
 
+/* Shape creation cursor */
 .canvas-container.creating-shape {
-  cursor: crosshair; /* When tool is selected: always crosshair */
+  cursor: crosshair; /* When shape tool is selected: always crosshair */
 }
 
 .canvas-container.creating-shape:active {
   cursor: crosshair;
+}
+
+/* Text tool cursor */
+.canvas-container.cursor-text {
+  cursor: text;
+}
+
+/* Brush tool cursor */
+.canvas-container.cursor-brush {
+  cursor: crosshair; /* Will be replaced with custom brush cursor */
 }
 
 /* Loading and error states */

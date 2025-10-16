@@ -23,6 +23,7 @@ interface ModernToolbarProps {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  onCursorModeChange?: (mode: string) => void;
 }
 
 type CursorMode = "grab" | "pointer" | "select";
@@ -47,6 +48,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  onCursorModeChange,
 }) => {
   // Initialize state from localStorage or defaults
   const [cursorMode, setCursorMode] = useState<CursorMode>(() => {
@@ -55,6 +57,10 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   });
   const [shapeMode, setShapeMode] = useState<ShapeType>(() => {
     const saved = localStorage.getItem("toolbar-shape-mode");
+    return (saved as ShapeType) || "rectangle";
+  });
+  const [lastNonImageShape, setLastNonImageShape] = useState<ShapeType>(() => {
+    const saved = localStorage.getItem("toolbar-last-non-image-shape");
     return (saved as ShapeType) || "rectangle";
   });
   const [drawingMode, setDrawingMode] = useState<DrawingMode>(() => {
@@ -91,6 +97,10 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   }, [shapeMode]);
 
   useEffect(() => {
+    localStorage.setItem("toolbar-last-non-image-shape", lastNonImageShape);
+  }, [lastNonImageShape]);
+
+  useEffect(() => {
     localStorage.setItem("toolbar-drawing-mode", drawingMode);
   }, [drawingMode]);
 
@@ -100,8 +110,18 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
   const cursorTools = [
     {
+      id: "select" as const,
+      name: "Move",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+          <path d="m13 13 6 6"/>
+        </svg>
+      ),
+    },
+    {
       id: "grab" as const,
-      name: "Hand tool",
+      name: "Hand",
       icon: (
         <svg
           width="16"
@@ -115,16 +135,6 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           <path d="M14 10V4a2 2 0 0 0-4 0v2" />
           <path d="M10 10.5V6a2 2 0 0 0-4 0v8" />
           <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-        </svg>
-      ),
-    },
-    {
-      id: "select" as const,
-      name: "Select",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-          <path d="m13 13 6 6"/>
         </svg>
       ),
     },
@@ -324,23 +334,43 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setShowCursorDropdown(false);
     setIsTextMode(false);
     setShowDrawingToolbar(false);
-    if (mode === "select") {
-      onToolSelect(null); // Select tool
+    
+    // Notify parent about cursor mode change
+    if (onCursorModeChange) {
+      if (mode === "select") {
+        onCursorModeChange("move");
+      } else if (mode === "grab") {
+        onCursorModeChange("hand");
+      }
     }
-    // Handle grab and pointer modes as needed
+    
+    if (mode === "select") {
+      onToolSelect(null); // Move tool - allows selection and manipulation
+    } else if (mode === "grab") {
+      onToolSelect(null); // Hand tool - allows panning
+    }
   };
 
   const handleShapeSelect = (shape: ShapeType) => {
-    setShapeMode(shape);
     setShowShapeDropdown(false);
     setIsTextMode(false);
     setShowDrawingToolbar(false);
     
+    // Notify parent about cursor mode change
+    if (onCursorModeChange) {
+      onCursorModeChange("shape");
+    }
+    
     // Handle image upload
     if (shape === "image") {
       handleImageUpload();
+      // Don't update shapeMode for image - keep the last non-image shape as the displayed tool
       return;
     }
+    
+    // Update shape mode and track as last non-image shape
+    setShapeMode(shape);
+    setLastNonImageShape(shape);
     
     // Only pass supported shapes to canvas (rectangle and circle for now)
     if (shape === "rectangle" || shape === "circle") {
@@ -376,6 +406,11 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setIsTextMode(false);
     onToolSelect(null); // Clear shape tool when drawing
     
+    // Notify parent about cursor mode change
+    if (onCursorModeChange) {
+      onCursorModeChange("brush");
+    }
+    
     // Show notification that drawing is not fully implemented
     setTimeout(() => {
       alert(`${mode === 'brush' ? 'Brush' : 'Eraser'} tool is not yet fully implemented. This feature will be added in a future update.`);
@@ -383,11 +418,17 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   };
 
   const handleTextSelect = () => {
-    setIsTextMode(!isTextMode);
+    const newTextMode = !isTextMode;
+    setIsTextMode(newTextMode);
     setShowDrawingToolbar(false);
     onToolSelect(null); // Clear shape tool when text mode
+    
+    // Notify parent about cursor mode change
+    if (onCursorModeChange) {
+      onCursorModeChange(newTextMode ? "text" : "move");
+    }
+    
     closeAllDropdowns();
-    // Handle text mode
   };
 
   // Zoom functionality - use props if available
@@ -412,7 +453,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   const getCurrentCursorTool = () =>
     cursorTools.find((tool) => tool.id === cursorMode);
   const getCurrentShapeTool = () =>
-    shapeTools.find((tool) => tool.id === shapeMode);
+    shapeTools.find((tool) => tool.id === lastNonImageShape); // Always show last non-image shape
   const getCurrentDrawingTool = () =>
     drawingTools.find((tool) => tool.id === drawingMode);
 
