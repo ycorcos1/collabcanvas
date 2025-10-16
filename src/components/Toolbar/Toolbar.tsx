@@ -462,10 +462,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onAlignLeft}
                   title="Align Left"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="15" y2="12"/>
-                    <line x1="3" y1="18" x2="18" y2="18"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="15" y2="12" />
+                    <line x1="3" y1="18" x2="18" y2="18" />
                   </svg>
                 </button>
               )}
@@ -475,10 +482,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onAlignCenterH}
                   title="Align Center Horizontal"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="2" x2="12" y2="22"/>
-                    <rect x="8" y="6" width="8" height="4"/>
-                    <rect x="6" y="14" width="12" height="4"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="12" y1="2" x2="12" y2="22" />
+                    <rect x="8" y="6" width="8" height="4" />
+                    <rect x="6" y="14" width="12" height="4" />
                   </svg>
                 </button>
               )}
@@ -488,10 +502,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onAlignRight}
                   title="Align Right"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="9" y1="12" x2="21" y2="12"/>
-                    <line x1="6" y1="18" x2="21" y2="18"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="9" y1="12" x2="21" y2="12" />
+                    <line x1="6" y1="18" x2="21" y2="18" />
                   </svg>
                 </button>
               )}
@@ -508,10 +529,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onAlignTop}
                   title="Align Top"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="6" y1="3" x2="6" y2="21"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                    <line x1="18" y1="3" x2="18" y2="18"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="6" y1="3" x2="6" y2="21" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                    <line x1="18" y1="3" x2="18" y2="18" />
                   </svg>
                 </button>
               )}
@@ -521,10 +549,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onAlignCenterV}
                   title="Align Center Vertical"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="2" y1="12" x2="22" y2="12"/>
-                    <rect x="6" y="8" width="4" height="8"/>
-                    <rect x="14" y="6" width="4" height="12"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <rect x="6" y="8" width="4" height="8" />
+                    <rect x="14" y="6" width="4" height="12" />
                   </svg>
                 </button>
               )}
@@ -534,10 +569,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onAlignBottom}
                   title="Align Bottom"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="6" y1="3" x2="6" y2="21"/>
-                    <line x1="12" y1="9" x2="12" y2="21"/>
-                    <line x1="18" y1="6" x2="18" y2="21"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="6" y1="3" x2="6" y2="21" />
+                    <line x1="12" y1="9" x2="12" y2="21" />
+                    <line x1="18" y1="6" x2="18" y2="21" />
                   </svg>
                 </button>
               )}
@@ -554,10 +596,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onDistributeH}
                   title="Distribute Horizontally"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="8" width="4" height="8"/>
-                    <rect x="10" y="6" width="4" height="12"/>
-                    <rect x="17" y="8" width="4" height="8"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="8" width="4" height="8" />
+                    <rect x="10" y="6" width="4" height="12" />
+                    <rect x="17" y="8" width="4" height="8" />
                   </svg>
                 </button>
               )}
@@ -567,10 +616,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   onClick={onDistributeV}
                   title="Distribute Vertically"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="8" y="3" width="8" height="4"/>
-                    <rect x="6" y="10" width="12" height="4"/>
-                    <rect x="8" y="17" width="8" height="4"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="8" y="3" width="8" height="4" />
+                    <rect x="6" y="10" width="12" height="4" />
+                    <rect x="8" y="17" width="8" height="4" />
                   </svg>
                 </button>
               )}

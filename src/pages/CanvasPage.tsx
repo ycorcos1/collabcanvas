@@ -2,14 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/Auth/AuthProvider";
 import { Canvas } from "../components/Canvas/Canvas";
-import { Toolbar } from "../components/Toolbar/Toolbar";
-import { UserPresence } from "../components/Presence/UserPresence";
+// Removed old imports - using new floating components
 import { ConnectionStatus } from "../components/ConnectionStatus";
 import { ThemeInitializer } from "../components/ThemeInitializer";
 import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
-import { exportCanvas, exportSelectedShapes } from "../utils/exportUtils";
+import { exportCanvas } from "../utils/exportUtils";
 import {
   alignLeft,
   alignRight,
@@ -21,6 +20,9 @@ import {
   distributeVertically,
 } from "../utils/alignmentUtils";
 import { LayersPanel } from "../components/LayersPanel/LayersPanel";
+import { FloatingToolbar } from "../components/FloatingToolbar/FloatingToolbar";
+import { FloatingUserPanel } from "../components/FloatingUserPanel/FloatingUserPanel";
+import { CanvasBackground } from "../components/CanvasBackground/CanvasBackground";
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
 import "./CanvasPage.css";
@@ -43,14 +45,22 @@ const CanvasPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
 
+  // Generate project name based on slug or create new untitled project
+  const generateProjectName = (slug: string) => {
+    if (slug.startsWith('untitled-')) {
+      // Extract timestamp and convert to project number
+      const timestamp = slug.split('-')[1];
+      const projectNumber = Math.floor(parseInt(timestamp) / 100000) % 1000 + 1;
+      return `Untitled Project ${projectNumber}`;
+    }
+    return slug.replace(/-/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+  };
+
   // Project name state (editable)
   const [projectName, setProjectName] = useState(
-    slug
-      ? slug.replace(/-/g, " ").replace(/^\w/, (c) => c.toUpperCase())
-      : "Untitled Project"
+    slug ? generateProjectName(slug) : "Untitled Project 1"
   );
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [tempName, setTempName] = useState(projectName);
+  // Removed unused old state variables
 
   // Canvas state management
   const {
@@ -90,6 +100,18 @@ const CanvasPage: React.FC = () => {
 
   // Layers panel state
   const [isLayersPanelOpen, setIsLayersPanelOpen] = useState(false);
+
+  // Canvas background state
+  const [canvasBackground, setCanvasBackground] = useState('#ffffff');
+  const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
+
+  // Floating panel positions
+  const [toolbarPosition, setToolbarPosition] = useState({ x: 20, y: 80 });
+  const [userPanelPosition, setUserPanelPosition] = useState({ x: window.innerWidth - 300, y: 20 });
+
+  // Project naming state
+  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
+  const [tempProjectName, setTempProjectName] = useState(projectName);
 
   // Persist selected tool in session storage
   useEffect(() => {
@@ -133,20 +155,21 @@ const CanvasPage: React.FC = () => {
 
   // Handle project name editing
   const handleNameEdit = () => {
-    setTempName(projectName);
-    setIsEditingName(true);
+    setTempProjectName(projectName);
+    setIsEditingProjectName(true);
   };
 
   const handleNameSave = () => {
-    if (tempName.trim()) {
-      setProjectName(tempName.trim());
+    if (tempProjectName.trim()) {
+      setProjectName(tempProjectName.trim());
+      // Note: URL will update on next page refresh as per requirements
     }
-    setIsEditingName(false);
+    setIsEditingProjectName(false);
   };
 
   const handleNameCancel = () => {
-    setTempName(projectName);
-    setIsEditingName(false);
+    setTempProjectName(projectName);
+    setIsEditingProjectName(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -294,30 +317,7 @@ const CanvasPage: React.FC = () => {
     }
   }, [shapes, projectName]);
 
-  const handleExportSelectedPNG = useCallback(async () => {
-    try {
-      await exportSelectedShapes(shapes, selectedShapeIds, projectName, {
-        format: 'png',
-        scale: 2,
-        padding: 20,
-        backgroundColor: '#ffffff',
-        quality: 0.9,
-      });
-    } catch (error) {
-      console.error('Export selected PNG failed:', error);
-    }
-  }, [shapes, selectedShapeIds, projectName]);
-
-  const handleExportSelectedSVG = useCallback(async () => {
-    try {
-      await exportSelectedShapes(shapes, selectedShapeIds, projectName, {
-        format: 'svg',
-        padding: 20,
-      });
-    } catch (error) {
-      console.error('Export selected SVG failed:', error);
-    }
-  }, [shapes, selectedShapeIds, projectName]);
+  // Export selected functions moved to FloatingToolbar component
 
   // Z-index management functions
   const handleBringToFront = useCallback(async (shapeIds: string[]) => {
@@ -458,22 +458,21 @@ const CanvasPage: React.FC = () => {
       {/* Initialize theme for authenticated users */}
       <ThemeInitializer />
 
-      {/* Connection Status */}
-      <ConnectionStatus />
-
-      {/* Top Bar */}
-      <header className="canvas-header">
+      {/* Modern Header */}
+      <header className="modern-header">
         <div className="header-left">
-          <Button variant="ghost" onClick={handleBack}>
-            ← Back
+          <Button variant="ghost" onClick={handleBack} className="back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
           </Button>
 
           <div className="project-name-section">
-            {isEditingName ? (
+            {isEditingProjectName ? (
               <input
                 type="text"
-                value={tempName}
-                onChange={(e) => setTempName(e.target.value)}
+                value={tempProjectName}
+                onChange={(e) => setTempProjectName(e.target.value)}
                 onBlur={handleNameSave}
                 onKeyDown={handleKeyPress}
                 className="project-name-input"
@@ -491,105 +490,121 @@ const CanvasPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="header-center">
+          <div className="canvas-controls">
+            <button
+              className="control-btn"
+              onClick={() => setIsBackgroundPickerOpen(!isBackgroundPickerOpen)}
+              title="Canvas Background"
+            >
+              <div className="bg-preview" style={{ backgroundColor: canvasBackground }} />
+              Background
+            </button>
+            
+            <button
+              className="control-btn"
+              onClick={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
+              title="Toggle Layers"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="12,2 2,7 12,12 22,7 12,2"/>
+                <polyline points="2,17 12,22 22,17"/>
+                <polyline points="2,12 12,17 22,12"/>
+              </svg>
+              Layers
+            </button>
+          </div>
+        </div>
+
         <div className="header-right">
-          <UserPresence />
-          <Button variant="primary" onClick={handleShare}>
+          <Button variant="primary" onClick={handleShare} className="share-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
             Share
           </Button>
         </div>
       </header>
 
       {/* Main Canvas Area */}
-      <main className="canvas-main">
-        {/* Toolbar */}
-        <Toolbar
-          selectedTool={selectedTool}
-          onToolSelect={handleToolSelect}
-          hasSelectedShapes={selectedShapeIds.length > 0}
-          onDeleteSelected={deleteSelectedShapes}
-          onClearAll={clearAllShapes}
-          selectedColor={selectedColor}
-          onColorChange={setSelectedColor}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          onDuplicate={handleDuplicate}
-          onExportPNG={handleExportPNG}
-          onExportSVG={handleExportSVG}
-          onExportSelectedPNG={handleExportSelectedPNG}
-          onExportSelectedSVG={handleExportSelectedSVG}
-          onAlignLeft={handleAlignLeft}
-          onAlignRight={handleAlignRight}
-          onAlignCenterH={handleAlignCenterH}
-          onAlignTop={handleAlignTop}
-          onAlignBottom={handleAlignBottom}
-          onAlignCenterV={handleAlignCenterV}
-          onDistributeH={handleDistributeH}
-          onDistributeV={handleDistributeV}
-        />
-
-        {/* Canvas */}
-        <div className="canvas-container">
-          <Canvas
-            shapes={shapes}
-            selectedShapeIds={selectedShapeIds}
-            selectedTool={selectedTool}
-            isLoading={false}
-            error={null}
-            createShape={createShape}
-            updateShape={updateShape}
-            deleteSelectedShapes={deleteSelectedShapes}
-            selectShape={selectShape}
-            isShapeLockedByOther={isShapeLockedByOther}
-            getShapeSelector={getShapeSelector}
-          />
-        </div>
-
-        {/* Layers Panel */}
-        <LayersPanel
+      <main className="modern-canvas-main" style={{ backgroundColor: canvasBackground }}>
+        <Canvas
           shapes={shapes}
           selectedShapeIds={selectedShapeIds}
-          onSelectShape={selectShape}
-          onUpdateShape={updateShape}
-          onBringToFront={handleBringToFront}
-          onSendToBack={handleSendToBack}
-          onBringForward={handleBringForward}
-          onSendBackward={handleSendBackward}
-          isOpen={isLayersPanelOpen}
-          onToggle={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
+          selectedTool={selectedTool}
+          isLoading={false}
+          error={null}
+          createShape={createShape}
+          updateShape={updateShape}
+          deleteSelectedShapes={deleteSelectedShapes}
+          selectShape={selectShape}
+          isShapeLockedByOther={isShapeLockedByOther}
+          getShapeSelector={getShapeSelector}
         />
       </main>
 
-      {/* Status Bar */}
-      <footer className="canvas-status-bar">
-        <div className="status-left">
-          <span className="status-item">
-            {shapes.length} object{shapes.length !== 1 ? 's' : ''}
-          </span>
-          {selectedShapeIds.length > 0 && (
-            <span className="status-item">
-              {selectedShapeIds.length} selected
-            </span>
-          )}
-        </div>
-        
-        <div className="status-center">
-          <span className="status-item canvas-info">
-            Canvas: {projectName}
-          </span>
-        </div>
-        
-        <div className="status-right">
-          <span className="status-item">
-            Tool: {selectedTool || 'Select'}
-          </span>
-          <span className="status-item">
-            <div className="status-color-preview" style={{ backgroundColor: selectedColor }} />
-            {selectedColor}
-          </span>
-        </div>
-      </footer>
+      {/* Floating Toolbar */}
+      <FloatingToolbar
+        selectedTool={selectedTool}
+        onToolSelect={handleToolSelect}
+        selectedColor={selectedColor}
+        onColorChange={setSelectedColor}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onDuplicate={handleDuplicate}
+        hasSelectedShapes={selectedShapeIds.length > 0}
+        onDeleteSelected={deleteSelectedShapes}
+        onClearAll={clearAllShapes}
+        onExportPNG={handleExportPNG}
+        onExportSVG={handleExportSVG}
+        onAlignLeft={handleAlignLeft}
+        onAlignRight={handleAlignRight}
+        onAlignCenterH={handleAlignCenterH}
+        onAlignTop={handleAlignTop}
+        onAlignBottom={handleAlignBottom}
+        onAlignCenterV={handleAlignCenterV}
+        onDistributeH={handleDistributeH}
+        onDistributeV={handleDistributeV}
+        position={toolbarPosition}
+        onPositionChange={setToolbarPosition}
+      />
+
+      {/* Floating User Panel */}
+      <FloatingUserPanel
+        position={userPanelPosition}
+        onPositionChange={setUserPanelPosition}
+      />
+
+      {/* Layers Panel */}
+      <LayersPanel
+        shapes={shapes}
+        selectedShapeIds={selectedShapeIds}
+        onSelectShape={selectShape}
+        onUpdateShape={updateShape}
+        onBringToFront={handleBringToFront}
+        onSendToBack={handleSendToBack}
+        onBringForward={handleBringForward}
+        onSendBackward={handleSendBackward}
+        isOpen={isLayersPanelOpen}
+        onToggle={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
+      />
+
+      {/* Canvas Background Picker */}
+      <CanvasBackground
+        backgroundColor={canvasBackground}
+        onBackgroundChange={setCanvasBackground}
+        isOpen={isBackgroundPickerOpen}
+        onClose={() => setIsBackgroundPickerOpen(false)}
+      />
+
+      {/* Connection Status */}
+      <ConnectionStatus />
     </div>
   );
 };

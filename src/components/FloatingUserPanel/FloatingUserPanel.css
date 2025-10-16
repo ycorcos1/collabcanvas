@@ -1,0 +1,199 @@
+/* Floating User Panel Styles */
+
+.floating-user-panel {
+  position: fixed;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(20px);
+  z-index: 1000;
+  min-width: 200px;
+  max-width: 280px;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.floating-user-panel.dragging {
+  cursor: grabbing;
+  transform: rotate(-0.5deg);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+}
+
+.floating-user-panel.minimized {
+  min-width: auto;
+  width: auto;
+}
+
+/* Header */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-primary);
+  cursor: grab;
+  background: var(--bg-secondary);
+  border-radius: 12px 12px 0 0;
+}
+
+.panel-header:active {
+  cursor: grabbing;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.panel-title svg {
+  color: var(--text-secondary);
+}
+
+.minimize-btn {
+  background: var(--bg-tertiary);
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.minimize-btn:hover {
+  background: var(--bg-quaternary);
+  color: var(--text-primary);
+}
+
+/* Content */
+.panel-content {
+  padding: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Override UserPresence styles for floating panel */
+.floating-user-panel .user-presence {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.floating-user-panel .presence-header {
+  display: none; /* Hide duplicate header */
+}
+
+.floating-user-panel .users-list {
+  gap: 8px;
+}
+
+.floating-user-panel .user-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.15s ease;
+}
+
+.floating-user-panel .user-item:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
+}
+
+.floating-user-panel .user-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.floating-user-panel .user-info {
+  font-size: 13px;
+}
+
+.floating-user-panel .user-name {
+  font-weight: 500;
+}
+
+.floating-user-panel .user-status {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Scrollbar */
+.panel-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 2px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Dark Mode Enhancements */
+@media (prefers-color-scheme: dark) {
+  .floating-user-panel {
+    backdrop-filter: blur(20px) saturate(180%);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .floating-user-panel.dragging {
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .floating-user-panel {
+    min-width: 180px;
+    max-width: 220px;
+  }
+  
+  .panel-content {
+    padding: 12px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .floating-user-panel {
+    border-width: 2px;
+  }
+  
+  .floating-user-panel .user-item {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .floating-user-panel,
+  .minimize-btn,
+  .floating-user-panel .user-item {
+    transition: none;
+  }
+  
+  .floating-user-panel.dragging {
+    transform: none;
+  }
+  
+  .floating-user-panel .user-item:hover {
+    transform: none;
+  }
+}

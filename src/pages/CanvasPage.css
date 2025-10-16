@@ -1,56 +1,122 @@
-/* Canvas Page Styles - Matching Dashboard Design */
+/* Modern Canvas Page Styles */
 
 .canvas-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-primary);
+  background: var(--bg-primary);
   overflow: hidden;
+  position: relative;
 }
 
-/* Header Styles - Matching Dashboard Header */
-.canvas-header {
+/* Theme Support */
+.canvas-page[data-theme="dark"] {
+  background: var(--bg-primary);
+}
+
+.canvas-page[data-theme="light"] {
+  background: var(--bg-primary);
+}
+
+/* Modern Header Styles */
+.modern-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-6);
-  background-color: var(--bg-elevated);
+  padding: 12px 24px;
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(20px);
   z-index: 100;
-  min-height: 72px;
+  min-height: 60px;
+  position: relative;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: 16px;
+  flex: 1;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 1;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Canvas Controls */
+.canvas-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.control-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.control-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-focus);
+  transform: translateY(-1px);
+}
+
+.bg-preview {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border-primary);
+}
+
+/* Modern Buttons */
+.back-btn {
+  padding: 8px !important;
+  border-radius: 8px !important;
+}
+
+.share-btn {
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
 }
 
 /* Project Name Styles */
 .project-name-section {
   display: flex;
   align-items: center;
-  margin-left: var(--space-2);
 }
 
 .project-name {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
   cursor: pointer;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  transition: background-color var(--duration-fast) var(--ease-out);
-  min-width: 200px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  min-width: 180px;
   border: 2px solid transparent;
 }
 
@@ -64,103 +130,31 @@
 }
 
 .project-name-input {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-primary);
   background-color: var(--bg-primary);
   border: 2px solid var(--border-focus);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  min-width: 200px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 180px;
   outline: none;
 }
 
-/* Main Canvas Area - Dashboard Layout */
-.canvas-main {
-  flex: 1;
-  display: flex;
-  background-color: var(--bg-primary);
-  overflow: hidden;
-}
-
-.canvas-container {
+/* Modern Canvas Main Area */
+.modern-canvas-main {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background-color: var(--canvas-bg);
-  border-left: 1px solid var(--border-primary);
-}
-
-/* Toolbar Integration */
-.canvas-main .toolbar {
-  border-right: 1px solid var(--border-primary);
-  background-color: var(--bg-elevated);
-}
-
-/* Status Bar */
-.canvas-status-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-6);
-  background-color: var(--bg-elevated);
-  border-top: 1px solid var(--border-primary);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  min-height: 40px;
-}
-
-.status-left,
-.status-center,
-.status-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.status-center {
-  flex: 1;
-  justify-content: center;
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-weight: var(--font-medium);
-}
-
-.canvas-info {
-  color: var(--text-primary);
-  font-weight: var(--font-semibold);
-}
-
-.status-color-preview {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-primary);
-  display: inline-block;
-  margin-right: var(--space-2);
-}
-
-/* Canvas Container Enhancements */
-.canvas-container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-/* User Presence Integration */
-.header-right .user-presence {
-  margin-right: var(--space-2);
+  background: #ffffff; /* Default canvas background */
+  transition: background-color 0.2s ease;
 }
 
 /* Connection Status Integration */
 .canvas-page .connection-status {
   position: fixed;
-  top: var(--space-4);
-  right: var(--space-4);
+  bottom: 20px;
+  right: 20px;
   z-index: 1000;
 }
 
@@ -193,47 +187,60 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .canvas-header {
-    padding: var(--space-2) var(--space-3);
+/* Modern Responsive Design */
+@media (max-width: 1024px) {
+  .modern-header {
+    padding: 8px 16px;
   }
-
-  .header-left {
-    gap: var(--space-2);
+  
+  .header-center {
+    display: none; /* Hide center controls on smaller screens */
   }
-
-  .header-right {
-    gap: var(--space-2);
+  
+  .project-name {
+    font-size: 16px;
+    min-width: 140px;
   }
-
-  .project-name,
+  
   .project-name-input {
-    font-size: var(--text-lg);
-    min-width: 150px;
-  }
-
-  .canvas-main {
-    flex-direction: column;
+    font-size: 16px;
+    min-width: 140px;
   }
 }
 
-@media (max-width: 480px) {
-  .canvas-header {
+@media (max-width: 768px) {
+  .modern-header {
+    padding: 8px 12px;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    min-height: auto;
   }
-
+  
   .header-left,
   .header-right {
-    flex: 1;
-    min-width: 0;
+    flex: none;
   }
-
-  .project-name,
-  .project-name-input {
-    font-size: var(--text-base);
+  
+  .canvas-controls {
+    margin-top: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .project-name {
+    font-size: 14px;
     min-width: 120px;
+    padding: 6px 8px;
+  }
+  
+  .project-name-input {
+    font-size: 14px;
+    min-width: 120px;
+    padding: 6px 8px;
+  }
+  
+  .control-btn {
+    font-size: 12px;
+    padding: 6px 8px;
   }
 }
 
@@ -248,31 +255,40 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Animation for smooth transitions */
-.project-name-section {
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-/* High contrast mode support */
+/* High Contrast Mode */
 @media (prefers-contrast: high) {
-  .canvas-header {
+  .modern-header {
     border-bottom-width: 2px;
   }
-
-  .project-name:hover {
-    background-color: var(--text-primary);
-    color: var(--bg-primary);
+  
+  .control-btn,
+  .project-name,
+  .project-name-input {
+    border-width: 2px;
   }
 }
 
-/* Reduced motion support */
+/* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner {
     animation: none;
   }
-
+  
+  .modern-canvas-main,
+  .control-btn,
   .project-name,
-  .project-name-section {
+  .project-name-input {
     transition: none;
+  }
+  
+  .control-btn:hover {
+    transform: none;
+  }
+}
+
+/* Dark Mode Specific Styles */
+@media (prefers-color-scheme: dark) {
+  .modern-header {
+    backdrop-filter: blur(20px) saturate(180%);
   }
 }
