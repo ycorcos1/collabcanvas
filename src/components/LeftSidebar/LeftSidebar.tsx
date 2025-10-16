@@ -190,12 +190,26 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   const handleRenameSubmit = () => {
     if (editingObjectId && editingObjectName.trim()) {
+      const trimmedName = editingObjectName.trim();
+      
+      // Check if the name already exists among other objects (excluding current one)
+      const nameExists = Object.entries(objectNames).some(([id, name]) => 
+        id !== editingObjectId && name.toLowerCase() === trimmedName.toLowerCase()
+      );
+      
+      if (nameExists) {
+        // Don't update if name already exists, just cancel editing
+        setEditingObjectId(null);
+        setEditingObjectName("");
+        return;
+      }
+      
       setObjectNames(prev => ({
         ...prev,
-        [editingObjectId]: editingObjectName.trim()
+        [editingObjectId]: trimmedName
       }));
       if (onRenameShape) {
-        onRenameShape(editingObjectId, editingObjectName.trim());
+        onRenameShape(editingObjectId, trimmedName);
       }
     }
     setEditingObjectId(null);
@@ -211,13 +225,20 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       })
       .filter(num => num > 0);
     
-    const nextPageNumber = existingNumbers.length > 0 
+    let nextPageNumber = existingNumbers.length > 0 
       ? Math.max(...existingNumbers) + 1 
       : pages.length + 1;
     
+    // Ensure the generated name doesn't already exist
+    let proposedName = `Page ${nextPageNumber}`;
+    while (pages.some(page => page.name.toLowerCase() === proposedName.toLowerCase())) {
+      nextPageNumber++;
+      proposedName = `Page ${nextPageNumber}`;
+    }
+    
     const newPage = {
       id: `page${Date.now()}`, // Use timestamp for unique ID
-      name: `Page ${nextPageNumber}`
+      name: proposedName
     };
     setPages([...pages, newPage]);
   };
@@ -243,9 +264,23 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   const handlePageRenameSubmit = () => {
     if (editingPageId && editingPageName.trim()) {
+      const trimmedName = editingPageName.trim();
+      
+      // Check if the name already exists (excluding the current page being edited)
+      const nameExists = pages.some((page: { id: string; name: string }) => 
+        page.id !== editingPageId && page.name.toLowerCase() === trimmedName.toLowerCase()
+      );
+      
+      if (nameExists) {
+        // Don't update if name already exists, just cancel editing
+        setEditingPageId(null);
+        setEditingPageName("");
+        return;
+      }
+      
       setPages((prev: { id: string; name: string }[]) => prev.map((page: { id: string; name: string }) => 
         page.id === editingPageId 
-          ? { ...page, name: editingPageName.trim() }
+          ? { ...page, name: trimmedName }
           : page
       ));
     }
@@ -498,11 +533,15 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                         onChange={(e) => setEditingPageName(e.target.value)}
                         onBlur={handlePageRenameSubmit}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') handlePageRenameSubmit();
-                          if (e.key === 'Escape') {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handlePageRenameSubmit();
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
                             setEditingPageId(null);
                             setEditingPageName("");
                           }
+                          // Allow shift key and other keys to work normally for typing
                         }}
                         autoFocus
                         className="page-name-input"
@@ -588,11 +627,15 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                             onChange={(e) => setEditingObjectName(e.target.value)}
                             onBlur={handleRenameSubmit}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleRenameSubmit();
-                              if (e.key === 'Escape') {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleRenameSubmit();
+                              } else if (e.key === 'Escape') {
+                                e.preventDefault();
                                 setEditingObjectId(null);
                                 setEditingObjectName("");
                               }
+                              // Allow shift key and other keys to work normally for typing
                             }}
                             autoFocus
                             className="object-name-input"
