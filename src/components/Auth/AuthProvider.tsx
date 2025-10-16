@@ -93,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       email: firebaseUser.email,
       displayName: firebaseUser.displayName || emailFallback,
       color: getUserColor(firebaseUser.uid),
+      photoURL: firebaseUser.photoURL || undefined,
     };
   };
 
