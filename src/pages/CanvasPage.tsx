@@ -15,7 +15,7 @@ import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
 import { ModernToolbar } from "../components/ModernToolbar/ModernToolbar";
 import { RightPanel } from "../components/RightPanel/RightPanel";
 import { Button } from "../components/shared";
-import { Shape, CreateShapeData } from "../types/shape";
+import { Shape } from "../types/shape";
 import "./CanvasPage.css";
 
 /**
@@ -57,7 +57,6 @@ const CanvasPage: React.FC = () => {
     selectedShapeIds,
     createShape,
     updateShape,
-    deleteShape,
     deleteSelectedShapes,
     selectShape,
     // clearAllShapes, // Not used in Figma layout
@@ -89,18 +88,32 @@ const CanvasPage: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedState, setLastSavedState] = useState<string>("");
   const [showExitPrompt, setShowExitPrompt] = useState(false);
+  // Removed sessionStartState as it's not needed
 
   // Removed layers panel state - now integrated in left sidebar
 
-  // Canvas background state with persistence
+  // Canvas background state with session persistence (temporary)
   const [canvasBackground, setCanvasBackground] = useState(() => {
-    return sessionStorage.getItem("canvas-background-color") || "#ffffff";
+    // Try session storage first, then saved project, then default
+    const sessionBg = sessionStorage.getItem(`canvas-background-${slug}`);
+    if (sessionBg) return sessionBg;
+    
+    const savedProject = localStorage.getItem(`project-${slug}`);
+    if (savedProject) {
+      try {
+        const projectData = JSON.parse(savedProject);
+        return projectData.canvasBackground || "#ffffff";
+      } catch {
+        return "#ffffff";
+      }
+    }
+    return "#ffffff";
   });
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
-  // Cursor mode state with persistence
+  // Cursor mode state with session persistence (temporary)
   const [cursorMode, setCursorMode] = useState(() => {
-    return sessionStorage.getItem("canvas-cursor-mode") || "move";
+    return sessionStorage.getItem(`canvas-cursor-mode-${slug}`) || "hand";
   });
 
   // Project naming state
@@ -118,25 +131,25 @@ const CanvasPage: React.FC = () => {
 
   // Persist cursor mode to session storage
   useEffect(() => {
-    sessionStorage.setItem("canvas-cursor-mode", cursorMode);
-  }, [cursorMode]);
+    sessionStorage.setItem(`canvas-cursor-mode-${slug}`, cursorMode);
+  }, [cursorMode, slug]);
 
-  // Persist canvas background to session storage
+  // Persist canvas background to session storage (temporary)
   useEffect(() => {
-    sessionStorage.setItem("canvas-background-color", canvasBackground);
-  }, [canvasBackground]);
+    sessionStorage.setItem(`canvas-background-${slug}`, canvasBackground);
+  }, [canvasBackground, slug]);
 
-  // Persist selected shapes to session storage
+  // Persist selected shapes to session storage (temporary)
   useEffect(() => {
     sessionStorage.setItem(
-      "canvas-selected-shapes",
+      `canvas-selected-shapes-${slug}`,
       JSON.stringify(selectedShapeIds)
     );
-  }, [selectedShapeIds]);
+  }, [selectedShapeIds, slug]);
 
   // Restore selected shapes on component mount
   useEffect(() => {
-    const savedSelection = sessionStorage.getItem("canvas-selected-shapes");
+    const savedSelection = sessionStorage.getItem(`canvas-selected-shapes-${slug}`);
     if (savedSelection && shapes.length > 0) {
       try {
         const parsedSelection = JSON.parse(savedSelection);
@@ -154,19 +167,12 @@ const CanvasPage: React.FC = () => {
         console.error("Failed to restore shape selection:", error);
       }
     }
-  }, [shapes, selectShape]); // Only run when shapes are loaded
-
-  // Local shapes state for unsaved changes
-  const [localShapes, setLocalShapes] = useState<Shape[]>([]);
-  const [isLocalMode, setIsLocalMode] = useState(false);
-
-  // Use local shapes when in local mode, otherwise use Firestore shapes
-  const currentShapes = isLocalMode ? localShapes : shapes;
+  }, [shapes, selectShape, slug]); // Only run when shapes are loaded
 
   // Track unsaved changes by comparing current state with last saved state
   useEffect(() => {
     const currentState = JSON.stringify({
-      shapes: currentShapes.map((s) => ({
+      shapes: shapes.map((s) => ({
         ...s,
         selectedBy: undefined,
         selectedByName: undefined,
@@ -183,79 +189,41 @@ const CanvasPage: React.FC = () => {
       // Initialize last saved state on first load
       setLastSavedState(currentState);
     }
-  }, [currentShapes, canvasBackground, projectName, lastSavedState]);
+  }, [shapes, canvasBackground, projectName, lastSavedState]);
 
-  // Load saved project state on mount
+  // Load saved project state on mount and initialize save system
   useEffect(() => {
     const savedProject = localStorage.getItem(`project-${slug}`);
     if (savedProject) {
       try {
         const projectData = JSON.parse(savedProject);
-        setLastSavedState(
-          JSON.stringify({
-            shapes: projectData.shapes || [],
-            canvasBackground: projectData.canvasBackground || "#ffffff",
-            projectName: projectData.projectName || projectName,
-          })
-        );
+        const savedState = JSON.stringify({
+          shapes: projectData.shapes || [],
+          canvasBackground: projectData.canvasBackground || "#ffffff",
+          projectName: projectData.projectName || projectName,
+        });
+        setLastSavedState(savedState);
         setHasUnsavedChanges(false);
-        
-        // Load saved shapes into local state
-        if (projectData.shapes) {
-          setLocalShapes(projectData.shapes);
-          setIsLocalMode(true);
-        }
       } catch (error) {
         console.error("Failed to load saved project:", error);
+        // Initialize with current state if no saved project
+        const currentState = JSON.stringify({
+          shapes: [],
+          canvasBackground: "#ffffff",
+          projectName: projectName,
+        });
+        setLastSavedState(currentState);
       }
+    } else {
+      // No saved project, initialize with current state
+      const currentState = JSON.stringify({
+        shapes: [],
+        canvasBackground: "#ffffff",
+        projectName: projectName,
+      });
+      setLastSavedState(currentState);
     }
   }, [slug, projectName]);
-
-  // Local shape operations that don't sync to Firestore
-  const localCreateShape = useCallback(async (shapeData: CreateShapeData): Promise<Shape | null> => {
-    const newShape: Shape = {
-      id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      ...shapeData,
-      zIndex: Math.max(...currentShapes.map(s => s.zIndex), 0) + 1,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    
-    setLocalShapes(prev => [...prev, newShape]);
-    setIsLocalMode(true);
-    setHasUnsavedChanges(true);
-    
-    return newShape;
-  }, [currentShapes]);
-
-  const localUpdateShape = useCallback(async (id: string, updates: Partial<Shape>): Promise<void> => {
-    setLocalShapes(prev => prev.map(shape => 
-      shape.id === id 
-        ? { ...shape, ...updates, updatedAt: Date.now() }
-        : shape
-    ));
-    setHasUnsavedChanges(true);
-  }, []);
-
-  const localDeleteShapes = useCallback((ids: string[]) => {
-    setLocalShapes(prev => prev.filter(shape => !ids.includes(shape.id)));
-    setHasUnsavedChanges(true);
-  }, []);
-
-  // Local delete selected shapes
-  const localDeleteSelectedShapes = useCallback(async (): Promise<void> => {
-    if (selectedShapeIds.length > 0) {
-      localDeleteShapes(selectedShapeIds);
-      // Clear selection after deleting
-      sessionStorage.removeItem("horizon-selected-shapes");
-      window.location.reload(); // Force refresh to clear selection state
-    }
-  }, [selectedShapeIds, localDeleteShapes]);
-
-  // Use local operations when in local mode
-  const activeCreateShape = isLocalMode ? localCreateShape : createShape;
-  const activeUpdateShape = isLocalMode ? localUpdateShape : updateShape;
-  const activeDeleteSelectedShapes = isLocalMode ? localDeleteSelectedShapes : deleteSelectedShapes;
 
   // Handle browser beforeunload event
   useEffect(() => {
@@ -270,6 +238,16 @@ const CanvasPage: React.FC = () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  // Removed unused restoreFromSavedState function
+
+  // Clear session storage when exiting without saving
+  const clearSessionStorage = useCallback(() => {
+    sessionStorage.removeItem(`canvas-background-${slug}`);
+    sessionStorage.removeItem(`canvas-cursor-mode-${slug}`);
+    sessionStorage.removeItem(`canvas-selected-shapes-${slug}`);
+    // Keep toolbar state as it should persist until logout
+  }, [slug]);
 
   // Validate slug parameter
   if (!slug) {
@@ -346,70 +324,26 @@ const CanvasPage: React.FC = () => {
     console.log(`Renaming shape ${id} to ${newName}`);
   };
 
-  // Save project functionality - saves to both localStorage and Firestore
-  const handleSaveProject = useCallback(async () => {
+  // Save project functionality
+  const handleSaveProject = useCallback(() => {
     try {
-      const shapesToSave = currentShapes.map((s) => ({
-        ...s,
-        selectedBy: undefined,
-        selectedByName: undefined,
-        selectedByColor: undefined,
-        selectedAt: undefined,
-      }));
-
       const projectData = {
-        shapes: shapesToSave,
+        shapes: shapes.map((s) => ({
+          ...s,
+          selectedBy: undefined,
+          selectedByName: undefined,
+          selectedByColor: undefined,
+          selectedAt: undefined,
+        })),
         canvasBackground,
         projectName,
         lastSaved: Date.now(),
       };
 
-      // Save to localStorage for quick access
       localStorage.setItem(`project-${slug}`, JSON.stringify(projectData));
 
-      // If we have local changes, sync them to Firestore
-      if (isLocalMode) {
-        // First, clear existing shapes from Firestore
-        const existingShapes = shapes;
-        for (const shape of existingShapes) {
-          try {
-            await deleteShape(shape.id);
-          } catch (error) {
-            console.error(`Failed to delete old shape ${shape.id}:`, error);
-          }
-        }
-
-        // Then create new shapes in Firestore
-        for (const shape of shapesToSave) {
-          try {
-            const shapeData: CreateShapeData = {
-              type: shape.type,
-              x: shape.x,
-              y: shape.y,
-              width: shape.width,
-              height: shape.height,
-              color: shape.color,
-              zIndex: shape.zIndex,
-              createdBy: shape.createdBy,
-              text: shape.text,
-              fontSize: shape.fontSize,
-              fontFamily: shape.fontFamily,
-              points: shape.points,
-              strokeWidth: shape.strokeWidth,
-            };
-            await createShape(shapeData);
-          } catch (error) {
-            console.error(`Failed to create shape in Firestore:`, error);
-          }
-        }
-
-        // Switch back to Firestore mode
-        setIsLocalMode(false);
-        setLocalShapes([]);
-      }
-
       const currentState = JSON.stringify({
-        shapes: shapesToSave,
+        shapes: projectData.shapes,
         canvasBackground,
         projectName,
       });
@@ -417,11 +351,12 @@ const CanvasPage: React.FC = () => {
       setLastSavedState(currentState);
       setHasUnsavedChanges(false);
 
-      console.log("Project saved successfully to both localStorage and Firestore");
+      // Show brief save confirmation (optional)
+      console.log("Project saved successfully");
     } catch (error) {
       console.error("Failed to save project:", error);
     }
-  }, [currentShapes, canvasBackground, projectName, slug, isLocalMode, shapes, deleteShape, createShape]);
+  }, [shapes, canvasBackground, projectName, slug]);
 
   // Handle new project
   const handleNewProject = useCallback(() => {
@@ -434,10 +369,11 @@ const CanvasPage: React.FC = () => {
 
   // Handle exit with unsaved changes
   const handleExitWithoutSaving = useCallback(() => {
+    clearSessionStorage(); // Clear temporary changes
     setHasUnsavedChanges(false);
     setShowExitPrompt(false);
     navigate("/dashboard/recent");
-  }, [navigate]);
+  }, [navigate, clearSessionStorage]);
 
   // Handle save and exit
   const handleSaveAndExit = useCallback(() => {
@@ -445,6 +381,8 @@ const CanvasPage: React.FC = () => {
     setShowExitPrompt(false);
     navigate("/dashboard/recent");
   }, [handleSaveProject, navigate]);
+
+  // Removed duplicate clearSessionStorage function
 
   // History operations
   const handleUndo = useCallback(() => {
@@ -548,7 +486,7 @@ const CanvasPage: React.FC = () => {
   // Export functions
   const handleExportPNG = useCallback(async () => {
     try {
-      await exportCanvas(currentShapes, projectName, {
+      await exportCanvas(shapes, projectName, {
         format: "png",
         scale: 2, // High DPI export
         padding: 20,
@@ -558,22 +496,22 @@ const CanvasPage: React.FC = () => {
     } catch (error) {
       console.error("Export PNG failed:", error);
     }
-  }, [currentShapes, projectName]);
+  }, [shapes, projectName]);
 
   const handleExportSVG = useCallback(async () => {
     try {
-      await exportCanvas(currentShapes, projectName, {
+      await exportCanvas(shapes, projectName, {
         format: "svg",
         padding: 20,
       });
     } catch (error) {
       console.error("Export SVG failed:", error);
     }
-  }, [currentShapes, projectName]);
+  }, [shapes, projectName]);
 
   const handleExportPDF = useCallback(async () => {
     try {
-      await exportCanvas(currentShapes, projectName, {
+      await exportCanvas(shapes, projectName, {
         format: "pdf",
         padding: 20,
         backgroundColor: canvasBackground,
@@ -581,7 +519,7 @@ const CanvasPage: React.FC = () => {
     } catch (error) {
       console.error("Export PDF failed:", error);
     }
-  }, [currentShapes, projectName, canvasBackground]);
+  }, [shapes, projectName, canvasBackground]);
 
   // Export selected functions moved to FloatingToolbar component
 
@@ -658,14 +596,14 @@ const CanvasPage: React.FC = () => {
       <div className="modern-main-layout">
         {/* Left Sidebar */}
         <LeftSidebar
-          shapes={currentShapes}
+          shapes={shapes}
           selectedShapeIds={selectedShapeIds}
           onSelectShape={selectShape}
           onUndo={handleUndo}
           onRedo={handleRedo}
           onCopy={handleCopy}
           onPaste={handlePaste}
-          onDeleteSelected={activeDeleteSelectedShapes}
+          onDeleteSelected={deleteSelectedShapes}
           onRenameShape={handleRenameShape}
           onSave={handleSaveProject}
           onNewProject={handleNewProject}
@@ -683,14 +621,14 @@ const CanvasPage: React.FC = () => {
           style={{ backgroundColor: canvasBackground }}
         >
           <Canvas
-            shapes={currentShapes}
+            shapes={shapes}
             selectedShapeIds={selectedShapeIds}
             selectedTool={selectedTool}
             isLoading={false}
             error={null}
-            createShape={activeCreateShape}
-            updateShape={activeUpdateShape}
-            deleteSelectedShapes={activeDeleteSelectedShapes}
+            createShape={createShape}
+            updateShape={updateShape}
+            deleteSelectedShapes={deleteSelectedShapes}
             selectShape={selectShape}
             isShapeLockedByOther={isShapeLockedByOther}
             getShapeSelector={getShapeSelector}
@@ -711,10 +649,10 @@ const CanvasPage: React.FC = () => {
             setIsBackgroundPickerOpen(!isBackgroundPickerOpen)
           }
           onCloseBackgroundPicker={() => setIsBackgroundPickerOpen(false)}
-          selectedShapes={currentShapes.filter((shape) =>
+          selectedShapes={shapes.filter((shape) =>
             selectedShapeIds.includes(shape.id)
           )}
-          onUpdateShape={activeUpdateShape}
+          onUpdateShape={updateShape}
           onExportPNG={handleExportPNG}
           onExportSVG={handleExportSVG}
           onExportPDF={handleExportPDF}
