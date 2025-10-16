@@ -408,30 +408,41 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
         <div className="toolbar-left">
           {/* Cursor Tool */}
           <div className="tool-group">
-            <button
-              ref={cursorButtonRef}
-              className={`main-tool-button ${
-                selectedTool === null && !isTextMode && !showDrawingToolbar ? "active" : ""
-              }`}
-               onClick={() => {
-                 closeAllDropdowns();
-                 setShowCursorDropdown(!showCursorDropdown);
-               }}
-              title={getCurrentCursorTool()?.name}
-            >
-              {getCurrentCursorTool()?.icon}
-              <svg
-                className="dropdown-arrow"
-                width="8"
-                height="8"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+            <div className="split-button">
+              <button
+                ref={cursorButtonRef}
+                className={`main-tool-button ${
+                  selectedTool === null && !isTextMode && !showDrawingToolbar ? "active" : ""
+                }`}
+                onClick={() => {
+                  closeAllDropdowns();
+                  handleCursorSelect(cursorMode);
+                }}
+                title={getCurrentCursorTool()?.name}
               >
-                <polyline points="6,9 12,15 18,9" />
-              </svg>
-            </button>
+                {getCurrentCursorTool()?.icon}
+              </button>
+              <button
+                className="dropdown-button"
+                onClick={() => {
+                  closeAllDropdowns();
+                  setShowCursorDropdown(!showCursorDropdown);
+                }}
+                title="More cursor tools"
+              >
+                <svg
+                  className="dropdown-arrow"
+                  width="8"
+                  height="8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polyline points="6,9 12,15 18,9" />
+                </svg>
+              </button>
+            </div>
 
             {showCursorDropdown && (
               <div className="tool-dropdown">
@@ -454,32 +465,43 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
           {/* Shape Tool */}
           <div className="tool-group">
-            <button
-              ref={shapeButtonRef}
-              className={`main-tool-button ${
-                (selectedTool === "rectangle" || selectedTool === "circle") && !isTextMode && !showDrawingToolbar
-                  ? "active"
-                  : ""
-              }`}
-               onClick={() => {
-                 closeAllDropdowns();
-                 setShowShapeDropdown(!showShapeDropdown);
-               }}
-              title={getCurrentShapeTool()?.name}
-            >
-              {getCurrentShapeTool()?.icon}
-              <svg
-                className="dropdown-arrow"
-                width="8"
-                height="8"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+            <div className="split-button">
+              <button
+                ref={shapeButtonRef}
+                className={`main-tool-button ${
+                  (selectedTool === "rectangle" || selectedTool === "circle") && !isTextMode && !showDrawingToolbar
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() => {
+                  closeAllDropdowns();
+                  handleShapeSelect(shapeMode);
+                }}
+                title={getCurrentShapeTool()?.name}
               >
-                <polyline points="6,9 12,15 18,9" />
-              </svg>
-            </button>
+                {getCurrentShapeTool()?.icon}
+              </button>
+              <button
+                className="dropdown-button"
+                onClick={() => {
+                  closeAllDropdowns();
+                  setShowShapeDropdown(!showShapeDropdown);
+                }}
+                title="More shape tools"
+              >
+                <svg
+                  className="dropdown-arrow"
+                  width="8"
+                  height="8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polyline points="6,9 12,15 18,9" />
+                </svg>
+              </button>
+            </div>
 
             {showShapeDropdown && (
               <div className="tool-dropdown">
@@ -524,30 +546,41 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
           {/* Drawing Tool */}
           <div className="tool-group">
-            <button
-              ref={drawingButtonRef}
-              className={`main-tool-button ${
-                showDrawingToolbar ? "active" : ""
-              }`}
-               onClick={() => {
-                 closeAllDropdowns();
-                 setShowDrawingDropdown(!showDrawingDropdown);
-               }}
-              title={getCurrentDrawingTool()?.name}
-            >
-              {getCurrentDrawingTool()?.icon}
-              <svg
-                className="dropdown-arrow"
-                width="8"
-                height="8"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+            <div className="split-button">
+              <button
+                ref={drawingButtonRef}
+                className={`main-tool-button ${
+                  showDrawingToolbar ? "active" : ""
+                }`}
+                onClick={() => {
+                  closeAllDropdowns();
+                  handleDrawingSelect(drawingMode);
+                }}
+                title={getCurrentDrawingTool()?.name}
               >
-                <polyline points="6,9 12,15 18,9" />
-              </svg>
-            </button>
+                {getCurrentDrawingTool()?.icon}
+              </button>
+              <button
+                className="dropdown-button"
+                onClick={() => {
+                  closeAllDropdowns();
+                  setShowDrawingDropdown(!showDrawingDropdown);
+                }}
+                title="More drawing tools"
+              >
+                <svg
+                  className="dropdown-arrow"
+                  width="8"
+                  height="8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polyline points="6,9 12,15 18,9" />
+                </svg>
+              </button>
+            </div>
 
             {showDrawingDropdown && (
               <div className="tool-dropdown">

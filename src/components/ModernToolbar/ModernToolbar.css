@@ -47,21 +47,47 @@
   align-items: center;
 }
 
-/* Main Tool Buttons */
-.main-tool-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 8px;
-  padding: 10px 12px;
+/* Split Button Layout */
+.split-button {
   display: flex;
   align-items: center;
-  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 1px;
+}
+
+/* Main Tool Buttons */
+.main-tool-button {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.8);
   transition: all 0.15s ease;
   font-size: 14px;
-  min-width: 44px;
+  min-width: 36px;
+  height: 32px;
+}
+
+/* Dropdown Button */
+.dropdown-button {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 6px;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.15s ease;
+  min-width: 20px;
+  height: 32px;
 }
 
 .main-tool-button:hover {
@@ -69,9 +95,18 @@
   color: white;
 }
 
+.dropdown-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .main-tool-button.active {
   background: rgba(59, 130, 246, 0.8);
   color: white;
+}
+
+.split-button:has(.main-tool-button.active) {
+  background: rgba(74, 144, 226, 0.2);
 }
 
 .dropdown-arrow {
