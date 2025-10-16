@@ -76,7 +76,7 @@ const CanvasPage: React.FC = () => {
   });
 
   // History management for undo/redo
-  const { undo, redo, pushState } = useHistory(shapes);
+  const { undo, redo, pushState, canUndo, canRedo } = useHistory(shapes);
 
   // Canvas state management
   const { canvasState, zoomIn, zoomOut, zoomReset } = useCanvas();
@@ -172,6 +172,58 @@ const CanvasPage: React.FC = () => {
   // Handle cursor mode changes from toolbar
   const handleCursorModeChange = (mode: string) => {
     setCursorMode(mode);
+  };
+
+  // Sidebar handlers
+  const handleSave = () => {
+    // Implement save functionality
+    console.log("Save project");
+  };
+
+  const handleNewProject = () => {
+    // Navigate to new project
+    navigate("/canvas/new");
+  };
+
+  const handleCreateObject = (type: 'shape' | 'text' | 'brush') => {
+    // Switch to the appropriate tool and trigger creation
+    if (type === 'text') {
+      setCursorMode('text');
+    } else if (type === 'brush') {
+      setCursorMode('brush');
+    } else {
+      // For shape, default to rectangle
+      setSelectedTool('rectangle');
+      setCursorMode('shape');
+    }
+  };
+
+  const handleRenameObject = (id: string, newName: string) => {
+    // For text objects, update the text content
+    const shape = shapes.find(s => s.id === id);
+    if (shape && shape.type === 'text') {
+      updateShape(id, { text: newName });
+    }
+    // For other objects, we could store custom names in a separate field
+    // This would require extending the Shape interface
+  };
+
+  const handleDeleteObject = async (id: string) => {
+    // Remove from selection if selected
+    if (selectedShapeIds.includes(id)) {
+      await selectShape(null);
+    }
+    // Delete the specific object using the shapes service
+    // This would need to be implemented in the shapes service
+    console.log("Delete object:", id);
+  };
+
+  const handleCopyObject = (id: string) => {
+    // Copy specific object to clipboard
+    const shape = shapes.find(s => s.id === id);
+    if (shape) {
+      setClipboard([shape]);
+    }
   };
 
   // History operations
@@ -378,6 +430,19 @@ const CanvasPage: React.FC = () => {
           selectedShapeIds={selectedShapeIds}
           onSelectShape={selectShape}
           projectName={projectName}
+          onSave={handleSave}
+          onCopy={handleCopy}
+          onPaste={handlePaste}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onNewProject={handleNewProject}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          hasClipboardContent={clipboard.length > 0}
+          onCreateObject={handleCreateObject}
+          onRenameObject={handleRenameObject}
+          onDeleteObject={handleDeleteObject}
+          onCopyObject={handleCopyObject}
         />
 
         {/* Canvas Area */}
