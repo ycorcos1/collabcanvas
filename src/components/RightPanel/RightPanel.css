@@ -86,6 +86,11 @@
   padding: 0 20px 16px;
 }
 
+/* Online Panel Specific Styling */
+.online-panel .section-content {
+  padding: 0 16px 16px;
+}
+
 /* Property Rows */
 .property-row {
   display: flex;

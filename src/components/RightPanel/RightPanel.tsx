@@ -316,7 +316,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                 <h3>Online Users</h3>
               </div>
               <div className="section-content">
-                <UserPresence />
+                <UserPresence variant="right-panel" />
               </div>
             </div>
           </div>
