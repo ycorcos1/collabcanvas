@@ -47,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       path: "/dashboard/recent",
       label: "Recent",
-      icon: "◷",
+      icon: "⏱",
     },
     {
       path: "/dashboard/all",
@@ -57,12 +57,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       path: "/dashboard/trash",
       label: "Trash",
-      icon: "◪",
+      icon: "🗑",
     },
     {
       path: "/dashboard/settings",
       label: "Settings",
-      icon: "◉",
+      icon: "⚙",
     },
   ];
 
@@ -207,6 +207,8 @@ style.textContent = `
     font-size: var(--text-lg);
     width: 24px;
     text-align: center;
+    color: inherit;
+    filter: grayscale(1);
   }
 
   .nav-label {
