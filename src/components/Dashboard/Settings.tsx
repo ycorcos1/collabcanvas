@@ -3,6 +3,8 @@ import { useAuth } from "../Auth/AuthProvider";
 import { useTheme } from "../../hooks/useTheme";
 import { Button, Input, Avatar, Modal } from "../shared";
 import { uploadProfilePhoto } from "../../services/storage";
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { auth } from "../../services/firebase";
 
 /**
  * Settings Page - User preferences and account management
@@ -29,6 +31,16 @@ export const Settings: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [currentPhotoURL, setCurrentPhotoURL] = useState<string | undefined>(user?.photoURL);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Password change state
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
 
   // Sync local photo state with user state
   useEffect(() => {
@@ -125,6 +137,86 @@ export const Settings: React.FC = () => {
         fileInputRef.current.value = "";
       }
     }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!user?.email) {
+      setPasswordError("User email not found");
+      return;
+    }
+
+    // Validation
+    if (!passwordData.currentPassword) {
+      setPasswordError("Current password is required");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      setPasswordError("New password must be different from current password");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setPasswordError("");
+
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("No authenticated user found");
+      }
+
+      // Re-authenticate user with current password
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        passwordData.currentPassword
+      );
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // Update password
+      await updatePassword(currentUser, passwordData.newPassword);
+
+      // Reset form and close
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setShowPasswordForm(false);
+      
+      // Show success (you could add a toast here)
+      alert("Password updated successfully!");
+
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      
+      // Handle specific Firebase errors
+      if (error.code === "auth/wrong-password") {
+        setPasswordError("Current password is incorrect");
+      } else if (error.code === "auth/weak-password") {
+        setPasswordError("New password is too weak");
+      } else if (error.code === "auth/requires-recent-login") {
+        setPasswordError("Please sign out and sign back in, then try again");
+      } else {
+        setPasswordError("Failed to update password. Please try again.");
+      }
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handlePasswordInputChange = (field: string, value: string) => {
+    setPasswordData(prev => ({ ...prev, [field]: value }));
+    setPasswordError(""); // Clear error when user types
   };
 
   const themeOptions = [
@@ -245,6 +337,91 @@ export const Settings: React.FC = () => {
                 </>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Password Section */}
+        <div className="settings-section">
+          <div className="section-header">
+            <h2>Password</h2>
+            <p>Update your account password</p>
+          </div>
+
+          <div className="password-card">
+            {!showPasswordForm ? (
+              <div className="password-actions">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowPasswordForm(true)}
+                >
+                  Change Password
+                </Button>
+              </div>
+            ) : (
+              <div className="password-form">
+                <Input
+                  label="Current Password"
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => handlePasswordInputChange("currentPassword", e.target.value)}
+                  placeholder="Enter your current password"
+                  fullWidth
+                  error={passwordError && passwordError.includes("Current password") ? passwordError : undefined}
+                />
+
+                <Input
+                  label="New Password"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => handlePasswordInputChange("newPassword", e.target.value)}
+                  placeholder="Enter your new password (min 6 characters)"
+                  fullWidth
+                  error={passwordError && passwordError.includes("New password") ? passwordError : undefined}
+                />
+
+                <Input
+                  label="Confirm New Password"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => handlePasswordInputChange("confirmPassword", e.target.value)}
+                  placeholder="Confirm your new password"
+                  fullWidth
+                  error={passwordError && passwordError.includes("do not match") ? passwordError : undefined}
+                />
+
+                {passwordError && !passwordError.includes("Current password") && !passwordError.includes("New password") && !passwordError.includes("do not match") && (
+                  <div className="password-error">
+                    {passwordError}
+                  </div>
+                )}
+
+                <div className="password-actions">
+                  <Button
+                    variant="primary"
+                    onClick={handlePasswordChange}
+                    loading={isChangingPassword}
+                    disabled={isChangingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                  >
+                    Update Password
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setShowPasswordForm(false);
+                      setPasswordData({
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: "",
+                      });
+                      setPasswordError("");
+                    }}
+                    disabled={isChangingPassword}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -466,6 +643,34 @@ style.textContent = `
     margin-top: var(--space-2);
   }
 
+  .password-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+  }
+
+  .password-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: 400px;
+  }
+
+  .password-actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+
+  .password-error {
+    color: var(--status-error);
+    font-size: var(--text-sm);
+    padding: var(--space-2);
+    background-color: var(--status-error-bg);
+    border: 1px solid var(--status-error);
+    border-radius: var(--radius-sm);
+  }
 
   .theme-selector {
     display: flex;
