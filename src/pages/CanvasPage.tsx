@@ -9,11 +9,13 @@ import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCanvas } from "../hooks/useCanvas";
+import { useProjectManagement } from "../hooks/useProjectManagement";
 import { exportCanvas } from "../utils/exportUtils";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
 import { ModernToolbar } from "../components/ModernToolbar/ModernToolbar";
 import { RightPanel } from "../components/RightPanel/RightPanel";
+import { AddCollaboratorsModal } from "../components/Modals/AddCollaboratorsModal";
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
 import "./CanvasPage.css";
@@ -77,6 +79,13 @@ const CanvasPage: React.FC = () => {
 
   // History management for undo/redo
   const { undo, redo, pushState, canUndo, canRedo } = useHistory(shapes);
+
+  // Collaboration modal state
+  const [isCollaborationModalOpen, setIsCollaborationModalOpen] =
+    useState(false);
+
+  // Project management
+  const { saveProject } = useProjectManagement();
 
   // Canvas state management
   const { canvasState, zoomIn, zoomOut, zoomReset } = useCanvas();
@@ -287,46 +296,55 @@ const CanvasPage: React.FC = () => {
   };
 
   // Save project functionality
-  const handleSaveProject = useCallback(() => {
+  const handleSaveProject = useCallback(async () => {
     try {
-      const projectData = {
-        shapes: shapes.map((s) => ({
-          ...s,
-          selectedBy: undefined,
-          selectedByName: undefined,
-          selectedByColor: undefined,
-          selectedAt: undefined,
-        })),
-        canvasBackground,
-        projectName,
-        lastSaved: Date.now(),
-      };
+      const cleanedShapes = shapes.map((s) => ({
+        ...s,
+        selectedBy: undefined,
+        selectedByName: undefined,
+        selectedByColor: undefined,
+        selectedAt: undefined,
+      }));
 
-      localStorage.setItem(`project-${slug}`, JSON.stringify(projectData));
+      // Generate project ID from slug or create new one
+      const projectId = slug?.startsWith("untitled-")
+        ? `project-${slug.replace("untitled-", "")}`
+        : `project-${Date.now()}`;
 
-      const currentState = JSON.stringify({
-        shapes: projectData.shapes,
+      const success = await saveProject(projectId, {
+        name: projectName,
+        shapes: cleanedShapes,
         canvasBackground,
-        projectName,
       });
 
-      setLastSavedState(currentState);
-      setHasUnsavedChanges(false);
-
-      // Show brief save confirmation (optional)
-      console.log("Project saved successfully");
+      if (success) {
+        const currentState = JSON.stringify({
+          shapes: cleanedShapes,
+          canvasBackground,
+          projectName,
+        });
+        setLastSavedState(currentState);
+        setHasUnsavedChanges(false);
+        console.log("Project saved successfully");
+      } else {
+        console.error("Failed to save project");
+      }
     } catch (error) {
-      console.error("Failed to save project:", error);
+      console.error("Error saving project:", error);
     }
-  }, [shapes, canvasBackground, projectName, slug]);
+  }, [shapes, canvasBackground, projectName, slug, saveProject]);
 
   // Handle new project
-  const handleNewProject = useCallback(() => {
+  const handleNewProject = useCallback(async () => {
     if (hasUnsavedChanges) {
       setShowExitPrompt(true);
       return;
     }
-    navigate("/dashboard/recent");
+
+    // Generate a unique project name and slug
+    const timestamp = Date.now();
+    const newProjectSlug = `untitled-${timestamp}`;
+    navigate(`/canvas/${newProjectSlug}`);
   }, [hasUnsavedChanges, navigate]);
 
   // Handle exit with unsaved changes
@@ -342,6 +360,11 @@ const CanvasPage: React.FC = () => {
     setShowExitPrompt(false);
     navigate("/dashboard/recent");
   }, [handleSaveProject, navigate]);
+
+  // Handle add collaborators
+  const handleAddCollaborators = useCallback(() => {
+    setIsCollaborationModalOpen(true);
+  }, []);
 
   // History operations
   const handleUndo = useCallback(() => {
@@ -566,6 +589,7 @@ const CanvasPage: React.FC = () => {
           onRenameShape={handleRenameShape}
           onSave={handleSaveProject}
           onNewProject={handleNewProject}
+          onAddCollaborators={handleAddCollaborators}
           onExportPNG={handleExportPNG}
           onExportPDF={handleExportPDF}
           canUndo={canUndo}
@@ -664,6 +688,14 @@ const CanvasPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add Collaborators Modal */}
+      <AddCollaboratorsModal
+        isOpen={isCollaborationModalOpen}
+        onClose={() => setIsCollaborationModalOpen(false)}
+        projectId={slug || ""}
+        projectName={projectName}
+      />
     </div>
   );
 };

@@ -1,5 +1,17 @@
 import { useAuth } from '../components/Auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  doc, 
+  query, 
+  where, 
+  getDocs, 
+  Timestamp,
+  arrayUnion 
+} from 'firebase/firestore';
+import { firestore as db } from '../services/firebase';
 
 /**
  * Hook for managing collaboration request actions
@@ -12,18 +24,33 @@ export const useCollaborationRequests = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      // TODO: Implement actual Firestore logic
-      // 1. Update request status to 'accepted'
-      // 2. Add user as collaborator to the project
-      // 3. Add project to user's shared projects
-      // 4. Navigate to the project canvas
+      // Get the collaboration request
+      const requestsRef = collection(db, 'collaborationRequests');
+      const requestQuery = query(requestsRef, where('__name__', '==', requestId));
+      const requestSnapshot = await getDocs(requestQuery);
       
-      console.log('Accepting request:', requestId);
-      
-      // Mock implementation - navigate to a project
-      // In real implementation, get the actual project ID from the request
-      const mockProjectId = 'shared-project-123';
-      navigate(`/canvas/${mockProjectId}`);
+      if (requestSnapshot.empty) {
+        throw new Error('Collaboration request not found');
+      }
+
+      const requestDoc = requestSnapshot.docs[0];
+      const requestData = requestDoc.data();
+
+      // Update request status to 'accepted'
+      await updateDoc(doc(db, 'collaborationRequests', requestId), {
+        status: 'accepted',
+        acceptedAt: Timestamp.now()
+      });
+
+      // Add user as collaborator to the project
+      const projectRef = doc(db, 'projects', requestData.projectId);
+      await updateDoc(projectRef, {
+        collaborators: arrayUnion(user.id),
+        updatedAt: Timestamp.now()
+      });
+
+      // Navigate to the project canvas
+      navigate(`/canvas/${requestData.projectSlug || requestData.projectId}`);
       
     } catch (error) {
       console.error('Error accepting collaboration request:', error);
@@ -35,14 +62,11 @@ export const useCollaborationRequests = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      // TODO: Implement actual Firestore logic
-      // 1. Update request status to 'denied'
-      // 2. Optionally remove the request after some time
-      
-      console.log('Denying request:', requestId);
-      
-      // Mock implementation
-      // In real implementation, update Firestore document
+      // Update request status to 'denied'
+      await updateDoc(doc(db, 'collaborationRequests', requestId), {
+        status: 'denied',
+        deniedAt: Timestamp.now()
+      });
       
     } catch (error) {
       console.error('Error denying collaboration request:', error);
@@ -59,21 +83,48 @@ export const useCollaborationRequests = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      // TODO: Implement actual Firestore logic
-      // 1. Check if recipient exists
-      // 2. Check if request already exists
-      // 3. Create new collaboration request document
-      // 4. Send notification to recipient
+      // Check if recipient exists (in a real app, you'd have a users collection)
+      // For now, we'll assume the email is valid and create the request
       
-      console.log('Sending collaboration request:', {
+      // Check if request already exists
+      const requestsRef = collection(db, 'collaborationRequests');
+      const existingRequestQuery = query(
+        requestsRef,
+        where('projectId', '==', projectId),
+        where('fromUserId', '==', user.id),
+        where('toUserEmail', '==', recipientEmail),
+        where('status', 'in', ['pending', 'accepted'])
+      );
+      
+      const existingSnapshot = await getDocs(existingRequestQuery);
+      if (!existingSnapshot.empty) {
+        const existingRequest = existingSnapshot.docs[0].data();
+        if (existingRequest.status === 'accepted') {
+          throw new Error('This user is already a collaborator on this project');
+        } else {
+          throw new Error('A collaboration request has already been sent to this user');
+        }
+      }
+
+      // Create new collaboration request
+      await addDoc(requestsRef, {
         projectId,
         projectName,
-        recipientEmail,
-        message,
-        fromUser: user.email
+        fromUserId: user.id,
+        fromUserName: user.displayName || user.email || 'Unknown User',
+        fromUserEmail: user.email,
+        toUserEmail: recipientEmail,
+        toUserId: null, // Will be populated when we have user lookup
+        message: message || '',
+        status: 'pending',
+        createdAt: Timestamp.now()
       });
+
+      // In a real app, you would also:
+      // 1. Create a notification for the recipient
+      // 2. Send an email notification
+      // 3. Update any real-time listeners
       
-      // Mock implementation
       return { success: true, message: 'Collaboration request sent!' };
       
     } catch (error) {

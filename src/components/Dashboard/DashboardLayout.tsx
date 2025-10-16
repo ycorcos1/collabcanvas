@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
+import { NotificationCenter } from "../Notifications/NotificationCenter";
 import { ThemeInitializer } from "../ThemeInitializer";
 
 interface DashboardLayoutProps {
@@ -54,7 +55,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Sidebar isOpen={isMobileMenuOpen} onClose={closeMobileMenu} />
 
       {/* Main Content */}
-      <main className="dashboard-main">{children || <Outlet />}</main>
+      <main className="dashboard-main">
+        {/* Dashboard Header */}
+        <div className="dashboard-header">
+          <div className="dashboard-header-actions">
+            <NotificationCenter />
+          </div>
+        </div>
+        
+        {/* Dashboard Content */}
+        <div className="dashboard-content-wrapper">
+          {children || <Outlet />}
+        </div>
+      </main>
     </div>
   );
 };
@@ -108,6 +121,31 @@ style.textContent = `
     flex: 1;
     min-width: 0; /* Prevent flex item from overflowing */
     background-color: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: var(--space-4) var(--space-6);
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-primary);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .dashboard-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .dashboard-content-wrapper {
+    flex: 1;
+    overflow: auto;
   }
 
   /* Mobile styles */
