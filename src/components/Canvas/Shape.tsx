@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect, useRef } from "react";
-import { Rect, Circle, Group, Text } from "react-konva";
+import { Rect, Circle, Group, Text, Transformer } from "react-konva";
 import { KonvaEventObject } from "konva/lib/Node";
 import { Shape as ShapeType } from "../../types/shape";
 import Konva from "konva";
@@ -11,6 +11,7 @@ interface ShapeProps {
   selectedTool: ShapeType["type"] | null;
   onSelect: (id: string, event?: MouseEvent) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
+  onResize?: (id: string, x: number, y: number, width: number, height: number) => void;
   isLockedByOther?: boolean; // New prop for collaborative locking
   selectedByOther?: { name: string; color: string } | null; // New prop for showing who selected it
   canvasScale: number; // New prop for canvas zoom scale
@@ -24,6 +25,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
     selectedTool,
     onSelect,
     onDragEnd,
+    onResize,
     isLockedByOther = false,
     selectedByOther = null,
     canvasScale,
@@ -31,6 +33,22 @@ export const Shape: React.FC<ShapeProps> = React.memo(
     const [isDragging, setIsDragging] = useState(false);
     const [realTimeScale, setRealTimeScale] = useState(canvasScale);
     const groupRef = useRef<Konva.Group>(null);
+    const shapeRef = useRef<Konva.Rect | Konva.Circle>(null);
+    const transformerRef = useRef<Konva.Transformer>(null);
+
+    // Attach transformer to shape when selected
+    useEffect(() => {
+      if (isSelected && !isPreview && selectedTool === null) {
+        // Only show transformer when using move tool (selectedTool === null)
+        const transformer = transformerRef.current;
+        const shape = shapeRef.current;
+        
+        if (transformer && shape) {
+          transformer.nodes([shape]);
+          transformer.getLayer()?.batchDraw();
+        }
+      }
+    }, [isSelected, isPreview, selectedTool]);
 
     // Update real-time scale by checking the stage scale frequently during interactions
     useEffect(() => {
@@ -131,6 +149,26 @@ export const Shape: React.FC<ShapeProps> = React.memo(
       [shape.id, onDragEnd]
     );
 
+    const handleTransform = useCallback(() => {
+      const shapeNode = shapeRef.current;
+      if (shapeNode && onResize) {
+        const scaleX = shapeNode.scaleX();
+        const scaleY = shapeNode.scaleY();
+        
+        // Calculate new dimensions
+        const newWidth = Math.max(5, shapeNode.width() * scaleX);
+        const newHeight = Math.max(5, shapeNode.height() * scaleY);
+        
+        // Reset scale to 1 and apply new dimensions
+        shapeNode.scaleX(1);
+        shapeNode.scaleY(1);
+        shapeNode.width(newWidth);
+        shapeNode.height(newHeight);
+        
+        onResize(shape.id, shapeNode.x(), shapeNode.y(), newWidth, newHeight);
+      }
+    }, [onResize, shape.id]);
+
     const handleMouseEnter = useCallback(
       (e: KonvaEventObject<MouseEvent>) => {
         if (!isPreview && !isDragging && selectedTool) {
@@ -194,6 +232,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
       return (
         <Group ref={groupRef}>
           <Circle
+            ref={shapeRef as React.RefObject<Konva.Circle>}
             x={shape.x + shape.width / 2} // Adjust x to center
             y={shape.y + shape.height / 2} // Adjust y to center
             radius={Math.min(shape.width, shape.height) / 2}
@@ -298,6 +337,25 @@ export const Shape: React.FC<ShapeProps> = React.memo(
               />
             </Group>
           )}
+          {/* Transformer for resize handles when selected and using move tool */}
+          {isSelected && !isPreview && selectedTool === null && (
+            <Transformer
+              ref={transformerRef}
+              onTransform={handleTransform}
+              boundBoxFunc={(oldBox, newBox) => {
+                // Minimum size constraints
+                if (newBox.width < 5 || newBox.height < 5) {
+                  return oldBox;
+                }
+                return newBox;
+              }}
+              anchorStroke="#2196f3"
+              anchorFill="white"
+              anchorSize={8}
+              borderStroke="#2196f3"
+              borderDash={[3, 3]}
+            />
+          )}
         </Group>
       );
     }
@@ -305,7 +363,12 @@ export const Shape: React.FC<ShapeProps> = React.memo(
     // Default to rectangle
     return (
       <Group ref={groupRef}>
-        <Rect {...commonProps} width={shape.width} height={shape.height} />
+        <Rect 
+          ref={shapeRef as React.RefObject<Konva.Rect>}
+          {...commonProps} 
+          width={shape.width} 
+          height={shape.height} 
+        />
         {/* User label for shapes selected by others - positioned as tab on top of outline */}
         {selectedByOther && !isSelected && (
           <Group x={shape.x} y={shape.y} scaleX={uiScale} scaleY={uiScale}>
@@ -340,6 +403,25 @@ export const Shape: React.FC<ShapeProps> = React.memo(
               fontStyle="bold"
             />
           </Group>
+        )}
+        {/* Transformer for resize handles when selected and using move tool */}
+        {isSelected && !isPreview && selectedTool === null && (
+          <Transformer
+            ref={transformerRef}
+            onTransform={handleTransform}
+            boundBoxFunc={(oldBox, newBox) => {
+              // Minimum size constraints
+              if (newBox.width < 5 || newBox.height < 5) {
+                return oldBox;
+              }
+              return newBox;
+            }}
+            anchorStroke="#2196f3"
+            anchorFill="white"
+            anchorSize={8}
+            borderStroke="#2196f3"
+            borderDash={[3, 3]}
+          />
         )}
       </Group>
     );

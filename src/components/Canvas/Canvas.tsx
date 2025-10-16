@@ -495,6 +495,14 @@ export const Canvas: React.FC<CanvasProps> = ({
     [updateShape, shapes]
   );
 
+  // Handle shape resize
+  const handleShapeResize = useCallback(
+    (shapeId: string, x: number, y: number, width: number, height: number) => {
+      updateShape(shapeId, { x, y, width, height });
+    },
+    [updateShape]
+  );
+
   return (
     <div className={`canvas-container ${selectedTool ? "creating-shape" : ""}`}>
       {/* Don't render canvas content if user is not authenticated */}
@@ -599,6 +607,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 selectedTool={selectedTool}
                 onSelect={handleShapeSelect}
                 onDragEnd={handleShapeDragEnd}
+                onResize={handleShapeResize}
                 isLockedByOther={isLockedByOther}
                 selectedByOther={selectedByOther}
                 canvasScale={canvasState.scale}
