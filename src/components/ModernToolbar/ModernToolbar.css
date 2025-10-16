@@ -1,0 +1,377 @@
+/* Modern Toolbar Styles */
+
+.modern-toolbar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 400px;
+}
+
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-left {
+  flex: 1;
+}
+
+.toolbar-center {
+  flex: 0 0 auto;
+}
+
+.toolbar-right {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Tool Groups */
+.tool-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Main Tool Buttons */
+.main-tool-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.15s ease;
+  font-size: 14px;
+  min-width: 44px;
+  justify-content: center;
+}
+
+.main-tool-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.main-tool-button.active {
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+}
+
+.dropdown-arrow {
+  margin-left: 2px;
+  opacity: 0.6;
+}
+
+/* Tool Dropdowns */
+.tool-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1001;
+}
+
+.dropdown-item {
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.15s ease;
+  width: 100%;
+  font-size: 13px;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.dropdown-item.active {
+  background: rgba(59, 130, 246, 0.6);
+  color: white;
+}
+
+.dropdown-item span:first-of-type {
+  flex: 1;
+  text-align: left;
+}
+
+.shortcut {
+  font-size: 11px;
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+/* Zoom Level */
+.zoom-level {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.15s ease;
+}
+
+.action-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Drawing Toolbar */
+.drawing-toolbar {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 12px 16px;
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.drawing-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brush-size-control,
+.brush-color-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brush-size-control label,
+.brush-color-control label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.brush-size-slider {
+  width: 80px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.brush-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.brush-size-value {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 20px;
+  text-align: center;
+}
+
+.brush-color-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.brush-color-button:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.close-drawing-toolbar {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.15s ease;
+}
+
+.close-drawing-toolbar:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modern-toolbar {
+    min-width: 320px;
+    padding: 6px 12px;
+    gap: 12px;
+  }
+  
+  .main-tool-button {
+    padding: 8px 10px;
+    min-width: 40px;
+  }
+  
+  .toolbar-center {
+    display: none;
+  }
+  
+  .drawing-toolbar {
+    bottom: 80px;
+    padding: 8px 12px;
+  }
+  
+  .drawing-controls {
+    gap: 12px;
+  }
+  
+  .brush-size-slider {
+    width: 60px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .modern-toolbar,
+  .drawing-toolbar {
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .main-tool-button,
+  .action-button {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .main-tool-button.active {
+    border-color: rgba(59, 130, 246, 1);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .main-tool-button,
+  .dropdown-item,
+  .action-button,
+  .close-drawing-toolbar,
+  .brush-color-button {
+    transition: none;
+  }
+}
+
+/* Dark Theme Adjustments */
+@media (prefers-color-scheme: light) {
+  .modern-toolbar,
+  .drawing-toolbar {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  .tool-dropdown {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  .main-tool-button,
+  .action-button,
+  .close-drawing-toolbar {
+    color: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.05);
+  }
+  
+  .main-tool-button:hover,
+  .action-button:hover,
+  .close-drawing-toolbar:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: black;
+  }
+  
+  .dropdown-item {
+    color: rgba(0, 0, 0, 0.8);
+  }
+  
+  .dropdown-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: black;
+  }
+  
+  .zoom-level {
+    color: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.05);
+  }
+  
+  .brush-size-control label,
+  .brush-color-control label,
+  .brush-size-value {
+    color: rgba(0, 0, 0, 0.8);
+  }
+  
+  .brush-size-slider {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  
+  .brush-size-slider::-webkit-slider-thumb {
+    background: black;
+  }
+}
