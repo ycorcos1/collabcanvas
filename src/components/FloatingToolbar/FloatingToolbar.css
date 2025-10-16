@@ -16,8 +16,6 @@
 
 .floating-toolbar.dragging {
   cursor: grabbing;
-  transform: rotate(1deg);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
 }
 
 .floating-toolbar.minimized {
@@ -265,10 +263,6 @@
   .tab-btn,
   .minimize-btn {
     transition: none;
-  }
-  
-  .floating-toolbar.dragging {
-    transform: none;
   }
   
   .tool-btn:hover {

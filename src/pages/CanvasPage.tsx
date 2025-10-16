@@ -9,20 +9,10 @@ import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { exportCanvas } from "../utils/exportUtils";
-import {
-  alignLeft,
-  alignRight,
-  alignCenterHorizontal,
-  alignTop,
-  alignBottom,
-  alignCenterVertical,
-  distributeHorizontally,
-  distributeVertically,
-} from "../utils/alignmentUtils";
-import { LayersPanel } from "../components/LayersPanel/LayersPanel";
-import { FloatingToolbar } from "../components/FloatingToolbar/FloatingToolbar";
-import { FloatingUserPanel } from "../components/FloatingUserPanel/FloatingUserPanel";
-import { CanvasBackground } from "../components/CanvasBackground/CanvasBackground";
+// Alignment utils removed - will be added back when needed in right panel
+import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
+import { BottomToolbar } from "../components/BottomToolbar/BottomToolbar";
+import { RightPanel } from "../components/RightPanel/RightPanel";
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
 import "./CanvasPage.css";
@@ -70,7 +60,7 @@ const CanvasPage: React.FC = () => {
     updateShape,
     deleteSelectedShapes,
     selectShape,
-    clearAllShapes,
+    // clearAllShapes, // Not used in Figma layout
     isShapeLockedByOther,
     getShapeSelector,
   } = useShapes();
@@ -98,16 +88,11 @@ const CanvasPage: React.FC = () => {
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
 
-  // Layers panel state
-  const [isLayersPanelOpen, setIsLayersPanelOpen] = useState(false);
+  // Removed layers panel state - now integrated in left sidebar
 
   // Canvas background state
   const [canvasBackground, setCanvasBackground] = useState('#ffffff');
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
-
-  // Floating panel positions
-  const [toolbarPosition, setToolbarPosition] = useState({ x: 20, y: 80 });
-  const [userPanelPosition, setUserPanelPosition] = useState({ x: window.innerWidth - 300, y: 20 });
 
   // Project naming state
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -319,119 +304,9 @@ const CanvasPage: React.FC = () => {
 
   // Export selected functions moved to FloatingToolbar component
 
-  // Z-index management functions
-  const handleBringToFront = useCallback(async (shapeIds: string[]) => {
-    const maxZIndex = Math.max(...shapes.map(s => s.zIndex), 0);
-    for (const id of shapeIds) {
-      await updateShape(id, { zIndex: maxZIndex + 1 });
-    }
-  }, [shapes, updateShape]);
+  // Z-index management functions removed - will be added to right panel later if needed
 
-  const handleSendToBack = useCallback(async (shapeIds: string[]) => {
-    const minZIndex = Math.min(...shapes.map(s => s.zIndex), 0);
-    for (const id of shapeIds) {
-      await updateShape(id, { zIndex: minZIndex - 1 });
-    }
-  }, [shapes, updateShape]);
-
-  const handleBringForward = useCallback(async (shapeIds: string[]) => {
-    for (const id of shapeIds) {
-      const shape = shapes.find(s => s.id === id);
-      if (shape) {
-        await updateShape(id, { zIndex: shape.zIndex + 1 });
-      }
-    }
-  }, [shapes, updateShape]);
-
-  const handleSendBackward = useCallback(async (shapeIds: string[]) => {
-    for (const id of shapeIds) {
-      const shape = shapes.find(s => s.id === id);
-      if (shape) {
-        await updateShape(id, { zIndex: shape.zIndex - 1 });
-      }
-    }
-  }, [shapes, updateShape]);
-
-  // Alignment functions
-  const handleAlignLeft = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = alignLeft(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.x !== undefined) {
-        await updateShape(update.id, { x: update.x });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
-
-  const handleAlignRight = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = alignRight(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.x !== undefined) {
-        await updateShape(update.id, { x: update.x });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
-
-  const handleAlignCenterH = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = alignCenterHorizontal(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.x !== undefined) {
-        await updateShape(update.id, { x: update.x });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
-
-  const handleAlignTop = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = alignTop(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.y !== undefined) {
-        await updateShape(update.id, { y: update.y });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
-
-  const handleAlignBottom = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = alignBottom(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.y !== undefined) {
-        await updateShape(update.id, { y: update.y });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
-
-  const handleAlignCenterV = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = alignCenterVertical(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.y !== undefined) {
-        await updateShape(update.id, { y: update.y });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
-
-  const handleDistributeH = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = distributeHorizontally(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.x !== undefined) {
-        await updateShape(update.id, { x: update.x });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
-
-  const handleDistributeV = useCallback(async () => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
-    const updates = distributeVertically(selectedShapes);
-    for (const update of updates) {
-      if (update.id && update.y !== undefined) {
-        await updateShape(update.id, { y: update.y });
-      }
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
+  // Alignment functions removed - will be added to right panel later if needed
 
   // Push shapes to history when they change
   useEffect(() => {
@@ -454,12 +329,12 @@ const CanvasPage: React.FC = () => {
   });
 
   return (
-    <div className="canvas-page">
+    <div className="figma-canvas-page">
       {/* Initialize theme for authenticated users */}
       <ThemeInitializer />
 
-      {/* Modern Header */}
-      <header className="modern-header">
+      {/* Top Header */}
+      <header className="figma-header">
         <div className="header-left">
           <Button variant="ghost" onClick={handleBack} className="back-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -490,32 +365,6 @@ const CanvasPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="header-center">
-          <div className="canvas-controls">
-            <button
-              className="control-btn"
-              onClick={() => setIsBackgroundPickerOpen(!isBackgroundPickerOpen)}
-              title="Canvas Background"
-            >
-              <div className="bg-preview" style={{ backgroundColor: canvasBackground }} />
-              Background
-            </button>
-            
-            <button
-              className="control-btn"
-              onClick={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
-              title="Toggle Layers"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="12,2 2,7 12,12 22,7 12,2"/>
-                <polyline points="2,17 12,22 22,17"/>
-                <polyline points="2,12 12,17 22,12"/>
-              </svg>
-              Layers
-            </button>
-          </div>
-        </div>
-
         <div className="header-right">
           <Button variant="primary" onClick={handleShare} className="share-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -530,77 +379,60 @@ const CanvasPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Canvas Area */}
-      <main className="modern-canvas-main" style={{ backgroundColor: canvasBackground }}>
-        <Canvas
+      {/* Main Layout */}
+      <div className="figma-main-layout">
+        {/* Left Sidebar */}
+        <LeftSidebar
           shapes={shapes}
           selectedShapeIds={selectedShapeIds}
-          selectedTool={selectedTool}
-          isLoading={false}
-          error={null}
-          createShape={createShape}
-          updateShape={updateShape}
-          deleteSelectedShapes={deleteSelectedShapes}
-          selectShape={selectShape}
-          isShapeLockedByOther={isShapeLockedByOther}
-          getShapeSelector={getShapeSelector}
+          onSelectShape={selectShape}
+          projectName={projectName}
         />
-      </main>
 
-      {/* Floating Toolbar */}
-      <FloatingToolbar
+        {/* Canvas Area */}
+        <main className="figma-canvas-main" style={{ backgroundColor: canvasBackground }}>
+          <Canvas
+            shapes={shapes}
+            selectedShapeIds={selectedShapeIds}
+            selectedTool={selectedTool}
+            isLoading={false}
+            error={null}
+            createShape={createShape}
+            updateShape={updateShape}
+            deleteSelectedShapes={deleteSelectedShapes}
+            selectShape={selectShape}
+            isShapeLockedByOther={isShapeLockedByOther}
+            getShapeSelector={getShapeSelector}
+          />
+        </main>
+
+        {/* Right Panel */}
+        <RightPanel
+          canvasBackground={canvasBackground}
+          onBackgroundChange={setCanvasBackground}
+          isBackgroundPickerOpen={isBackgroundPickerOpen}
+          onToggleBackgroundPicker={() => setIsBackgroundPickerOpen(!isBackgroundPickerOpen)}
+          onCloseBackgroundPicker={() => setIsBackgroundPickerOpen(false)}
+          hasSelectedShapes={selectedShapeIds.length > 0}
+          selectedShapeIds={selectedShapeIds}
+          onExportPNG={handleExportPNG}
+          onExportSVG={handleExportSVG}
+        />
+      </div>
+
+      {/* Bottom Toolbar */}
+      <BottomToolbar
         selectedTool={selectedTool}
         onToolSelect={handleToolSelect}
         selectedColor={selectedColor}
         onColorChange={setSelectedColor}
+        hasSelectedShapes={selectedShapeIds.length > 0}
+        onDeleteSelected={deleteSelectedShapes}
+        onDuplicate={handleDuplicate}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={handleUndo}
         onRedo={handleRedo}
-        onDuplicate={handleDuplicate}
-        hasSelectedShapes={selectedShapeIds.length > 0}
-        onDeleteSelected={deleteSelectedShapes}
-        onClearAll={clearAllShapes}
-        onExportPNG={handleExportPNG}
-        onExportSVG={handleExportSVG}
-        onAlignLeft={handleAlignLeft}
-        onAlignRight={handleAlignRight}
-        onAlignCenterH={handleAlignCenterH}
-        onAlignTop={handleAlignTop}
-        onAlignBottom={handleAlignBottom}
-        onAlignCenterV={handleAlignCenterV}
-        onDistributeH={handleDistributeH}
-        onDistributeV={handleDistributeV}
-        position={toolbarPosition}
-        onPositionChange={setToolbarPosition}
-      />
-
-      {/* Floating User Panel */}
-      <FloatingUserPanel
-        position={userPanelPosition}
-        onPositionChange={setUserPanelPosition}
-      />
-
-      {/* Layers Panel */}
-      <LayersPanel
-        shapes={shapes}
-        selectedShapeIds={selectedShapeIds}
-        onSelectShape={selectShape}
-        onUpdateShape={updateShape}
-        onBringToFront={handleBringToFront}
-        onSendToBack={handleSendToBack}
-        onBringForward={handleBringForward}
-        onSendBackward={handleSendBackward}
-        isOpen={isLayersPanelOpen}
-        onToggle={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
-      />
-
-      {/* Canvas Background Picker */}
-      <CanvasBackground
-        backgroundColor={canvasBackground}
-        onBackgroundChange={setCanvasBackground}
-        isOpen={isBackgroundPickerOpen}
-        onClose={() => setIsBackgroundPickerOpen(false)}
       />
 
       {/* Connection Status */}

@@ -96,8 +96,10 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
         const newY = e.clientY - dragOffset.y;
         
         // Keep toolbar within viewport bounds
-        const maxX = window.innerWidth - 320;
-        const maxY = window.innerHeight - 400;
+        const toolbarWidth = 320;
+        const toolbarHeight = 400;
+        const maxX = Math.max(0, window.innerWidth - toolbarWidth);
+        const maxY = Math.max(0, window.innerHeight - toolbarHeight);
         
         onPositionChange({
           x: Math.max(0, Math.min(newX, maxX)),

@@ -16,8 +16,6 @@
 
 .floating-user-panel.dragging {
   cursor: grabbing;
-  transform: rotate(-0.5deg);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
 }
 
 .floating-user-panel.minimized {
@@ -81,12 +79,18 @@
   overflow-y: auto;
 }
 
+/* User Presence Wrapper */
+.user-presence-wrapper {
+  min-height: 60px;
+}
+
 /* Override UserPresence styles for floating panel */
 .floating-user-panel .user-presence {
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 0;
+  margin: 0;
 }
 
 .floating-user-panel .presence-header {
@@ -95,6 +99,7 @@
 
 .floating-user-panel .users-list {
   gap: 8px;
+  margin: 0;
 }
 
 .floating-user-panel .user-item {
@@ -103,29 +108,48 @@
   border-radius: 8px;
   padding: 8px 12px;
   transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .floating-user-panel .user-item:hover {
   background: var(--bg-tertiary);
-  transform: translateY(-1px);
 }
 
 .floating-user-panel .user-avatar {
   width: 28px;
   height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .floating-user-panel .user-info {
   font-size: 13px;
+  flex: 1;
+  min-width: 0;
 }
 
 .floating-user-panel .user-name {
   font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .floating-user-panel .user-status {
   font-size: 11px;
+  color: var(--text-secondary);
   opacity: 0.8;
+}
+
+/* Empty state for when no other users */
+.floating-user-panel .empty-users {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 /* Scrollbar */

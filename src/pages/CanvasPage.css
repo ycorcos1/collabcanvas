@@ -1,92 +1,36 @@
-/* Modern Canvas Page Styles */
+/* Figma-Style Canvas Page */
 
-.canvas-page {
+.figma-canvas-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
   overflow: hidden;
-  position: relative;
 }
 
-/* Theme Support */
-.canvas-page[data-theme="dark"] {
-  background: var(--bg-primary);
-}
-
-.canvas-page[data-theme="light"] {
-  background: var(--bg-primary);
-}
-
-/* Modern Header Styles */
-.modern-header {
+/* Figma Header Styles */
+.figma-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 8px 16px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-primary);
-  backdrop-filter: blur(20px);
   z-index: 100;
-  min-height: 60px;
-  position: relative;
+  min-height: 48px;
+  flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex: 1;
-}
-
-.header-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
+  gap: 12px;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-/* Canvas Controls */
-.canvas-controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.control-btn {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  transition: all 0.15s ease;
-}
-
-.control-btn:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--border-focus);
-  transform: translateY(-1px);
-}
-
-.bg-preview {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid var(--border-primary);
 }
 
 /* Modern Buttons */
@@ -141,19 +85,27 @@
   outline: none;
 }
 
-/* Modern Canvas Main Area */
-.modern-canvas-main {
+/* Figma Main Layout */
+.figma-main-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Figma Canvas Main Area */
+.figma-canvas-main {
   flex: 1;
   position: relative;
   overflow: hidden;
   background: #ffffff; /* Default canvas background */
   transition: background-color 0.2s ease;
+  margin-bottom: 48px; /* Account for bottom toolbar */
 }
 
 /* Connection Status Integration */
-.canvas-page .connection-status {
+.figma-canvas-page .connection-status {
   position: fixed;
-  bottom: 20px;
+  bottom: 60px;
   right: 20px;
   z-index: 1000;
 }
@@ -187,14 +139,10 @@
   }
 }
 
-/* Modern Responsive Design */
+/* Figma Responsive Design */
 @media (max-width: 1024px) {
-  .modern-header {
-    padding: 8px 16px;
-  }
-  
-  .header-center {
-    display: none; /* Hide center controls on smaller screens */
+  .figma-header {
+    padding: 6px 12px;
   }
   
   .project-name {
@@ -209,21 +157,9 @@
 }
 
 @media (max-width: 768px) {
-  .modern-header {
-    padding: 8px 12px;
-    flex-wrap: wrap;
-    min-height: auto;
-  }
-  
-  .header-left,
-  .header-right {
-    flex: none;
-  }
-  
-  .canvas-controls {
-    margin-top: 8px;
-    width: 100%;
-    justify-content: center;
+  .figma-header {
+    padding: 6px 8px;
+    min-height: 44px;
   }
   
   .project-name {
@@ -235,11 +171,6 @@
   .project-name-input {
     font-size: 14px;
     min-width: 120px;
-    padding: 6px 8px;
-  }
-  
-  .control-btn {
-    font-size: 12px;
     padding: 6px 8px;
   }
 }
@@ -257,11 +188,10 @@
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
-  .modern-header {
+  .figma-header {
     border-bottom-width: 2px;
   }
   
-  .control-btn,
   .project-name,
   .project-name-input {
     border-width: 2px;
@@ -274,21 +204,9 @@
     animation: none;
   }
   
-  .modern-canvas-main,
-  .control-btn,
+  .figma-canvas-main,
   .project-name,
   .project-name-input {
     transition: none;
-  }
-  
-  .control-btn:hover {
-    transform: none;
-  }
-}
-
-/* Dark Mode Specific Styles */
-@media (prefers-color-scheme: dark) {
-  .modern-header {
-    backdrop-filter: blur(20px) saturate(180%);
   }
 }

@@ -1,0 +1,308 @@
+/* Right Panel Styles - Figma-inspired */
+
+.right-panel {
+  width: 280px;
+  height: 100vh;
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Panel Tabs */
+.panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.tab-button {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-button:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.tab-button.active {
+  color: var(--interactive-primary);
+  border-bottom-color: var(--interactive-primary);
+  background: var(--bg-secondary);
+}
+
+/* Panel Content */
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.design-panel,
+.prototype-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Panel Sections */
+.panel-section {
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.selection-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.section-content {
+  padding: 0 20px 16px;
+}
+
+/* Property Rows */
+.property-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.property-row:last-child {
+  margin-bottom: 0;
+}
+
+.property-row label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Background Button */
+.background-button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.background-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-focus);
+}
+
+.background-preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+
+/* Property Placeholder */
+.property-placeholder {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-primary);
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Export Buttons */
+.export-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.export-button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.export-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-focus);
+}
+
+.export-button svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+}
+
+/* User Presence Integration */
+.right-panel .user-presence {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.right-panel .presence-header {
+  display: none; /* Hide duplicate header */
+}
+
+.right-panel .users-list {
+  gap: 8px;
+}
+
+.right-panel .user-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 8px 12px;
+  transition: all 0.15s ease;
+}
+
+.right-panel .user-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.right-panel .user-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.right-panel .user-info {
+  font-size: 13px;
+}
+
+.right-panel .user-name {
+  font-weight: 500;
+}
+
+.right-panel .user-status {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Scrollbar Styling */
+.panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .right-panel {
+    width: 240px;
+  }
+  
+  .section-content {
+    padding: 0 16px 16px;
+  }
+  
+  .section-header {
+    padding: 12px 16px 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .right-panel {
+    width: 200px;
+  }
+  
+  .tab-button {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .section-content {
+    padding: 0 12px 12px;
+  }
+  
+  .section-header {
+    padding: 10px 12px 6px;
+  }
+  
+  .section-header h3 {
+    font-size: 12px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .right-panel {
+    border-left-width: 2px;
+  }
+  
+  .background-button,
+  .export-button {
+    border-width: 2px;
+  }
+  
+  .tab-button.active {
+    border-bottom-width: 3px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .tab-button,
+  .background-button,
+  .export-button {
+    transition: none;
+  }
+}

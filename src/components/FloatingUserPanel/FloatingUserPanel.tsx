@@ -48,8 +48,10 @@ export const FloatingUserPanel: React.FC<FloatingUserPanelProps> = ({
         const newY = e.clientY - dragOffset.y;
         
         // Keep panel within viewport bounds
-        const maxX = window.innerWidth - 280;
-        const maxY = window.innerHeight - 200;
+        const panelWidth = 280;
+        const panelHeight = 200;
+        const maxX = Math.max(0, window.innerWidth - panelWidth);
+        const maxY = Math.max(0, window.innerHeight - panelHeight);
         
         onPositionChange({
           x: Math.max(0, Math.min(newX, maxX)),
@@ -103,7 +105,9 @@ export const FloatingUserPanel: React.FC<FloatingUserPanelProps> = ({
 
       {!isMinimized && (
         <div className="panel-content">
-          <UserPresence />
+          <div className="user-presence-wrapper">
+            <UserPresence />
+          </div>
         </div>
       )}
     </div>
