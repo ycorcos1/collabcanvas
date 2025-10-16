@@ -16,24 +16,13 @@ import { Button } from "../shared";
 export const RecentProjects: React.FC = () => {
   const navigate = useNavigate();
   const { projects: recentProjects, isLoading, error } = useRecentProjects();
-  const { createNewProject, openProject, renameProject, deleteProject } =
-    useProjects();
+  const { openProject, renameProject, deleteProject } = useProjects();
 
-  const handleCreateProject = async () => {
-    try {
-      const project = await createNewProject({
-        name: "Untitled Project",
-        description: "",
-        isPublic: false,
-      });
-
-      if (project) {
-        // Navigate to the new project
-        navigate(`/canvas/${project.slug}`);
-      }
-    } catch (err) {
-      console.error("Error creating project:", err);
-    }
+  const handleCreateProject = () => {
+    // Generate a unique slug for new project
+    const timestamp = Date.now();
+    const newProjectSlug = `untitled-${timestamp}`;
+    navigate(`/canvas/${newProjectSlug}`);
   };
 
   const handleOpenProject = (projectId: string) => {

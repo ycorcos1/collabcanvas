@@ -38,7 +38,6 @@ export const AllProjects: React.FC = () => {
     openProject,
     renameProject,
     deleteProject,
-    createNewProject,
     loadMore,
     refresh,
   } = useProjects(projectOptions);
@@ -56,21 +55,11 @@ export const AllProjects: React.FC = () => {
     }
   };
 
-  const handleCreateProject = async () => {
-    try {
-      const project = await createNewProject({
-        name: "Untitled Project",
-        description: "",
-        isPublic: false,
-      });
-
-      if (project) {
-        // Navigate to the new project
-        navigate(`/canvas/${project.slug}`);
-      }
-    } catch (err) {
-      console.error("Error creating project:", err);
-    }
+  const handleCreateProject = () => {
+    // Generate a unique slug for new project
+    const timestamp = Date.now();
+    const newProjectSlug = `untitled-${timestamp}`;
+    navigate(`/canvas/${newProjectSlug}`);
   };
 
   const handleLoadMore = () => {

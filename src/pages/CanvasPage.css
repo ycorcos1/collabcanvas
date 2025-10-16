@@ -1,0 +1,269 @@
+/* Canvas Page Styles - Matching Dashboard Design */
+
+.canvas-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+}
+
+/* Header Styles - Matching Dashboard Header */
+.canvas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
+  z-index: 100;
+  min-height: 72px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Project Name Styles */
+.project-name-section {
+  display: flex;
+  align-items: center;
+  margin-left: var(--space-2);
+}
+
+.project-name {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background-color var(--duration-fast) var(--ease-out);
+  min-width: 200px;
+  border: 2px solid transparent;
+}
+
+.project-name:hover {
+  background-color: var(--bg-secondary);
+}
+
+.project-name:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.project-name-input {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-focus);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  min-width: 200px;
+  outline: none;
+}
+
+/* Main Canvas Area - Dashboard Layout */
+.canvas-main {
+  flex: 1;
+  display: flex;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+}
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--canvas-bg);
+  border-left: 1px solid var(--border-primary);
+}
+
+/* Toolbar Integration */
+.canvas-main .toolbar {
+  border-right: 1px solid var(--border-primary);
+  background-color: var(--bg-elevated);
+}
+
+/* Status Bar */
+.canvas-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-6);
+  background-color: var(--bg-elevated);
+  border-top: 1px solid var(--border-primary);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  min-height: 40px;
+}
+
+.status-left,
+.status-center,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.status-center {
+  flex: 1;
+  justify-content: center;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-medium);
+}
+
+.canvas-info {
+  color: var(--text-primary);
+  font-weight: var(--font-semibold);
+}
+
+/* Canvas Container Enhancements */
+.canvas-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* User Presence Integration */
+.header-right .user-presence {
+  margin-right: var(--space-2);
+}
+
+/* Connection Status Integration */
+.canvas-page .connection-status {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1000;
+}
+
+/* Loading State */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background-color: var(--bg-primary);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-primary);
+  border-top: 3px solid var(--interactive-primary);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .canvas-header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .header-left {
+    gap: var(--space-2);
+  }
+
+  .header-right {
+    gap: var(--space-2);
+  }
+
+  .project-name,
+  .project-name-input {
+    font-size: var(--text-lg);
+    min-width: 150px;
+  }
+
+  .canvas-main {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .canvas-header {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .header-left,
+  .header-right {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .project-name,
+  .project-name-input {
+    font-size: var(--text-base);
+    min-width: 120px;
+  }
+}
+
+/* Focus and Accessibility */
+.project-name:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.project-name-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Animation for smooth transitions */
+.project-name-section {
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .canvas-header {
+    border-bottom-width: 2px;
+  }
+
+  .project-name:hover {
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+
+  .project-name,
+  .project-name-section {
+    transition: none;
+  }
+}
