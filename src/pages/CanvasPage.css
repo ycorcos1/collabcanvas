@@ -135,6 +135,15 @@
   font-weight: var(--font-semibold);
 }
 
+.status-color-preview {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  display: inline-block;
+  margin-right: var(--space-2);
+}
+
 /* Canvas Container Enhancements */
 .canvas-container {
   position: relative;

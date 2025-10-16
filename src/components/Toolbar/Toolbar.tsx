@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Shape } from "../../types/shape";
 import { useCanvasDimensions } from "../../hooks/useCanvasDimensions";
+import { ColorPicker } from "../ColorPicker/ColorPicker";
 import "./Toolbar.css";
 
 /**
@@ -13,6 +14,17 @@ interface ToolbarProps {
   onClearAll: () => void;
   onDeleteSelected: () => void;
   hasSelectedShapes: boolean;
+  selectedColor?: string;
+  onColorChange?: (color: string) => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onDuplicate?: () => void;
+  onExportPNG?: () => void;
+  onExportSVG?: () => void;
+  onExportSelectedPNG?: () => void;
+  onExportSelectedSVG?: () => void;
 }
 
 /**
@@ -32,6 +44,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onClearAll,
   onDeleteSelected,
   hasSelectedShapes,
+  selectedColor = "#4ECDC4",
+  onColorChange,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
+  onDuplicate,
+  onExportPNG,
+  onExportSVG,
+  onExportSelectedPNG,
+  onExportSelectedSVG,
 }) => {
   const {
     dimensions,
@@ -44,6 +67,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   // Local state for temporary dimension values during editing
   const [tempWidth, setTempWidth] = useState(dimensions.width.toString());
   const [tempHeight, setTempHeight] = useState(dimensions.height.toString());
+  
+  // Color picker state
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const colorButtonRef = useRef<HTMLButtonElement>(null);
 
   // Update temp values when dimensions change from Firebase
   React.useEffect(() => {
@@ -158,8 +185,70 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </button>
       </div>
 
+      {/* Color Section */}
+      <div className="toolbar-section">
+        <h3>Color</h3>
+        
+        <button
+          ref={colorButtonRef}
+          className="tool-button color-button"
+          onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+          title="Select Color"
+        >
+          <div className="color-preview" style={{ backgroundColor: selectedColor }} />
+          <span>Color</span>
+        </button>
+      </div>
+
       <div className="toolbar-section">
         <h3>Actions</h3>
+
+        {/* Undo Button */}
+        {onUndo && (
+          <button
+            className={`tool-button ${!canUndo ? "disabled" : ""}`}
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Undo (Cmd+Z)"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 7v6h6"/>
+              <path d="m21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+            </svg>
+            Undo
+          </button>
+        )}
+
+        {/* Redo Button */}
+        {onRedo && (
+          <button
+            className={`tool-button ${!canRedo ? "disabled" : ""}`}
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Redo (Cmd+Shift+Z)"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="m21 7-6-6v6h-6a9 9 0 0 0-9 9 9 9 0 0 0 9 9h6v-6"/>
+            </svg>
+            Redo
+          </button>
+        )}
+
+        {/* Duplicate Button */}
+        {onDuplicate && (
+          <button
+            className={`tool-button ${!hasSelectedShapes ? "disabled" : ""}`}
+            onClick={onDuplicate}
+            disabled={!hasSelectedShapes}
+            title="Duplicate (Cmd+D)"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Duplicate
+          </button>
+        )}
 
         {/* Delete Selected Button */}
         <button
@@ -213,6 +302,81 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </svg>
           Clear All
         </button>
+      </div>
+
+      {/* Export Section */}
+      <div className="toolbar-section">
+        <h3>Export</h3>
+
+        {/* Export Canvas as PNG */}
+        {onExportPNG && (
+          <button
+            className="tool-button"
+            onClick={onExportPNG}
+            title="Export Canvas as PNG"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10,9 9,9 8,9"/>
+            </svg>
+            PNG
+          </button>
+        )}
+
+        {/* Export Canvas as SVG */}
+        {onExportSVG && (
+          <button
+            className="tool-button"
+            onClick={onExportSVG}
+            title="Export Canvas as SVG"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <circle cx="10" cy="12" r="2"/>
+              <path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22"/>
+            </svg>
+            SVG
+          </button>
+        )}
+
+        {/* Export Selected as PNG */}
+        {onExportSelectedPNG && (
+          <button
+            className={`tool-button ${!hasSelectedShapes ? "disabled" : ""}`}
+            onClick={onExportSelectedPNG}
+            disabled={!hasSelectedShapes}
+            title="Export Selected as PNG"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <rect x="8" y="12" width="8" height="4" rx="1"/>
+            </svg>
+            PNG Selected
+          </button>
+        )}
+
+        {/* Export Selected as SVG */}
+        {onExportSelectedSVG && (
+          <button
+            className={`tool-button ${!hasSelectedShapes ? "disabled" : ""}`}
+            onClick={onExportSelectedSVG}
+            disabled={!hasSelectedShapes}
+            title="Export Selected as SVG"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <circle cx="10" cy="15" r="1"/>
+              <circle cx="14" cy="15" r="1"/>
+            </svg>
+            SVG Selected
+          </button>
+        )}
       </div>
 
       <div className="toolbar-section">
@@ -315,6 +479,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Current: {dimensions.width} × {dimensions.height}
         </div>
       </div>
+      
+      {/* Color Picker */}
+      {onColorChange && (
+        <ColorPicker
+          selectedColor={selectedColor}
+          onColorChange={onColorChange}
+          isOpen={isColorPickerOpen}
+          onClose={() => setIsColorPickerOpen(false)}
+          anchorEl={colorButtonRef.current}
+        />
+      )}
     </div>
   );
 };

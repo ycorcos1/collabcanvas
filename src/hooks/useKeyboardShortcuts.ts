@@ -1,0 +1,129 @@
+import { useEffect, useCallback } from 'react';
+
+/**
+ * Keyboard Shortcuts Hook - Handles global keyboard shortcuts
+ * 
+ * Features:
+ * - Undo/Redo (Cmd+Z/Cmd+Shift+Z)
+ * - Delete selected shapes (Delete/Backspace)
+ * - Duplicate shapes (Cmd+D)
+ * - Select All (Cmd+A)
+ * - Copy/Paste (Cmd+C/Cmd+V)
+ * - Arrow keys for shape movement
+ */
+
+interface KeyboardShortcutsHandlers {
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onDelete?: () => void;
+  onDuplicate?: () => void;
+  onSelectAll?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onMoveLeft?: () => void;
+  onMoveRight?: () => void;
+  onEscape?: () => void;
+}
+
+export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Don't trigger shortcuts when typing in inputs
+    if (
+      event.target instanceof HTMLInputElement ||
+      event.target instanceof HTMLTextAreaElement ||
+      (event.target as HTMLElement)?.contentEditable === 'true'
+    ) {
+      return;
+    }
+
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const cmdKey = isMac ? event.metaKey : event.ctrlKey;
+    const shiftKey = event.shiftKey;
+
+    // Undo/Redo
+    if (cmdKey && event.key === 'z') {
+      event.preventDefault();
+      if (shiftKey && handlers.onRedo) {
+        handlers.onRedo();
+      } else if (handlers.onUndo) {
+        handlers.onUndo();
+      }
+      return;
+    }
+
+    // Redo (alternative shortcut)
+    if (cmdKey && event.key === 'y' && handlers.onRedo) {
+      event.preventDefault();
+      handlers.onRedo();
+      return;
+    }
+
+    // Delete
+    if ((event.key === 'Delete' || event.key === 'Backspace') && handlers.onDelete) {
+      event.preventDefault();
+      handlers.onDelete();
+      return;
+    }
+
+    // Duplicate
+    if (cmdKey && event.key === 'd' && handlers.onDuplicate) {
+      event.preventDefault();
+      handlers.onDuplicate();
+      return;
+    }
+
+    // Select All
+    if (cmdKey && event.key === 'a' && handlers.onSelectAll) {
+      event.preventDefault();
+      handlers.onSelectAll();
+      return;
+    }
+
+    // Copy
+    if (cmdKey && event.key === 'c' && handlers.onCopy) {
+      event.preventDefault();
+      handlers.onCopy();
+      return;
+    }
+
+    // Paste
+    if (cmdKey && event.key === 'v' && handlers.onPaste) {
+      event.preventDefault();
+      handlers.onPaste();
+      return;
+    }
+
+    // Arrow keys for movement (only when shapes are selected)
+    if (!cmdKey && !shiftKey) {
+      switch (event.key) {
+        case 'ArrowUp':
+          event.preventDefault();
+          handlers.onMoveUp?.();
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          handlers.onMoveDown?.();
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          handlers.onMoveLeft?.();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          handlers.onMoveRight?.();
+          break;
+        case 'Escape':
+          event.preventDefault();
+          handlers.onEscape?.();
+          break;
+      }
+    }
+  }, [handlers]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+};
