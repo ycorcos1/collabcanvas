@@ -1,4 +1,4 @@
-/* Left Sidebar Styles - Figma-inspired */
+/* Left Sidebar Styles - Modern Design */
 
 .left-sidebar {
   width: 240px;
@@ -85,6 +85,32 @@
 .tab-button svg {
   width: 14px;
   height: 14px;
+}
+
+/* Add Button */
+.add-button {
+  background: none;
+  border: none;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 4px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.add-button:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.add-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Content Area */
@@ -247,7 +273,7 @@
   .left-sidebar {
     width: 200px;
   }
-  
+
   .file-name {
     max-width: 100px;
   }
@@ -257,16 +283,16 @@
   .left-sidebar {
     width: 180px;
   }
-  
+
   .file-section {
     padding: 12px;
   }
-  
+
   .tab-button {
     padding: 10px 6px;
     font-size: 11px;
   }
-  
+
   .file-name {
     font-size: 13px;
     max-width: 80px;
@@ -278,11 +304,11 @@
   .left-sidebar {
     border-right-width: 2px;
   }
-  
+
   .layer-item {
     border: 1px solid transparent;
   }
-  
+
   .layer-item.selected {
     border-color: var(--interactive-primary);
   }

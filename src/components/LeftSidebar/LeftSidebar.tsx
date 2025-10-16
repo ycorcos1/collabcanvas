@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Shape } from '../../types/shape';
-import './LeftSidebar.css';
+import React, { useState } from "react";
+import { Shape } from "../../types/shape";
+import "./LeftSidebar.css";
 
 /**
- * Left Sidebar Component - Figma-style left panel
- * 
+ * Left Sidebar Component - Modern left panel
+ *
  * Features:
  * - File/project management
  * - Pages navigation
@@ -25,13 +25,15 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onSelectShape,
   projectName,
 }) => {
-  const [activeTab, setActiveTab] = useState<'pages' | 'layers'>('layers');
+  const [activeTab, setActiveTab] = useState<"pages" | "layers">("layers");
 
   // Convert shapes to layer items with generated names
   const layers = shapes
     .map((shape, index) => ({
       ...shape,
-      name: `${shape.type.charAt(0).toUpperCase() + shape.type.slice(1)} ${index + 1}`,
+      name: `${shape.type.charAt(0).toUpperCase() + shape.type.slice(1)} ${
+        index + 1
+      }`,
     }))
     .sort((a, b) => b.zIndex - a.zIndex); // Sort by z-index (highest first)
 
@@ -42,22 +44,43 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   const getLayerIcon = (type: string) => {
     switch (type) {
-      case 'rectangle':
+      case "rectangle":
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
           </svg>
         );
-      case 'circle':
+      case "circle":
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="9"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="12" cy="12" r="9" />
           </svg>
         );
       default:
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
           </svg>
         );
     }
@@ -69,52 +92,86 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       <div className="sidebar-section file-section">
         <div className="file-info">
           <div className="file-name">{projectName}</div>
-          <div className="file-status">
-            <span className="status-badge">Free</span>
-          </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
       <div className="sidebar-tabs">
         <button
-          className={`tab-button ${activeTab === 'pages' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pages')}
+          className={`tab-button ${activeTab === "pages" ? "active" : ""}`}
+          onClick={() => setActiveTab("pages")}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14,2 14,8 20,8"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14,2 14,8 20,8" />
           </svg>
           Pages
         </button>
         <button
-          className={`tab-button ${activeTab === 'layers' ? 'active' : ''}`}
-          onClick={() => setActiveTab('layers')}
+          className={`tab-button ${activeTab === "layers" ? "active" : ""}`}
+          onClick={() => setActiveTab("layers")}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polygon points="12,2 2,7 12,12 22,7 12,2"/>
-            <polyline points="2,17 12,22 22,17"/>
-            <polyline points="2,12 12,17 22,12"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polygon points="12,2 2,7 12,12 22,7 12,2" />
+            <polyline points="2,17 12,22 22,17" />
+            <polyline points="2,12 12,17 22,12" />
           </svg>
           Layers
+        </button>
+        <button
+          className="add-button"
+          title={`Add new ${activeTab === "pages" ? "page" : "layer"}`}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
         </button>
       </div>
 
       {/* Content Area */}
       <div className="sidebar-content">
-        {activeTab === 'pages' && (
+        {activeTab === "pages" && (
           <div className="pages-panel">
             <div className="page-item active">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14,2 14,8 20,8" />
               </svg>
               <span>Page 1</span>
             </div>
           </div>
         )}
 
-        {activeTab === 'layers' && (
+        {activeTab === "layers" && (
           <div className="layers-panel">
             {layers.length === 0 ? (
               <div className="empty-layers">
@@ -127,7 +184,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   <div
                     key={layer.id}
                     className={`layer-item ${
-                      selectedShapeIds.includes(layer.id) ? 'selected' : ''
+                      selectedShapeIds.includes(layer.id) ? "selected" : ""
                     }`}
                     onClick={(e) => handleLayerClick(layer.id, e)}
                   >
@@ -139,8 +196,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                         <span className="layer-name">{layer.name}</span>
                       </div>
                       <div className="layer-controls">
-                        <div 
-                          className="layer-color-preview" 
+                        <div
+                          className="layer-color-preview"
                           style={{ backgroundColor: layer.color }}
                         />
                       </div>

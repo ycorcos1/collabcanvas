@@ -1,6 +1,6 @@
-/* Figma-Style Canvas Page */
+/* Modern Canvas Page */
 
-.figma-canvas-page {
+.modern-canvas-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -8,8 +8,8 @@
   overflow: hidden;
 }
 
-/* Figma Header Styles */
-.figma-header {
+/* Modern Header Styles */
+.modern-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -85,27 +85,26 @@
   outline: none;
 }
 
-/* Figma Main Layout */
-.figma-main-layout {
+/* Modern Main Layout */
+.modern-main-layout {
   flex: 1;
   display: flex;
   overflow: hidden;
 }
 
-/* Figma Canvas Main Area */
-.figma-canvas-main {
+/* Modern Canvas Main Area */
+.modern-canvas-main {
   flex: 1;
   position: relative;
   overflow: hidden;
   background: #ffffff; /* Default canvas background */
   transition: background-color 0.2s ease;
-  margin-bottom: 48px; /* Account for bottom toolbar */
 }
 
 /* Connection Status Integration */
-.figma-canvas-page .connection-status {
+.modern-canvas-page .connection-status {
   position: fixed;
-  bottom: 60px;
+  bottom: 20px;
   right: 20px;
   z-index: 1000;
 }
@@ -139,17 +138,17 @@
   }
 }
 
-/* Figma Responsive Design */
+/* Modern Responsive Design */
 @media (max-width: 1024px) {
-  .figma-header {
+  .modern-header {
     padding: 6px 12px;
   }
-  
+
   .project-name {
     font-size: 16px;
     min-width: 140px;
   }
-  
+
   .project-name-input {
     font-size: 16px;
     min-width: 140px;
@@ -157,17 +156,17 @@
 }
 
 @media (max-width: 768px) {
-  .figma-header {
+  .modern-header {
     padding: 6px 8px;
     min-height: 44px;
   }
-  
+
   .project-name {
     font-size: 14px;
     min-width: 120px;
     padding: 6px 8px;
   }
-  
+
   .project-name-input {
     font-size: 14px;
     min-width: 120px;
@@ -188,10 +187,10 @@
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
-  .figma-header {
+  .modern-header {
     border-bottom-width: 2px;
   }
-  
+
   .project-name,
   .project-name-input {
     border-width: 2px;
@@ -203,8 +202,8 @@
   .loading-spinner {
     animation: none;
   }
-  
-  .figma-canvas-main,
+
+  .modern-canvas-main,
   .project-name,
   .project-name-input {
     transition: none;

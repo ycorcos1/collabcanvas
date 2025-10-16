@@ -11,7 +11,7 @@ import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { exportCanvas } from "../utils/exportUtils";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
-import { BottomToolbar } from "../components/BottomToolbar/BottomToolbar";
+import { ModernToolbar } from "../components/ModernToolbar/ModernToolbar";
 import { RightPanel } from "../components/RightPanel/RightPanel";
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
@@ -37,18 +37,16 @@ const CanvasPage: React.FC = () => {
 
   // Generate project name based on slug or create new untitled project
   const generateProjectName = (slug: string) => {
-    if (slug.startsWith('untitled-')) {
-      // Extract timestamp and convert to project number
-      const timestamp = slug.split('-')[1];
-      const projectNumber = Math.floor(parseInt(timestamp) / 100000) % 1000 + 1;
-      return `Untitled Project ${projectNumber}`;
+    if (slug.startsWith("untitled-")) {
+      // For new untitled projects, just return "Untitled Project"
+      return "Untitled Project";
     }
     return slug.replace(/-/g, " ").replace(/^\w/, (c) => c.toUpperCase());
   };
 
   // Project name state (editable)
   const [projectName, setProjectName] = useState(
-    slug ? generateProjectName(slug) : "Untitled Project 1"
+    slug ? generateProjectName(slug) : "Untitled Project"
   );
   // Removed unused old state variables
 
@@ -72,18 +70,12 @@ const CanvasPage: React.FC = () => {
   });
 
   // Selected color state with session persistence
-  const [selectedColor, setSelectedColor] = useState<string>(() => {
+  const [selectedColor] = useState<string>(() => {
     return sessionStorage.getItem("horizon-selected-color") || "#4ECDC4";
   });
 
   // History management for undo/redo
-  const {
-    canUndo,
-    canRedo,
-    undo,
-    redo,
-    pushState,
-  } = useHistory(shapes);
+  const { undo, redo, pushState } = useHistory(shapes);
 
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
@@ -91,7 +83,7 @@ const CanvasPage: React.FC = () => {
   // Removed layers panel state - now integrated in left sidebar
 
   // Canvas background state
-  const [canvasBackground, setCanvasBackground] = useState('#ffffff');
+  const [canvasBackground, setCanvasBackground] = useState("#ffffff");
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
   // Project naming state
@@ -106,11 +98,6 @@ const CanvasPage: React.FC = () => {
       sessionStorage.removeItem("horizon-selected-tool");
     }
   }, [selectedTool]);
-
-  // Persist selected color in session storage
-  useEffect(() => {
-    sessionStorage.setItem("horizon-selected-color", selectedColor);
-  }, [selectedColor]);
 
   // Validate slug parameter
   if (!slug) {
@@ -170,28 +157,6 @@ const CanvasPage: React.FC = () => {
     navigate("/dashboard/recent");
   };
 
-  // Handle share functionality
-  const handleShare = async () => {
-    const shareUrl = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: projectName,
-          text: `Collaborate on this canvas: ${projectName}`,
-          url: shareUrl,
-        });
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(shareUrl);
-        // You could add a toast notification here instead of alert
-        alert("Canvas link copied to clipboard!");
-      }
-    } catch (error) {
-      // User cancelled share or clipboard failed
-      console.log("Share cancelled or failed");
-    }
-  };
-
   // Handle tool selection with validation
   const handleToolSelect = (tool: Shape["type"] | null) => {
     setSelectedTool(tool);
@@ -203,7 +168,7 @@ const CanvasPage: React.FC = () => {
     if (previousShapes) {
       // Apply the previous state to Firebase
       // Note: This would need to be implemented in useShapes hook
-      console.log('Undo to state:', previousShapes);
+      console.log("Undo to state:", previousShapes);
     }
   }, [undo]);
 
@@ -212,13 +177,15 @@ const CanvasPage: React.FC = () => {
     if (nextShapes) {
       // Apply the next state to Firebase
       // Note: This would need to be implemented in useShapes hook
-      console.log('Redo to state:', nextShapes);
+      console.log("Redo to state:", nextShapes);
     }
   }, [redo]);
 
   // Copy selected shapes
   const handleCopy = useCallback(() => {
-    const selectedShapes = shapes.filter(shape => selectedShapeIds.includes(shape.id));
+    const selectedShapes = shapes.filter((shape) =>
+      selectedShapeIds.includes(shape.id)
+    );
     if (selectedShapes.length > 0) {
       setClipboard(selectedShapes);
     }
@@ -242,7 +209,9 @@ const CanvasPage: React.FC = () => {
 
   // Duplicate selected shapes
   const handleDuplicate = useCallback(async () => {
-    const selectedShapes = shapes.filter(shape => selectedShapeIds.includes(shape.id));
+    const selectedShapes = shapes.filter((shape) =>
+      selectedShapeIds.includes(shape.id)
+    );
     if (selectedShapes.length === 0) return;
 
     const offset = 20;
@@ -257,17 +226,22 @@ const CanvasPage: React.FC = () => {
   }, [shapes, selectedShapeIds, createShape]);
 
   // Move selected shapes
-  const handleMoveShapes = useCallback(async (dx: number, dy: number) => {
-    const selectedShapes = shapes.filter(shape => selectedShapeIds.includes(shape.id));
-    if (selectedShapes.length === 0) return;
+  const handleMoveShapes = useCallback(
+    async (dx: number, dy: number) => {
+      const selectedShapes = shapes.filter((shape) =>
+        selectedShapeIds.includes(shape.id)
+      );
+      if (selectedShapes.length === 0) return;
 
-    for (const shape of selectedShapes) {
-      await updateShape(shape.id, {
-        x: Math.max(0, shape.x + dx),
-        y: Math.max(0, shape.y + dy),
-      });
-    }
-  }, [shapes, selectedShapeIds, updateShape]);
+      for (const shape of selectedShapes) {
+        await updateShape(shape.id, {
+          x: Math.max(0, shape.x + dx),
+          y: Math.max(0, shape.y + dy),
+        });
+      }
+    },
+    [shapes, selectedShapeIds, updateShape]
+  );
 
   // Clear selection
   const handleEscape = useCallback(async () => {
@@ -280,25 +254,25 @@ const CanvasPage: React.FC = () => {
   const handleExportPNG = useCallback(async () => {
     try {
       await exportCanvas(shapes, projectName, {
-        format: 'png',
+        format: "png",
         scale: 2, // High DPI export
         padding: 20,
-        backgroundColor: '#ffffff',
+        backgroundColor: "#ffffff",
         quality: 0.9,
       });
     } catch (error) {
-      console.error('Export PNG failed:', error);
+      console.error("Export PNG failed:", error);
     }
   }, [shapes, projectName]);
 
   const handleExportSVG = useCallback(async () => {
     try {
       await exportCanvas(shapes, projectName, {
-        format: 'svg',
+        format: "svg",
         padding: 20,
       });
     } catch (error) {
-      console.error('Export SVG failed:', error);
+      console.error("Export SVG failed:", error);
     }
   }, [shapes, projectName]);
 
@@ -329,16 +303,23 @@ const CanvasPage: React.FC = () => {
   });
 
   return (
-    <div className="figma-canvas-page">
+    <div className="modern-canvas-page">
       {/* Initialize theme for authenticated users */}
       <ThemeInitializer />
 
       {/* Top Header */}
-      <header className="figma-header">
+      <header className="modern-header">
         <div className="header-left">
           <Button variant="ghost" onClick={handleBack} className="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="m15 18-6-6 6-6"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="m15 18-6-6 6-6" />
             </svg>
           </Button>
 
@@ -364,23 +345,10 @@ const CanvasPage: React.FC = () => {
             )}
           </div>
         </div>
-
-        <div className="header-right">
-          <Button variant="primary" onClick={handleShare} className="share-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="18" cy="5" r="3"/>
-              <circle cx="6" cy="12" r="3"/>
-              <circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-            Share
-          </Button>
-        </div>
       </header>
 
       {/* Main Layout */}
-      <div className="figma-main-layout">
+      <div className="modern-main-layout">
         {/* Left Sidebar */}
         <LeftSidebar
           shapes={shapes}
@@ -390,7 +358,10 @@ const CanvasPage: React.FC = () => {
         />
 
         {/* Canvas Area */}
-        <main className="figma-canvas-main" style={{ backgroundColor: canvasBackground }}>
+        <main
+          className="modern-canvas-main"
+          style={{ backgroundColor: canvasBackground }}
+        >
           <Canvas
             shapes={shapes}
             selectedShapeIds={selectedShapeIds}
@@ -411,7 +382,9 @@ const CanvasPage: React.FC = () => {
           canvasBackground={canvasBackground}
           onBackgroundChange={setCanvasBackground}
           isBackgroundPickerOpen={isBackgroundPickerOpen}
-          onToggleBackgroundPicker={() => setIsBackgroundPickerOpen(!isBackgroundPickerOpen)}
+          onToggleBackgroundPicker={() =>
+            setIsBackgroundPickerOpen(!isBackgroundPickerOpen)
+          }
           onCloseBackgroundPicker={() => setIsBackgroundPickerOpen(false)}
           hasSelectedShapes={selectedShapeIds.length > 0}
           selectedShapeIds={selectedShapeIds}
@@ -420,19 +393,13 @@ const CanvasPage: React.FC = () => {
         />
       </div>
 
-      {/* Bottom Toolbar */}
-      <BottomToolbar
+      {/* Modern Toolbar */}
+      <ModernToolbar
         selectedTool={selectedTool}
         onToolSelect={handleToolSelect}
-        selectedColor={selectedColor}
-        onColorChange={setSelectedColor}
         hasSelectedShapes={selectedShapeIds.length > 0}
         onDeleteSelected={deleteSelectedShapes}
         onDuplicate={handleDuplicate}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
       />
 
       {/* Connection Status */}

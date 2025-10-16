@@ -131,16 +131,49 @@
   font-weight: 500;
 }
 
-/* Zoom Level */
-.zoom-level {
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.zoom-button {
+  background: none;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   color: rgba(255, 255, 255, 0.8);
+  transition: all 0.15s ease;
+}
+
+.zoom-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.zoom-level {
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  min-width: 50px;
+  color: rgba(255, 255, 255, 0.9);
+  min-width: 40px;
   text-align: center;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.zoom-level:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Quick Actions */
@@ -267,25 +300,25 @@
     padding: 6px 12px;
     gap: 12px;
   }
-  
+
   .main-tool-button {
     padding: 8px 10px;
     min-width: 40px;
   }
-  
+
   .toolbar-center {
     display: none;
   }
-  
+
   .drawing-toolbar {
     bottom: 80px;
     padding: 8px 12px;
   }
-  
+
   .drawing-controls {
     gap: 12px;
   }
-  
+
   .brush-size-slider {
     width: 60px;
   }
@@ -298,12 +331,12 @@
     border-width: 2px;
     border-color: rgba(255, 255, 255, 0.3);
   }
-  
+
   .main-tool-button,
   .action-button {
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .main-tool-button.active {
     border-color: rgba(59, 130, 246, 1);
   }
@@ -327,50 +360,50 @@
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 0, 0, 0.1);
   }
-  
+
   .tool-dropdown {
     background: rgba(255, 255, 255, 0.95);
     border-color: rgba(0, 0, 0, 0.1);
   }
-  
+
   .main-tool-button,
   .action-button,
   .close-drawing-toolbar {
     color: rgba(0, 0, 0, 0.8);
     background: rgba(0, 0, 0, 0.05);
   }
-  
+
   .main-tool-button:hover,
   .action-button:hover,
   .close-drawing-toolbar:hover {
     background: rgba(0, 0, 0, 0.1);
     color: black;
   }
-  
+
   .dropdown-item {
     color: rgba(0, 0, 0, 0.8);
   }
-  
+
   .dropdown-item:hover {
     background: rgba(0, 0, 0, 0.05);
     color: black;
   }
-  
+
   .zoom-level {
     color: rgba(0, 0, 0, 0.8);
     background: rgba(0, 0, 0, 0.05);
   }
-  
+
   .brush-size-control label,
   .brush-color-control label,
   .brush-size-value {
     color: rgba(0, 0, 0, 0.8);
   }
-  
+
   .brush-size-slider {
     background: rgba(0, 0, 0, 0.2);
   }
-  
+
   .brush-size-slider::-webkit-slider-thumb {
     background: black;
   }

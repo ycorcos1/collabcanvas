@@ -513,26 +513,6 @@ export const Canvas: React.FC<CanvasProps> = ({
             </div>
           )}
 
-          {/* Multi-select indicator with debug info */}
-          {(isShiftPressed || shiftKeyRef.current) && (
-            <div
-              style={{
-                position: "absolute",
-                top: "10px",
-                left: "10px",
-                backgroundColor: "rgba(0, 123, 255, 0.8)",
-                color: "white",
-                padding: "8px 12px",
-                borderRadius: "4px",
-                fontSize: "14px",
-                fontWeight: "bold",
-                zIndex: 1000,
-                pointerEvents: "none",
-              }}
-            >
-              Multi-select mode (State: {isShiftPressed ? '✓' : '✗'}, Ref: {shiftKeyRef.current ? '✓' : '✗'})
-            </div>
-          )}
 
           {/* Error indicator */}
           {error && (

@@ -1,4 +1,4 @@
-/* Bottom Toolbar Styles - Figma-inspired */
+/* Bottom Toolbar Styles - Modern Design */
 
 .bottom-toolbar {
   position: fixed;
@@ -112,7 +112,7 @@
 }
 
 .color-swatch::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -2px;
   right: -2px;
@@ -178,22 +178,22 @@
     left: 200px; /* Account for smaller sidebar */
     padding: 0 12px;
   }
-  
+
   .tool-group {
     gap: 2px;
     padding: 2px;
   }
-  
+
   .tool-button {
     width: 28px;
     height: 28px;
   }
-  
+
   .color-tool-button {
     width: 28px;
     height: 28px;
   }
-  
+
   .color-swatch {
     width: 16px;
     height: 16px;
@@ -206,36 +206,36 @@
     height: 44px;
     padding: 0 8px;
   }
-  
+
   .toolbar-center {
     display: none; /* Hide tool info on mobile */
   }
-  
+
   .tool-button {
     width: 24px;
     height: 24px;
   }
-  
+
   .color-tool-button {
     width: 24px;
     height: 24px;
   }
-  
+
   .color-swatch {
     width: 14px;
     height: 14px;
   }
-  
+
   .zoom-controls {
     padding: 2px 4px;
     gap: 4px;
   }
-  
+
   .zoom-button {
     width: 20px;
     height: 20px;
   }
-  
+
   .zoom-level {
     font-size: 11px;
     min-width: 32px;
@@ -247,16 +247,16 @@
   .bottom-toolbar {
     border-top-width: 2px;
   }
-  
+
   .tool-button,
   .color-tool-button {
     border: 1px solid transparent;
   }
-  
+
   .tool-button.active {
     border-color: var(--interactive-primary);
   }
-  
+
   .color-swatch {
     border-width: 3px;
   }
@@ -276,7 +276,7 @@
   .bottom-toolbar {
     backdrop-filter: blur(20px) saturate(180%);
   }
-  
+
   .color-swatch::after {
     background: var(--bg-elevated);
   }
