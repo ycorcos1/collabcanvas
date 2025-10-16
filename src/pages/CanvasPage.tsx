@@ -122,7 +122,10 @@ const CanvasPage: React.FC = () => {
 
   // Persist selected shapes to session storage
   useEffect(() => {
-    sessionStorage.setItem("canvas-selected-shapes", JSON.stringify(selectedShapeIds));
+    sessionStorage.setItem(
+      "canvas-selected-shapes",
+      JSON.stringify(selectedShapeIds)
+    );
   }, [selectedShapeIds]);
 
   // Restore selected shapes on component mount
@@ -133,12 +136,12 @@ const CanvasPage: React.FC = () => {
         const parsedSelection = JSON.parse(savedSelection);
         if (Array.isArray(parsedSelection)) {
           // Only restore selections that still exist in current shapes
-          const validSelections = parsedSelection.filter(id => 
-            shapes.some(shape => shape.id === id)
+          const validSelections = parsedSelection.filter((id) =>
+            shapes.some((shape) => shape.id === id)
           );
           if (validSelections.length > 0) {
             // Use the selectShape function to restore selections
-            validSelections.forEach(id => selectShape(id, true));
+            validSelections.forEach((id) => selectShape(id, true));
           }
         }
       } catch (error) {
@@ -214,7 +217,6 @@ const CanvasPage: React.FC = () => {
   const handleCursorModeChange = (mode: string) => {
     setCursorMode(mode);
   };
-
 
   // Handle shape renaming from sidebar
   const handleRenameShape = (id: string, newName: string) => {

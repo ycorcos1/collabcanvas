@@ -203,10 +203,21 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   };
 
   const handleAddPage = () => {
-    const newPageNumber = pages.length + 1;
+    // Find the highest existing page number to determine the next number
+    const existingNumbers = pages
+      .map(page => {
+        const match = page.name.match(/^Page (\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(num => num > 0);
+    
+    const nextPageNumber = existingNumbers.length > 0 
+      ? Math.max(...existingNumbers) + 1 
+      : pages.length + 1;
+    
     const newPage = {
       id: `page${Date.now()}`, // Use timestamp for unique ID
-      name: `Page ${newPageNumber}`
+      name: `Page ${nextPageNumber}`
     };
     setPages([...pages, newPage]);
   };
