@@ -9,6 +9,7 @@ import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCanvas } from "../hooks/useCanvas";
+import { useCanvasDimensions } from "../hooks/useCanvasDimensions";
 import { exportCanvas } from "../utils/exportUtils";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
@@ -80,6 +81,7 @@ const CanvasPage: React.FC = () => {
 
   // Canvas state management
   const { canvasState, zoomIn, zoomOut, zoomReset } = useCanvas();
+  const { dimensions: canvasDimensions } = useCanvasDimensions();
 
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
@@ -174,56 +176,93 @@ const CanvasPage: React.FC = () => {
     setCursorMode(mode);
   };
 
-  // Sidebar handlers
-  const handleSave = () => {
-    // Implement save functionality
-    console.log("Save project");
-  };
+  // Handle shape creation from sidebar
+  const handleCreateShapeFromSidebar = async (type: "rectangle" | "circle" | "text" | "drawing") => {
+    if (!user) return;
 
-  const handleNewProject = () => {
-    // Navigate to new project
-    navigate("/canvas/new");
-  };
+    // Create shape at center of canvas
+    const canvasCenter = {
+      x: canvasDimensions.width / 2,
+      y: canvasDimensions.height / 2,
+    };
 
-  const handleCreateObject = (type: 'shape' | 'text' | 'brush') => {
-    // Switch to the appropriate tool and trigger creation
-    if (type === 'text') {
-      setCursorMode('text');
-    } else if (type === 'brush') {
-      setCursorMode('brush');
-    } else {
-      // For shape, default to rectangle
-      setSelectedTool('rectangle');
-      setCursorMode('shape');
+    let shapeData;
+    
+    switch (type) {
+      case "rectangle":
+        shapeData = {
+          type: "rectangle" as const,
+          x: canvasCenter.x - 50,
+          y: canvasCenter.y - 25,
+          width: 100,
+          height: 50,
+          color: "#FF0000",
+          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          createdBy: user.id,
+        };
+        break;
+      case "circle":
+        shapeData = {
+          type: "circle" as const,
+          x: canvasCenter.x - 25,
+          y: canvasCenter.y - 25,
+          width: 50,
+          height: 50,
+          color: "#FF0000",
+          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          createdBy: user.id,
+        };
+        break;
+      case "text":
+        shapeData = {
+          type: "text" as const,
+          x: canvasCenter.x - 50,
+          y: canvasCenter.y - 15,
+          width: 100,
+          height: 30,
+          color: "#FF0000",
+          text: "Text",
+          fontSize: 16,
+          fontFamily: "Arial",
+          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          createdBy: user.id,
+        };
+        break;
+      case "drawing":
+        // For drawing, create a simple line
+        shapeData = {
+          type: "drawing" as const,
+          x: canvasCenter.x - 50,
+          y: canvasCenter.y,
+          width: 100,
+          height: 1,
+          color: "#FF0000",
+          points: [canvasCenter.x - 50, canvasCenter.y, canvasCenter.x + 50, canvasCenter.y],
+          strokeWidth: 3,
+          zIndex: Math.max(...shapes.map(s => s.zIndex), 0) + 1,
+          createdBy: user.id,
+        };
+        break;
+      default:
+        return;
+    }
+
+    try {
+      const newShape = await createShape(shapeData);
+      if (newShape) {
+        // Select the newly created shape
+        selectShape(newShape.id);
+      }
+    } catch (error) {
+      console.error("Failed to create shape from sidebar:", error);
     }
   };
 
-  const handleRenameObject = (id: string, newName: string) => {
-    // For text objects, update the text content
-    const shape = shapes.find(s => s.id === id);
-    if (shape && shape.type === 'text') {
-      updateShape(id, { text: newName });
-    }
-    // For other objects, we could store custom names in a separate field
-    // This would require extending the Shape interface
-  };
-
-  const handleDeleteObject = async (id: string) => {
-    // Remove from selection if selected
-    if (selectedShapeIds.includes(id)) {
-      await selectShape(null);
-    }
-    // Delete the specific object using the shapes service
-    // This would need to be implemented in the shapes service
-    console.log("Delete object:", id);
-  };
-
-  const handleCopyObject = (id: string) => {
-    // Copy specific object to clipboard
-    const shape = shapes.find(s => s.id === id);
-    if (shape) {
-      setClipboard([shape]);
-    }
+  // Handle shape renaming from sidebar
+  const handleRenameShape = (id: string, newName: string) => {
+    // This is handled locally in the sidebar component
+    // Could be extended to save to a separate shapes metadata collection if needed
+    console.log(`Renaming shape ${id} to ${newName}`);
   };
 
   // History operations
@@ -429,20 +468,16 @@ const CanvasPage: React.FC = () => {
           shapes={shapes}
           selectedShapeIds={selectedShapeIds}
           onSelectShape={selectShape}
-          projectName={projectName}
-          onSave={handleSave}
-          onCopy={handleCopy}
-          onPaste={handlePaste}
           onUndo={handleUndo}
           onRedo={handleRedo}
-          onNewProject={handleNewProject}
+          onCopy={handleCopy}
+          onPaste={handlePaste}
+          onDeleteSelected={deleteSelectedShapes}
+          onCreateShape={handleCreateShapeFromSidebar}
+          onRenameShape={handleRenameShape}
           canUndo={canUndo}
           canRedo={canRedo}
           hasClipboardContent={clipboard.length > 0}
-          onCreateObject={handleCreateObject}
-          onRenameObject={handleRenameObject}
-          onDeleteObject={handleDeleteObject}
-          onCopyObject={handleCopyObject}
         />
 
         {/* Canvas Area */}
