@@ -13,6 +13,7 @@ import { exportCanvas } from "../utils/exportUtils";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
 import { ModernToolbar } from "../components/ModernToolbar/ModernToolbar";
+import { RightPanel } from "../components/RightPanel/RightPanel";
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
 import "./CanvasPage.css";
@@ -94,6 +95,7 @@ const CanvasPage: React.FC = () => {
   const [canvasBackground, setCanvasBackground] = useState(() => {
     return sessionStorage.getItem("canvas-background-color") || "#ffffff";
   });
+  const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
   // Cursor mode state with persistence
   const [cursorMode, setCursorMode] = useState(() => {
@@ -466,6 +468,18 @@ const CanvasPage: React.FC = () => {
     }
   }, [shapes, projectName]);
 
+  const handleExportPDF = useCallback(async () => {
+    try {
+      await exportCanvas(shapes, projectName, {
+        format: "pdf",
+        padding: 20,
+        backgroundColor: canvasBackground,
+      });
+    } catch (error) {
+      console.error("Export PDF failed:", error);
+    }
+  }, [shapes, projectName, canvasBackground]);
+
   // Export selected functions moved to FloatingToolbar component
 
   // Z-index management functions removed - will be added to right panel later if needed
@@ -553,7 +567,7 @@ const CanvasPage: React.FC = () => {
           onSave={handleSaveProject}
           onNewProject={handleNewProject}
           onExportPNG={handleExportPNG}
-          onExportSVG={handleExportSVG}
+          onExportPDF={handleExportPDF}
           canUndo={canUndo}
           canRedo={canRedo}
           hasClipboardContent={clipboard.length > 0}
@@ -585,24 +599,20 @@ const CanvasPage: React.FC = () => {
           />
         </main>
 
-        {/* Right Panel - Background Color Only */}
-        <div className="right-panel">
-          <div className="panel-section">
-            <h3>Canvas</h3>
-            <div className="background-section">
-              <label>Background Color</label>
-              <div className="color-input-container">
-                <input
-                  type="color"
-                  value={canvasBackground}
-                  onChange={(e) => setCanvasBackground(e.target.value)}
-                  className="color-input"
-                />
-                <span className="color-value">{canvasBackground}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Right Panel */}
+        <RightPanel
+          canvasBackground={canvasBackground}
+          onBackgroundChange={setCanvasBackground}
+          isBackgroundPickerOpen={isBackgroundPickerOpen}
+          onToggleBackgroundPicker={() =>
+            setIsBackgroundPickerOpen(!isBackgroundPickerOpen)
+          }
+          onCloseBackgroundPicker={() => setIsBackgroundPickerOpen(false)}
+          hasSelectedShapes={selectedShapeIds.length > 0}
+          selectedShapeIds={selectedShapeIds}
+          onExportPNG={handleExportPNG}
+          onExportSVG={handleExportSVG}
+        />
       </div>
 
       {/* Modern Toolbar */}

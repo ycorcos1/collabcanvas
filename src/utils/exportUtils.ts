@@ -1,4 +1,5 @@
 import { Shape } from '../types/shape';
+import jsPDF from 'jspdf';
 
 /**
  * Export Utilities - Handle canvas and shape export functionality
@@ -11,11 +12,11 @@ import { Shape } from '../types/shape';
  */
 
 interface ExportOptions {
-  format: 'png' | 'svg';
+  format: 'png' | 'svg' | 'pdf';
   quality?: number; // For PNG (0-1)
   scale?: number; // Export scale multiplier
   padding?: number; // Padding around shapes
-  backgroundColor?: string; // Background color for PNG
+  backgroundColor?: string; // Background color for PNG/PDF
 }
 
 interface ExportBounds {
@@ -142,6 +143,54 @@ export const createCanvasFromShapes = (
 };
 
 /**
+ * Create PDF from shapes
+ */
+export const createPDFFromShapes = (
+  shapes: Shape[], 
+  bounds: ExportBounds,
+  options: ExportOptions
+): jsPDF => {
+  // Convert pixels to mm (assuming 96 DPI)
+  const pxToMm = 0.264583;
+  const pdfWidth = bounds.width * pxToMm;
+  const pdfHeight = bounds.height * pxToMm;
+  
+  // Create PDF with custom dimensions
+  const pdf = new jsPDF({
+    orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+    unit: 'mm',
+    format: [pdfWidth, pdfHeight]
+  });
+  
+  // Add background
+  if (options.backgroundColor && options.backgroundColor !== '#ffffff') {
+    pdf.setFillColor(options.backgroundColor);
+    pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
+  }
+  
+  // Draw shapes
+  shapes.forEach(shape => {
+    const x = (shape.x - bounds.x) * pxToMm;
+    const y = (shape.y - bounds.y) * pxToMm;
+    const width = shape.width * pxToMm;
+    const height = shape.height * pxToMm;
+    
+    pdf.setFillColor(shape.color);
+    
+    if (shape.type === 'rectangle') {
+      pdf.rect(x, y, width, height, 'F');
+    } else if (shape.type === 'circle') {
+      const centerX = x + width / 2;
+      const centerY = y + height / 2;
+      const radius = Math.min(width, height) / 2;
+      pdf.circle(centerX, centerY, radius, 'F');
+    }
+  });
+  
+  return pdf;
+};
+
+/**
  * Export shapes as file
  */
 export const exportShapes = async (
@@ -166,6 +215,9 @@ export const exportShapes = async (
         resolve();
       }, 'image/png', options.quality || 0.9);
     });
+  } else if (options.format === 'pdf') {
+    const pdf = createPDFFromShapes(shapes, bounds, options);
+    pdf.save(`${filename}.pdf`);
   }
 };
 
