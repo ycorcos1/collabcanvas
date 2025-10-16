@@ -297,6 +297,8 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   const handleCursorSelect = (mode: CursorMode) => {
     setCursorMode(mode);
     setShowCursorDropdown(false);
+    setIsTextMode(false);
+    setShowDrawingToolbar(false);
     if (mode === "select") {
       onToolSelect(null); // Select tool
     }
@@ -306,6 +308,8 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   const handleShapeSelect = (shape: ShapeType) => {
     setShapeMode(shape);
     setShowShapeDropdown(false);
+    setIsTextMode(false);
+    setShowDrawingToolbar(false);
     if (shape === "rectangle" || shape === "circle") {
       onToolSelect(shape);
     }
@@ -316,11 +320,15 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setDrawingMode(mode);
     setShowDrawingDropdown(false);
     setShowDrawingToolbar(true);
+    setIsTextMode(false);
+    onToolSelect(null); // Clear shape tool when drawing
     // Handle drawing mode
   };
 
   const handleTextSelect = () => {
     setIsTextMode(!isTextMode);
+    setShowDrawingToolbar(false);
+    onToolSelect(null); // Clear shape tool when text mode
     closeAllDropdowns();
     // Handle text mode
   };
@@ -403,7 +411,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
             <button
               ref={cursorButtonRef}
               className={`main-tool-button ${
-                selectedTool === null && cursorMode === "select" ? "active" : ""
+                selectedTool === null && !isTextMode && !showDrawingToolbar ? "active" : ""
               }`}
                onClick={() => {
                  closeAllDropdowns();
@@ -449,7 +457,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
             <button
               ref={shapeButtonRef}
               className={`main-tool-button ${
-                selectedTool === "rectangle" || selectedTool === "circle"
+                (selectedTool === "rectangle" || selectedTool === "circle") && !isTextMode && !showDrawingToolbar
                   ? "active"
                   : ""
               }`}
@@ -495,7 +503,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           {/* Text Tool */}
           <div className="tool-group">
             <button
-              className={`main-tool-button ${isTextMode ? "active" : ""}`}
+              className={`main-tool-button ${isTextMode && !showDrawingToolbar ? "active" : ""}`}
               onClick={handleTextSelect}
               title="Text"
             >
