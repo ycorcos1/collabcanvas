@@ -25,7 +25,6 @@ export const Settings: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [photoUploadStatus, setPhotoUploadStatus] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [currentPhotoURL, setCurrentPhotoURL] = useState<string | undefined>(user?.photoURL);
@@ -108,7 +107,6 @@ export const Settings: React.FC = () => {
     }
 
     setIsUploadingPhoto(true);
-    setPhotoUploadStatus("Uploading...");
     
     try {
       // Upload and update user profile (compression is handled inside the function)
@@ -116,15 +114,8 @@ export const Settings: React.FC = () => {
       
       // Update local state immediately for instant UI update
       setCurrentPhotoURL(newPhotoURL);
-      setPhotoUploadStatus("Photo updated successfully!");
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setPhotoUploadStatus(null);
-      }, 3000);
       
     } catch (error: any) {
-      setPhotoUploadStatus(null);
       setErrorMessage(error.message || "Failed to upload photo. Please try again.");
       setShowErrorModal(true);
     } finally {
@@ -162,18 +153,11 @@ export const Settings: React.FC = () => {
 
           <div className="profile-card">
             <div className="profile-avatar">
-              <div className="avatar-container">
-                <Avatar
-                  src={currentPhotoURL}
-                  name={user?.displayName || user?.email || "User"}
-                  size="lg"
-                />
-                {photoUploadStatus && (
-                  <div className={`upload-status-overlay ${photoUploadStatus.includes('successfully') ? 'success' : 'uploading'}`}>
-                    {photoUploadStatus}
-                  </div>
-                )}
-              </div>
+              <Avatar
+                src={currentPhotoURL}
+                name={user?.displayName || user?.email || "User"}
+                size="lg"
+              />
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -482,38 +466,6 @@ style.textContent = `
     margin-top: var(--space-2);
   }
 
-  .avatar-container {
-    position: relative;
-    display: inline-block;
-  }
-
-  .upload-status-overlay {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: var(--text-sm);
-    text-align: center;
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-md);
-    white-space: nowrap;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    pointer-events: none;
-    backdrop-filter: blur(8px);
-  }
-
-  .upload-status-overlay.uploading {
-    color: var(--text-secondary);
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid var(--border-primary);
-  }
-
-  .upload-status-overlay.success {
-    color: var(--status-success);
-    background-color: rgba(240, 253, 244, 0.95);
-    border: 1px solid var(--status-success);
-  }
 
   .theme-selector {
     display: flex;
