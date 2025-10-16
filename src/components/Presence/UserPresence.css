@@ -78,7 +78,6 @@
   padding: 14px 16px;
   border-radius: 8px;
   gap: 12px;
-  transition: all 0.15s ease;
   margin-bottom: 4px;
   background: var(--bg-primary);
   border: 1px solid transparent;
@@ -88,12 +87,7 @@
   margin-bottom: 0;
 }
 
-.user-presence.right-panel-variant .user-item:hover {
-  background-color: var(--bg-secondary);
-  border-color: var(--border-secondary);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+/* Removed hover state for online users */
 
 .user-presence.right-panel-variant .user-item.current-user {
   background: var(--bg-secondary);
@@ -136,13 +130,9 @@
   border: 2px solid rgba(255, 255, 255, 0.3);
   position: relative;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.15s ease;
 }
 
-.user-presence.right-panel-variant .user-item:hover .user-avatar {
-  transform: scale(1.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
+/* Removed avatar hover scaling effect */
 
 .user-presence.right-panel-variant .user-avatar::after {
   content: '';
