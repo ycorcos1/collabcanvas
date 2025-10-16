@@ -488,28 +488,30 @@ style.textContent = `
   }
 
   .upload-status-overlay {
-    position: absolute;
-    bottom: -8px;
+    position: fixed;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    font-size: var(--text-xs);
+    transform: translate(-50%, -50%);
+    font-size: var(--text-sm);
     text-align: center;
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
     white-space: nowrap;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+    backdrop-filter: blur(8px);
   }
 
   .upload-status-overlay.uploading {
     color: var(--text-secondary);
-    background-color: var(--bg-secondary);
+    background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid var(--border-primary);
   }
 
   .upload-status-overlay.success {
     color: var(--status-success);
-    background-color: var(--status-success-bg);
+    background-color: rgba(240, 253, 244, 0.95);
     border: 1px solid var(--status-success);
   }
 
