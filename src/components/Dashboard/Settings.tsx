@@ -68,19 +68,21 @@ export const Settings: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
+      alert("Image size must be less than 5MB");
       return;
     }
 
@@ -89,18 +91,20 @@ export const Settings: React.FC = () => {
       // For now, create a local URL for preview
       // TODO: Implement Firebase Storage upload
       const imageUrl = URL.createObjectURL(file);
-      console.log('Photo selected:', file.name, 'Preview URL:', imageUrl);
-      
+      console.log("Photo selected:", file.name, "Preview URL:", imageUrl);
+
       // TODO: Upload to Firebase Storage and update user profile
-      alert('Photo upload functionality will be implemented with Firebase Storage');
+      alert(
+        "Photo upload functionality will be implemented with Firebase Storage"
+      );
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      alert('Failed to upload photo. Please try again.');
+      console.error("Error uploading photo:", error);
+      alert("Failed to upload photo. Please try again.");
     } finally {
       setIsUploadingPhoto(false);
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -136,8 +140,8 @@ export const Settings: React.FC = () => {
                 name={user?.displayName || user?.email || "User"}
                 size="lg"
               />
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={handlePhotoUpload}
                 loading={isUploadingPhoto}
@@ -150,7 +154,7 @@ export const Settings: React.FC = () => {
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
               />
             </div>
 
