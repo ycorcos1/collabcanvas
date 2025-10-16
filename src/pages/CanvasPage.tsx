@@ -8,6 +8,7 @@ import { ThemeInitializer } from "../components/ThemeInitializer";
 import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+import { useCanvas } from "../hooks/useCanvas";
 import { exportCanvas } from "../utils/exportUtils";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
@@ -76,6 +77,9 @@ const CanvasPage: React.FC = () => {
 
   // History management for undo/redo
   const { undo, redo, pushState } = useHistory(shapes);
+
+  // Canvas state management
+  const { canvasState, zoomIn, zoomOut, zoomReset } = useCanvas();
 
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
@@ -400,6 +404,10 @@ const CanvasPage: React.FC = () => {
         hasSelectedShapes={selectedShapeIds.length > 0}
         onDeleteSelected={deleteSelectedShapes}
         onDuplicate={handleDuplicate}
+        zoom={Math.round(canvasState.scale * 100)}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onZoomReset={zoomReset}
       />
 
       {/* Connection Status */}

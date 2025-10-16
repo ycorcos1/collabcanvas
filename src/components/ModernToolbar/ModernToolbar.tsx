@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Shape } from "../../types/shape";
 import "./ModernToolbar.css";
 
@@ -19,6 +19,10 @@ interface ModernToolbarProps {
   hasSelectedShapes: boolean;
   onDeleteSelected: () => void;
   onDuplicate: () => void;
+  zoom?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
 }
 
 type CursorMode = "grab" | "pointer" | "select";
@@ -39,11 +43,28 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   hasSelectedShapes,
   onDeleteSelected,
   onDuplicate,
+  zoom = 100,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }) => {
-  const [cursorMode, setCursorMode] = useState<CursorMode>("select");
-  const [shapeMode, setShapeMode] = useState<ShapeType>("rectangle");
-  const [drawingMode, setDrawingMode] = useState<DrawingMode>("brush");
-  const [isTextMode, setIsTextMode] = useState(false);
+  // Initialize state from localStorage or defaults
+  const [cursorMode, setCursorMode] = useState<CursorMode>(() => {
+    const saved = localStorage.getItem("toolbar-cursor-mode");
+    return (saved as CursorMode) || "select";
+  });
+  const [shapeMode, setShapeMode] = useState<ShapeType>(() => {
+    const saved = localStorage.getItem("toolbar-shape-mode");
+    return (saved as ShapeType) || "rectangle";
+  });
+  const [drawingMode, setDrawingMode] = useState<DrawingMode>(() => {
+    const saved = localStorage.getItem("toolbar-drawing-mode");
+    return (saved as DrawingMode) || "brush";
+  });
+  const [isTextMode, setIsTextMode] = useState(() => {
+    const saved = localStorage.getItem("toolbar-text-mode");
+    return saved === "true";
+  });
 
   const [showCursorDropdown, setShowCursorDropdown] = useState(false);
   const [showShapeDropdown, setShowShapeDropdown] = useState(false);
@@ -52,11 +73,30 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
   const [brushSize, setBrushSize] = useState(4);
   const [brushColor] = useState("#000000");
-  const [zoom, setZoom] = useState(100);
+
+  // File input ref for image upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cursorButtonRef = useRef<HTMLButtonElement>(null);
   const shapeButtonRef = useRef<HTMLButtonElement>(null);
   const drawingButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Persist state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem("toolbar-cursor-mode", cursorMode);
+  }, [cursorMode]);
+
+  useEffect(() => {
+    localStorage.setItem("toolbar-shape-mode", shapeMode);
+  }, [shapeMode]);
+
+  useEffect(() => {
+    localStorage.setItem("toolbar-drawing-mode", drawingMode);
+  }, [drawingMode]);
+
+  useEffect(() => {
+    localStorage.setItem("toolbar-text-mode", isTextMode.toString());
+  }, [isTextMode]);
 
   const cursorTools = [
     {
@@ -77,30 +117,17 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
         </svg>
       ),
-      shortcut: "H",
     },
-      {
-        id: "pointer" as const,
-        name: "Move",
-        icon: (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-            <path d="m13 13 6 6"/>
-          </svg>
-        ),
-        shortcut: "V",
-      },
-      {
-        id: "select" as const,
-        name: "Select",
-        icon: (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-            <path d="m13 13 6 6"/>
-          </svg>
-        ),
-        shortcut: "V",
-      },
+    {
+      id: "select" as const,
+      name: "Select",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+          <path d="m13 13 6 6"/>
+        </svg>
+      ),
+    },
   ];
 
   const shapeTools = [
@@ -258,13 +285,11 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           stroke="currentColor"
           strokeWidth="2"
         >
-          <path d="M12 19l7-7 3 3-7 7-3-3z" />
-          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-          <path d="M2 2l7.586 7.586" />
-          <circle cx="11" cy="11" r="2" />
+          <path d="M9.06 11.9c.8-.8.8-2.07 0-2.86l-5.66-5.66a2 2 0 0 0-2.83 0l-.7.7a2 2 0 0 0 0 2.83L5.54 12.6c.79.8 2.07.8 2.86 0L9.06 11.9z"/>
+          <path d="M17 5h-4l-2 2h4l2-2z"/>
+          <path d="M19 3l2 2-2 2-2-2 2-2z"/>
         </svg>
       ),
-      shortcut: "B",
     },
     {
       id: "eraser" as const,
@@ -310,10 +335,38 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setShowShapeDropdown(false);
     setIsTextMode(false);
     setShowDrawingToolbar(false);
+    
+    // Handle image upload
+    if (shape === "image") {
+      handleImageUpload();
+      return;
+    }
+    
+    // Only pass supported shapes to canvas (rectangle and circle for now)
     if (shape === "rectangle" || shape === "circle") {
       onToolSelect(shape);
+    } else {
+      // For unsupported shapes, clear the tool selection
+      onToolSelect(null);
     }
-    // Handle other shapes as needed
+  };
+
+  const handleImageUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      // For now, just show an alert that image upload is not fully implemented
+      alert('Image upload functionality is not yet fully implemented. This feature will be added in a future update.');
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleDrawingSelect = (mode: DrawingMode) => {
@@ -322,7 +375,11 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setShowDrawingToolbar(true);
     setIsTextMode(false);
     onToolSelect(null); // Clear shape tool when drawing
-    // Handle drawing mode
+    
+    // Show notification that drawing is not fully implemented
+    setTimeout(() => {
+      alert(`${mode === 'brush' ? 'Brush' : 'Eraser'} tool is not yet fully implemented. This feature will be added in a future update.`);
+    }, 100);
   };
 
   const handleTextSelect = () => {
@@ -333,17 +390,23 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     // Handle text mode
   };
 
-  // Zoom functionality
+  // Zoom functionality - use props if available
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 25, 500));
+    if (onZoomIn) {
+      onZoomIn();
+    }
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 25, 25));
+    if (onZoomOut) {
+      onZoomOut();
+    }
   };
 
   const handleZoomReset = () => {
-    setZoom(100);
+    if (onZoomReset) {
+      onZoomReset();
+    }
   };
 
   const getCurrentCursorTool = () =>
@@ -355,6 +418,15 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
   return (
     <>
+      {/* Hidden file input for image upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      
       {/* Drawing Toolbar (appears above main toolbar when in drawing mode) */}
       {showDrawingToolbar && (
         <div className="drawing-toolbar">
@@ -456,7 +528,6 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
                   >
                     {tool.icon}
                     <span>{tool.name}</span>
-                    <span className="shortcut">{tool.shortcut}</span>
                   </button>
                 ))}
               </div>
@@ -515,7 +586,6 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
                   >
                     {tool.icon}
                     <span>{tool.name}</span>
-                    <span className="shortcut">{tool.shortcut}</span>
                   </button>
                 ))}
               </div>
@@ -524,24 +594,26 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
           {/* Text Tool */}
           <div className="tool-group">
-            <button
-              className={`main-tool-button ${isTextMode && !showDrawingToolbar ? "active" : ""}`}
-              onClick={handleTextSelect}
-              title="Text"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+            <div className="split-button">
+              <button
+                className={`main-tool-button ${isTextMode && !showDrawingToolbar ? "active" : ""}`}
+                onClick={handleTextSelect}
+                title="Text"
               >
-                <polyline points="4,7 4,4 20,4 20,7" />
-                <line x1="9" y1="20" x2="15" y2="20" />
-                <line x1="12" y1="4" x2="12" y2="20" />
-              </svg>
-            </button>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polyline points="4,7 4,4 20,4 20,7" />
+                  <line x1="9" y1="20" x2="15" y2="20" />
+                  <line x1="12" y1="4" x2="12" y2="20" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Drawing Tool */}
@@ -594,7 +666,6 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
                   >
                     {tool.icon}
                     <span>{tool.name}</span>
-                    <span className="shortcut">{tool.shortcut}</span>
                   </button>
                 ))}
               </div>

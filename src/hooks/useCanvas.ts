@@ -52,6 +52,28 @@ export const useCanvas = () => {
     []
   );
 
+  // Zoom functions for toolbar integration
+  const zoomIn = useCallback(() => {
+    setCanvasState((prev) => ({
+      ...prev,
+      scale: Math.min(prev.scale * 1.25, 5), // Max zoom 5x
+    }));
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setCanvasState((prev) => ({
+      ...prev,
+      scale: Math.max(prev.scale / 1.25, 0.1), // Min zoom 0.1x
+    }));
+  }, []);
+
+  const zoomReset = useCallback(() => {
+    setCanvasState((prev) => ({
+      ...prev,
+      scale: 1,
+    }));
+  }, []);
+
   const initializeCanvas = useCallback(
     (canvasWidth: number, canvasHeight: number) => {
       // Only center if there's no saved state (indicating a fresh sign-in)
@@ -84,5 +106,8 @@ export const useCanvas = () => {
     centerCanvas,
     initializeCanvas,
     zoomToFit,
+    zoomIn,
+    zoomOut,
+    zoomReset,
   };
 };
