@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { useAuth } from "../Auth/AuthProvider";
 import { useTheme } from "../../hooks/useTheme";
 import { Button, Input, Avatar } from "../shared";
-import { uploadProfilePhoto, compressImage } from "../../services/storage";
+import { uploadProfilePhoto } from "../../services/storage";
 
 /**
  * Settings Page - User preferences and account management
@@ -77,14 +77,12 @@ export const Settings: React.FC = () => {
 
     setIsUploadingPhoto(true);
     try {
-      // Compress the image before upload
-      const compressedFile = await compressImage(file, 400, 0.8);
+      console.log("Starting photo upload...");
       
-      // Upload to Firebase Storage and update user profile
-      await uploadProfilePhoto(compressedFile);
+      // Upload and update user profile (compression is handled inside the function)
+      await uploadProfilePhoto(file);
       
-      // The user profile is automatically updated in the uploadProfilePhoto function
-      // The auth context should reflect the change automatically
+      console.log("Photo upload completed successfully");
       alert("Profile photo updated successfully!");
       
     } catch (error: any) {

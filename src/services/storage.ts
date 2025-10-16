@@ -1,4 +1,4 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, deleteObject } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
 import { storage, auth } from "./firebase";
 
@@ -14,8 +14,9 @@ import { storage, auth } from "./firebase";
 
 /**
  * Upload a profile photo for the current user
+ * For now, we'll use base64 data URLs to avoid Firebase Storage configuration issues
  * @param file - The image file to upload
- * @returns Promise<string> - The download URL of the uploaded image
+ * @returns Promise<string> - The data URL of the processed image
  */
 export async function uploadProfilePhoto(file: File): Promise<string> {
   const user = auth.currentUser;
@@ -34,25 +35,47 @@ export async function uploadProfilePhoto(file: File): Promise<string> {
   }
 
   try {
-    // Create a reference to the user's profile photo
-    const photoRef = ref(storage, `profile-photos/${user.uid}/${Date.now()}-${file.name}`);
+    console.log("Starting photo upload process...");
     
-    // Upload the file
-    const snapshot = await uploadBytes(photoRef, file);
+    // Compress the image first
+    const compressedFile = await compressImage(file, 200, 0.7);
+    console.log("Image compressed successfully");
     
-    // Get the download URL
-    const downloadURL = await getDownloadURL(snapshot.ref);
+    // Convert to base64 data URL
+    const dataURL = await fileToDataURL(compressedFile);
+    console.log("Image converted to data URL");
     
-    // Update the user's profile with the new photo URL
+    // Update the user's profile with the data URL
     await updateProfile(user, {
-      photoURL: downloadURL
+      photoURL: dataURL
     });
-
-    return downloadURL;
+    
+    console.log("Profile updated successfully");
+    return dataURL;
   } catch (error) {
     console.error("Error uploading profile photo:", error);
-    throw new Error("Failed to upload photo. Please try again.");
+    throw new Error(`Failed to upload photo: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+/**
+ * Convert a file to a data URL
+ * @param file - The file to convert
+ * @returns Promise<string> - The data URL
+ */
+function fileToDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Failed to convert file to data URL'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
 }
 
 /**
