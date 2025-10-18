@@ -51,7 +51,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   onDuplicate: _onDuplicate, // unused in this component now
   onCopy: _onCopy, // unused here
   onPaste: _onPaste, // unused here
-  hasClipboardContent = false,
+  hasClipboardContent: _hasClipboardContent = false,
   selectedColor = "#FF0000",
   onColorChange,
   zoom = 100,

@@ -651,9 +651,10 @@ export const selectShapeTool: Tool = {
 
       if (color) {
         // Select all shapes with a color
-        const matchingShapes = context.shapes.filter(
-          (s) => s.fill?.toLowerCase() === color.toLowerCase()
-        );
+        const matchingShapes = context.shapes.filter((s: any) => {
+          const c = (s.color || s.fill || "").toString().toLowerCase();
+          return c === color.toLowerCase();
+        });
 
         if (matchingShapes.length === 0) {
           return {

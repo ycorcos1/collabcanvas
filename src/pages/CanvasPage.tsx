@@ -1614,7 +1614,7 @@ const CanvasPage: React.FC = () => {
           onExportPNG={handleExportPNG}
           onExportSVG={handleExportSVG}
           onExportPDF={handleExportPDF}
-          projectId={actualProjectId || projectSlug}
+          projectId={projectSlug}
           onDeleteSelected={deleteSelectedShapes}
           onClearCanvas={clearAllShapes}
           onCopy={handleCopy}
