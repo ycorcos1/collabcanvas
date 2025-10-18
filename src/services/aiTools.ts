@@ -140,8 +140,17 @@ export const createShapeTool: Tool = {
     context: AICommandContext
   ): Promise<AIToolResult> => {
     try {
-      const { type, x, y, width, height, radius, fill, stroke, strokeWidth } =
-        args;
+      const {
+        type,
+        x,
+        y,
+        width,
+        height,
+        radius,
+        fill,
+        stroke: _stroke,
+        strokeWidth: _strokeWidth,
+      } = args;
 
       // Validate required fields
       if (!type || typeof x !== "number" || typeof y !== "number") {
