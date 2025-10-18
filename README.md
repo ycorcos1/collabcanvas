@@ -105,18 +105,49 @@ npm run dev
 
 ## Deployment
 
-The application is ready for production deployment:
+### Vercel (recommended)
+
+- This project uses a serverless AI proxy compatible with Vite on Vercel.
+- The Edge Function is implemented with the standard Web Request/Response API (no Next.js runtime imports).
+- SPA routing and API passthrough are configured in `vercel.json`.
+
+Steps:
+
+1. Set environment variables in Vercel Project Settings → Environment Variables
+
+```env
+VITE_ENABLE_AI_AGENT=true
+VITE_USE_AI_PROXY=true
+OPENAI_API_KEY=sk-...            # Server-side only
+VITE_OPENAI_API_KEY=sk-...       # Optional for local dev; not required when proxying
+
+# Firebase
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_DATABASE_URL=...
+```
+
+2. Push to GitHub and connect the repo to Vercel. Vercel will run:
+
+```bash
+npm install
+npm run build
+```
+
+Routing:
+
+- `api/ai/proxy` → Edge Function (see `api/ai/proxy.ts`)
+- All other routes → `index.html` for SPA
+
+### Firebase Hosting (optional)
 
 ```bash
 npm run build
 firebase deploy
-```
-
-Or deploy to Vercel:
-
-```bash
-npm run build
-# Deploy dist/ folder to Vercel
 ```
 
 ## Success Criteria ✅
@@ -197,6 +228,17 @@ All MVP requirements have been met:
 - **Error Handling**: Ambiguity detection, command suggestions, retry logic
 - **Rate Limiting**: 50 commands/hour to prevent abuse
 
+Recent robustness updates:
+
+- Color normalization (`red` → `#FF0000`) prevents invalid color warnings.
+- Dimension parsing supports `200x300`, `width 200`, `height 300`.
+- Position parsing supports `at 100, 200`, `position 100, 200`, `at position 100, 200`.
+- Scale commands: understands "twice", "double", "3x", "3 times".
+- Shape-agnostic center movement: "move ... to the center" works for any type.
+- Single/All/Ask targeting: if exactly one match, act; if many and not "all", request selection.
+- Bulk tools: `update_many_shapes`, `delete_many_shapes`, `duplicate_many_shapes`, `rotate_many_shapes`.
+- Clear canvas triggers an auto-save to persist deletion across refreshes.
+
 #### Example AI Commands:
 
 ```
@@ -253,11 +295,28 @@ Firestore and Realtime Database rules ensure:
 - [AI Agent Implementation Summary](docs/AI_AGENT_SUMMARY.md) - Technical overview
 - [AI Agent Testing](docs/AI_AGENT_TESTING.md) - Test results and coverage
 - [Memory Bank README](memoryBank/README.md) - Memory bank structure and usage
+- [Security Quick Reference](SECURITY_QUICK_REF.md) - Pre-deploy secrets checklist
 - [Product Requirements Document](collabcanvas_prd.md) - Complete PRD with all features
 - [Task List](collabcanvas_tasklist.md) - Development task breakdown
 
 ## Development Notes
 
 The application implements the complete collaborative infrastructure and AI agent system as specified in the PRD. The codebase follows TypeScript strict mode and uses modern React patterns with hooks. All real-time features and AI commands work seamlessly with proper error handling and performance optimization.
+
+### Recent engineering changes (highlights)
+
+- Intent router fixes to avoid misclassifying updates as creates (e.g., "make all red ellipses blue").
+- Safe color handling end-to-end (`fill`→`color` mapping, hex normalization).
+- Presence stability: prevents online count flapping when switching tabs by reference counting `usePresence` subscribers.
+- Safer `ProtectedRoute` user checks (no null access).
+- OpenAI SDK compatibility: robust parsing of `tool_calls` in various SDK shapes.
+- Edge Function migration: removed `next/server`, uses Web API `Request`/`Response`.
+- `vercel.json` updated to keep `/api/*` on the server and SPA-route the rest.
+
+### Quick troubleshooting
+
+- If "Cannot find module 'next/server'" occurs on Vercel, ensure `api/ai/proxy.ts` matches this repo and `vercel.json` includes API rewrites.
+- If AI clear canvas reverts on refresh, confirm the auto-save listener in `CanvasPage` is active and that a project ID exists.
+- If online user count differs between clients, verify both use the same presence key (slug) and that you’re on the latest build.
 
 **Ready for production deployment, multi-user testing, and AI-powered collaboration!** 🚀
