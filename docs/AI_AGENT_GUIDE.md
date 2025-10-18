@@ -534,3 +534,4 @@ If you're stuck or have questions:
 **Happy Creating with HØRIZON AI! 🎨**
 
 _Last Updated: October 18, 2025_
+

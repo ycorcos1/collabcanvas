@@ -42,3 +42,4 @@ export function popCheckpoint(): AICheckpoint | null {
   write(list);
   return cp;
 }
+

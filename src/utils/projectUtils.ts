@@ -27,3 +27,4 @@ export const isValidProjectId = (id: string): boolean => {
 export const generateProjectSlug = (): string => {
   return generateProjectId();
 };
+

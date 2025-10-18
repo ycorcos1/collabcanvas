@@ -148,3 +148,4 @@ vercel logs
 ---
 
 📚 **Full Documentation**: See `SECURITY_SETUP.md`
+

@@ -59,15 +59,15 @@ interface LeftSidebarProps {
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
-  shapes,
+  shapes: _shapes,
   selectedShapeIds,
-  onSelectShape,
+  onSelectShape: _onSelectShape,
   onUndo,
   onRedo,
   onCopy,
   onPaste,
   onDeleteSelected,
-  onRenameShape,
+  onRenameShape: _onRenameShape,
   onSave,
   onNewProject,
   onAddCollaborators,
@@ -128,27 +128,26 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const pageMenuRef = useRef<HTMLDivElement>(null);
-  const objectMenuRef = useRef<HTMLDivElement>(null);
+  // const objectMenuRef = useRef<HTMLDivElement>(null); // unused
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Generate object names with "Object #" format
-  const getObjectName = (shape: Shape) => {
-    if (objectNames[shape.id]) {
-      return objectNames[shape.id];
-    }
-
-    const sameTypeShapes = shapes.filter((s) => s.type === shape.type);
-    const index = sameTypeShapes.findIndex((s) => s.id === shape.id) + 1;
-    return `Object ${index}`;
-  };
+  // Reserved for future object list UI
+  // const getObjectName = (_shape: Shape) => {
+  //   if (_shape && objectNames[_shape.id]) {
+  //     return objectNames[_shape.id];
+  //   }
+  //   return "Object";
+  // };
 
   // Convert shapes to object items with generated names
-  const objects = shapes
-    .map((shape) => ({
-      ...shape,
-      name: getObjectName(shape),
-    }))
-    .sort((a, b) => b.zIndex - a.zIndex); // Sort by z-index (highest first)
+  // Precomputed objects list (currently unused by UI, reserved for future list view)
+  // const objects = shapes
+  //   .map((shape) => ({
+  //     ...shape,
+  //     name: getObjectName(shape),
+  //   }))
+  //   .sort((a, b) => b.zIndex - a.zIndex);
 
   // Notify parent component of page data changes (for in-memory tracking)
   useEffect(() => {

@@ -17,6 +17,7 @@ import {
 import { getBasicTools } from "./aiTools";
 import type { Shape } from "../types/shape";
 import { memorySync } from "./memorySync";
+import { memoryBank } from "./memoryBank";
 
 // Normalize color names to hex for matching
 const normalizeColor = (c?: string) => {
@@ -238,8 +239,10 @@ const routeIntent = (
   // Target color used by downstream code
   const color = targetColorRaw || undefined;
 
-  // Basic position parsing: "at x, y"
-  const posMatch = t.match(/\bat\s*(\d+)\s*,\s*(\d+)\b/);
+  // Basic position parsing: accept "at 100,200", "position 100, 200", "at position 100, 200"
+  const posMatch = t.match(
+    /\b(?:at\s+position|position|at)\s*(\d+)\s*,\s*(\d+)\b/
+  );
   const x = posMatch ? Number(posMatch[1]) : undefined;
   const y = posMatch ? Number(posMatch[2]) : undefined;
 
@@ -1303,9 +1306,17 @@ export const processCommand = async (
       const results: AIToolResult[] = [];
 
       // Execute all tool calls
-      for (const toolCall of message.tool_calls) {
-        const functionName = toolCall.function.name;
-        const functionArgs = JSON.parse(toolCall.function.arguments);
+      for (const toolCall of message.tool_calls as any[]) {
+        // Handle SDK variants where the property may be named 'function' or 'function_'
+        const fn =
+          (toolCall as any)["function"] || (toolCall as any)["function_"];
+        const functionName = fn?.name as string | undefined;
+        const functionArgs = fn?.arguments ? JSON.parse(fn.arguments) : {};
+
+        if (!functionName) {
+          // Skip unrecognized tool call shapes
+          continue;
+        }
 
         const result = await executeTool(functionName, functionArgs, context);
         results.push(result);
@@ -1374,8 +1385,6 @@ export const processCommand = async (
 export const quickParse = (
   text: string
 ): { action?: string; params?: any } | null => {
-  const lowercaseText = text.toLowerCase();
-
   // Quick patterns for common commands
   const patterns = [
     {

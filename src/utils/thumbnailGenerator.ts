@@ -151,3 +151,4 @@ export async function generateKonvaThumbnail(
     return fallbackCanvas.toDataURL("image/jpeg", 0.8);
   }
 }
+

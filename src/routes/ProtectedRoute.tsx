@@ -37,7 +37,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // Additional safety check for incomplete user data
-  if (!user.id || !user.email) {
+  if (user && (!user.id || !user.email)) {
     console.warn("Incomplete user data detected in ProtectedRoute");
     return (
       <Navigate to="/signin" state={{ from: location.pathname }} replace />

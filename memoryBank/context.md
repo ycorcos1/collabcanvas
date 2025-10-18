@@ -50,3 +50,4 @@ HØRIZON is a collaborative canvas application with an AI-powered assistant that
 ---
 
 _Last Updated: Auto-generated on first run_
+

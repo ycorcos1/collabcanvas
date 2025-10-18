@@ -61,3 +61,4 @@ export const useAICommandBar = (): UseAICommandBarReturn => {
     toggle,
   };
 };
+

@@ -438,3 +438,4 @@ User sees complete card on canvas
 For more information about using the AI Agent, see [AI_AGENT_GUIDE.md](../docs/AI_AGENT_GUIDE.md)
 
 _Last Updated: October 18, 2025_
+
