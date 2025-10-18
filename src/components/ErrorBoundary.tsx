@@ -12,7 +12,7 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  private retryTimeout?: number;
+  private retryTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(props: Props) {
     super(props);

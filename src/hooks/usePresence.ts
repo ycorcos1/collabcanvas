@@ -4,6 +4,11 @@ import * as presenceService from "../services/presence";
 import { PresenceUser } from "../services/presence";
 import { useAuth } from "../components/Auth/AuthProvider";
 
+// Ensure we don't toggle online/offline when multiple components use this hook
+// Track subscribers per (projectId:userId)
+const subscribersPerKey: Record<string, number> = {};
+const onlineSetPerKey: Record<string, boolean> = {};
+
 export const usePresence = (projectId: string) => {
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<PresenceData[]>([]);
@@ -17,29 +22,35 @@ export const usePresence = (projectId: string) => {
     const currentUserName = user.displayName;
     const currentUserColor = user.color;
     const currentUserPhotoURL = user.photoURL;
+    const key = `${projectId}:${currentUserId}`;
 
-    // Set current user as online with error handling
-    presenceService
-      .setUserOnline(
-        projectId,
-        currentUserId,
-        currentUserName,
-        currentUserColor,
-        currentUserPhotoURL
-      )
-      .then(() => {
-        // User successfully set as online
-      })
-      .catch((error) => {
-        console.error("Failed to set user online:", error);
-        console.error("User data:", {
+    // Increment subscriber count for this key
+    subscribersPerKey[key] = (subscribersPerKey[key] || 0) + 1;
+
+    // Only set user online once per key (first subscriber wins)
+    if (!onlineSetPerKey[key]) {
+      presenceService
+        .setUserOnline(
           projectId,
-          userId: currentUserId,
-          userName: currentUserName,
-          userColor: currentUserColor,
-          photoURL: currentUserPhotoURL,
+          currentUserId,
+          currentUserName,
+          currentUserColor,
+          currentUserPhotoURL
+        )
+        .then(() => {
+          onlineSetPerKey[key] = true;
+        })
+        .catch((error) => {
+          console.error("Failed to set user online:", error);
+          console.error("User data:", {
+            projectId,
+            userId: currentUserId,
+            userName: currentUserName,
+            userColor: currentUserColor,
+            photoURL: currentUserPhotoURL,
+          });
         });
-      });
+    }
 
     // Subscribe to presence changes with error handling
     const unsubscribe = presenceService.subscribeToPresence(
@@ -80,10 +91,19 @@ export const usePresence = (projectId: string) => {
       try {
         unsubscribe();
         clearInterval(activityInterval);
-        presenceService.setUserOffline(projectId, currentUserId);
-      } catch (_error) {
-        // Silently handle cleanup errors
-      }
+      } catch (_error) {}
+
+      // Decrement subscriber count and only mark offline if this is the last subscriber
+      try {
+        subscribersPerKey[key] = Math.max(0, (subscribersPerKey[key] || 1) - 1);
+        if (subscribersPerKey[key] === 0) {
+          delete subscribersPerKey[key];
+          onlineSetPerKey[key] = false;
+          presenceService.setUserOffline(projectId, currentUserId).catch(() => {
+            // ignore
+          });
+        }
+      } catch (_err) {}
     };
   }, [user, projectId]);
 
