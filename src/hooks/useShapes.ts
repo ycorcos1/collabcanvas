@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Shape, CreateShapeData } from "../types/shape";
 import * as shapesService from "../services/shapes";
 import { useAuth } from "../components/Auth/AuthProvider";
@@ -16,13 +16,13 @@ import { useAuth } from "../components/Auth/AuthProvider";
  * - Shape validation and cleanup
  */
 
-export const useShapes = () => {
-  // Track the most recent shape creation for Firebase synchronization
-  const [pendingAutoSelect, setPendingAutoSelect] = useState<{
-    tempId: string;
-    createdAt: number;
-    userId: string;
-  } | null>(null);
+export const useShapes = (projectId: string) => {
+  // Firestore sync disabled - using local state only
+  // const [pendingAutoSelect, setPendingAutoSelect] = useState<{
+  //   tempId: string;
+  //   createdAt: number;
+  //   userId: string;
+  // } | null>(null);
 
   const { user } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
@@ -54,91 +54,50 @@ export const useShapes = () => {
     }
   }, [selectedShapeIds]);
 
-  // Subscribe to shapes from Firebase with robust error handling
+  // FIRESTORE SYNC DISABLED - Shapes are now local-only until manual save
+  // This prevents quota exceeded errors
   useEffect(() => {
     if (!user) return;
 
-    setIsLoading(true);
+    // Immediately set loading to false since we're not loading from Firestore
+    setIsLoading(false);
     setError(null);
 
-    // Set a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      setIsLoading(false);
-      setError(null); // Clear error - shapes will load from cache if available
-    }, 5000); // 5 second timeout
+    // No Firestore subscription - shapes are managed locally
+    // They will be saved to Firestore only when user manually saves the project
+  }, [user, projectId]);
 
-    const unsubscribe = shapesService.subscribeToShapes(
-      (firebaseShapes) => {
-        clearTimeout(loadingTimeout);
-        // Firebase shapes received
+  // Track previous shape IDs to prevent unnecessary validation
+  const prevShapeIdsRef = useRef<string>("[]");
 
-        // If we have a pending shape creation, find the corresponding Firebase shape
-        if (pendingAutoSelect && user && pendingAutoSelect.userId === user.id) {
-          // Find the most recently created shape by this user
-          const userShapes = firebaseShapes.filter(
-            (shape) => shape.createdBy === user.id
-          );
-          const sortedUserShapes = userShapes.sort(
-            (a, b) => b.createdAt - a.createdAt
-          );
-          const newestUserShape = sortedUserShapes[0];
-
-          // Check if this shape was created around the same time as our pending shape
-          if (
-            newestUserShape &&
-            Math.abs(newestUserShape.createdAt - pendingAutoSelect.createdAt) <
-              3000
-          ) {
-            // Don't auto-select - let user explicitly select if they want
-            setPendingAutoSelect(null); // Clear the pending tracking
-          }
-        }
-
-        setShapes(firebaseShapes);
-        setIsLoading(false);
-        setError(null); // Clear any previous errors on successful reconnection
-      },
-      (error) => {
-        clearTimeout(loadingTimeout);
-        console.error("Firebase shapes error:", error);
-
-        // Handle different types of errors gracefully
-        if (
-          (error as any).code === "unavailable" ||
-          (error as any).code === "permission-denied"
-        ) {
-          // Network issues or auth token expired - keep existing shapes and retry
-          setError(null); // Don't show error to user for temporary network issues
-          setIsLoading(false);
-        } else {
-          // Other errors - show error but don't crash
-          setError(`Connection issue: ${error.message}`);
-          setIsLoading(false);
-        }
-      }
-    );
-
-    return () => {
-      clearTimeout(loadingTimeout);
-      unsubscribe();
-      setIsLoading(false);
-    };
-  }, [user]);
-
-  // Validate persisted selected shape still exists after shapes load
   // Validate selected shapes still exist when shapes array changes
+  // Only run when shapes array changes, NOT when selection changes
   useEffect(() => {
-    if (selectedShapeIds.length > 0 && shapes.length > 0) {
+    // Serialize current shape IDs for comparison
+    const currentShapeIds = JSON.stringify(shapes.map((s) => s.id).sort());
+
+    // Only run validation if shapes actually changed
+    if (currentShapeIds === prevShapeIdsRef.current) {
+      return; // Skip validation - shapes didn't change
+    }
+
+    // Update ref AFTER checking to prevent loops
+    prevShapeIdsRef.current = currentShapeIds;
+
+    // Only validate if there are selected shapes
+    if (selectedShapeIds.length > 0) {
+      const shapeIds = shapes.map((s) => s.id);
       const validShapeIds = selectedShapeIds.filter((id) =>
-        shapes.some((shape) => shape.id === id)
+        shapeIds.includes(id)
       );
 
+      // Only update state if some selected shapes no longer exist
       if (validShapeIds.length !== selectedShapeIds.length) {
-        // Some selected shapes no longer exist, update the selection
         setSelectedShapeIds(validShapeIds);
       }
     }
-  }, [shapes, selectedShapeIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shapes]); // Only depend on shapes, not selectedShapeIds to prevent loops
 
   /**
    * Creates a new shape with optimistic UI updates
@@ -158,8 +117,9 @@ export const useShapes = () => {
         setError(null);
 
         // Calculate next z-index (highest current + 1)
-        const maxZIndex = shapes.length > 0 ? Math.max(...shapes.map(s => s.zIndex)) : 0;
-        
+        const maxZIndex =
+          shapes.length > 0 ? Math.max(...shapes.map((s) => s.zIndex)) : 0;
+
         // Optimistically add the shape to local state
         const newShape: Shape = {
           id: tempId,
@@ -172,15 +132,8 @@ export const useShapes = () => {
         setShapes((prev) => [...prev, newShape]);
         // Don't auto-select the shape during creation - let user explicitly select it
 
-        // Set up pending tracking for when Firebase returns the real shape
-        setPendingAutoSelect({
-          tempId: tempId,
-          createdAt: Date.now(),
-          userId: user.id,
-        });
-
-        // Save to Firebase (the subscription will update with the real ID)
-        await shapesService.createShape(shapeData);
+        // FIRESTORE WRITE DISABLED - Shape only exists locally until manual save
+        // await shapesService.createShape(projectId, shapeData);
 
         return newShape;
       } catch (err: any) {
@@ -188,12 +141,12 @@ export const useShapes = () => {
         setError(err.message || "Failed to create shape");
         // Remove the optimistic shape on error
         setShapes((prev) => prev.filter((shape) => shape.id !== tempId));
-        // Clear pending auto-select on error
-        setPendingAutoSelect(null);
+        // Clear pending auto-select on error (disabled)
+        // setPendingAutoSelect(null);
         return null;
       }
     },
-    [user]
+    [user, projectId]
   );
 
   const updateShape = useCallback(
@@ -202,6 +155,21 @@ export const useShapes = () => {
 
       try {
         setError(null);
+
+        // Check if shape is locked by another user (unless we're updating selection fields)
+        const isUpdatingSelection =
+          "selectedBy" in updates ||
+          "selectedByName" in updates ||
+          "selectedByColor" in updates ||
+          "selectedAt" in updates;
+
+        if (!isUpdatingSelection) {
+          const shape = shapes.find((s) => s.id === id);
+          if (shape?.selectedBy && shape.selectedBy !== user.id) {
+            setError("Cannot update shape locked by another user");
+            return;
+          }
+        }
 
         // Optimistically update local state
         setShapes((prev) =>
@@ -212,14 +180,14 @@ export const useShapes = () => {
           )
         );
 
-        // Update in Firebase
-        await shapesService.updateShape(id, updates);
+        // FIRESTORE WRITE DISABLED - Update only exists locally until manual save
+        // await shapesService.updateShape(projectId, id, updates);
       } catch (err: any) {
         setError(err.message || "Failed to update shape");
         // The subscription will revert the optimistic update
       }
     },
-    [user]
+    [user, projectId, shapes]
   );
 
   const deleteShape = useCallback(
@@ -228,6 +196,13 @@ export const useShapes = () => {
 
       try {
         setError(null);
+
+        // Check if shape is locked by another user
+        const shape = shapes.find((s) => s.id === id);
+        if (shape?.selectedBy && shape.selectedBy !== user.id) {
+          setError("Cannot delete shape locked by another user");
+          return;
+        }
 
         // Optimistically remove from local state
         setShapes((prev) => prev.filter((shape) => shape.id !== id));
@@ -239,14 +214,14 @@ export const useShapes = () => {
           );
         }
 
-        // Delete from Firebase
-        await shapesService.deleteShape(id);
+        // FIRESTORE WRITE DISABLED - Delete only exists locally until manual save
+        // await shapesService.deleteShape(projectId, id);
       } catch (err: any) {
         setError(err.message || "Failed to delete shape");
         // The subscription will restore the shape on error
       }
     },
-    [user, selectedShapeIds]
+    [user, selectedShapeIds, shapes]
   );
 
   // Shape selection function - single selection only
@@ -260,43 +235,76 @@ export const useShapes = () => {
 
       try {
         if (!id) {
-          // Deselecting all shapes
-          // Clear selections in Firebase for all currently selected shapes
-          for (const shapeId of selectedShapeIds) {
-            await shapesService.deselectShape(shapeId);
-          }
+          // Deselecting all shapes - clear selectedBy from all shapes
+          setShapes((prev) =>
+            prev.map((shape) =>
+              selectedShapeIds.includes(shape.id)
+                ? {
+                    ...shape,
+                    selectedBy: undefined,
+                    selectedByName: undefined,
+                    selectedByColor: undefined,
+                    selectedAt: undefined,
+                  }
+                : shape
+            )
+          );
           setSelectedShapeIds([]);
           return;
         }
 
-        // Check if shape is available for selection
-        const shape = shapes.find((s) => s.id === id);
-        if (shape?.selectedBy && shape.selectedBy !== user.id) {
-          // Shape is selected by another user - cannot select
-          return;
-        }
+        // Check if shape is available for selection - check real-time state
+        setShapes((prev) => {
+          const shape = prev.find((s) => s.id === id);
 
-        // Single selection - clear others and select this one
-        // First deselect all currently selected shapes
-        for (const shapeId of selectedShapeIds) {
-          if (shapeId !== id) {
-            await shapesService.deselectShape(shapeId);
+          // If shape is locked by another user, don't select it
+          if (shape?.selectedBy && shape.selectedBy !== user.id) {
+            console.log(
+              `Shape ${id} is locked by ${
+                shape.selectedByName || "another user"
+              }`
+            );
+            return prev; // Return unchanged
           }
-        }
 
-        // Select the new shape
-        await shapesService.selectShape(
-          id,
-          user.id,
-          user.displayName,
-          user.color
-        );
+          // If we're already selecting this shape, don't update
+          if (shape?.selectedBy === user.id && selectedShapeIds.includes(id)) {
+            return prev; // Return unchanged
+          }
+
+          // Clear selectedBy from ALL previously selected shapes (including by this user)
+          // and select the new shape
+          return prev.map((s) => {
+            if (selectedShapeIds.includes(s.id)) {
+              // Deselect previous shapes
+              return {
+                ...s,
+                selectedBy: undefined,
+                selectedByName: undefined,
+                selectedByColor: undefined,
+                selectedAt: undefined,
+              };
+            } else if (s.id === id) {
+              // Select this shape
+              return {
+                ...s,
+                selectedBy: user.id,
+                selectedByName: user.displayName || user.email || "Unknown",
+                selectedByColor: user.color || "#000000",
+                selectedAt: Date.now(),
+              };
+            }
+            return s;
+          });
+        });
+
+        // Update selected shape IDs
         setSelectedShapeIds([id]);
       } catch (error) {
         console.error("Error selecting shape:", error);
       }
     },
-    [user, selectedShapeIds, shapes]
+    [user, selectedShapeIds, setShapes] // Removed shapes from dependencies to use real-time state
   );
 
   // Delete all selected shapes
@@ -310,26 +318,36 @@ export const useShapes = () => {
     try {
       setError(null);
 
-      // Store the IDs to delete before clearing selection
-      const shapesToDelete = [...selectedShapeIds];
+      // Filter out shapes that are locked by other users
+      const shapesToDelete = selectedShapeIds.filter((shapeId) => {
+        const shape = shapes.find((s) => s.id === shapeId);
+        // Only delete if not locked by another user
+        return !shape?.selectedBy || shape.selectedBy === user.id;
+      });
+
+      if (shapesToDelete.length === 0) {
+        setError("Cannot delete shapes locked by other users");
+        return;
+      }
 
       // Clear selection immediately
       setSelectedShapeIds([]);
 
-      // Optimistically remove all selected shapes from local state
+      // Remove only the unlocked shapes from local state
       setShapes((prev) =>
         prev.filter((shape) => !shapesToDelete.includes(shape.id))
       );
 
-      // Delete all selected shapes from Firebase concurrently for better performance
-      await Promise.all(
-        shapesToDelete.map((shapeId) => shapesService.deleteShape(shapeId))
-      );
+      // FIRESTORE WRITE DISABLED - Shapes are local-only until manual save
+      // await Promise.all(
+      //   shapesToDelete.map((shapeId) =>
+      //     shapesService.deleteShape(projectId, shapeId)
+      //   )
+      // );
     } catch (err: any) {
       setError(err.message || "Failed to delete shapes");
-      // The subscription will restore the shapes on error
     }
-  }, [user, selectedShapeIds]);
+  }, [user, selectedShapeIds, shapes, setShapes]);
 
   // Check if a shape is selected by another user
   const isShapeLockedByOther = useCallback(
@@ -369,11 +387,13 @@ export const useShapes = () => {
 
     // Clear selections when component unmounts
     return () => {
-      shapesService.clearUserSelections(currentUserId).catch((error) => {
-        console.error("Error clearing user selections:", error);
-      });
+      shapesService
+        .clearUserSelections(projectId, currentUserId)
+        .catch((error) => {
+          console.error("Error clearing user selections:", error);
+        });
     };
-  }, [user]);
+  }, [user, projectId]);
 
   const clearShapes = useCallback(() => {
     setShapes([]);
@@ -392,7 +412,7 @@ export const useShapes = () => {
 
       // Delete all shapes from Firebase
       await Promise.all(
-        shapes.map((shape) => shapesService.deleteShape(shape.id))
+        shapes.map((shape) => shapesService.deleteShape(projectId, shape.id))
       );
     } catch (err: any) {
       setError(err.message || "Failed to clear all shapes");
@@ -409,6 +429,7 @@ export const useShapes = () => {
 
   return {
     shapes,
+    setShapes, // Export setShapes for direct shape manipulation (e.g., loading from saved data)
     selectedShapeIds, // Changed from selectedShapeId to selectedShapeIds
     isLoading,
     error,

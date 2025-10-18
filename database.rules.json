@@ -1,17 +1,23 @@
 {
   "rules": {
-    "cursors": {
-      "$canvasId": {
+    ".read": false,
+    ".write": false,
+
+    "presence": {
+      "$projectId": {
         ".read": "auth != null",
         "$userId": {
+          ".read": "auth != null",
           ".write": "auth != null && auth.uid == $userId"
         }
       }
     },
-    "presence": {
-      "$canvasId": {
+
+    "cursors": {
+      "$projectId": {
         ".read": "auth != null",
         "$userId": {
+          ".read": "auth != null",
           ".write": "auth != null && auth.uid == $userId"
         }
       }

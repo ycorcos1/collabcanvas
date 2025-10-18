@@ -5,13 +5,21 @@ import "./UserPresence.css";
 
 interface UserPresenceProps {
   variant?: "default" | "right-panel";
+  projectId: string;
 }
 
-export const UserPresence: React.FC<UserPresenceProps> = ({ variant = "default" }) => {
-  const { onlineUsers, currentUser, getUserCount } = usePresence();
+export const UserPresence: React.FC<UserPresenceProps> = ({
+  variant = "default",
+  projectId,
+}) => {
+  const { onlineUsers, currentUser, getUserCount } = usePresence(projectId);
 
   return (
-    <div className={`user-presence ${variant === "right-panel" ? "right-panel-variant" : ""}`}>
+    <div
+      className={`user-presence ${
+        variant === "right-panel" ? "right-panel-variant" : ""
+      }`}
+    >
       <div className="presence-header">
         <h3>Online ({getUserCount()})</h3>
       </div>

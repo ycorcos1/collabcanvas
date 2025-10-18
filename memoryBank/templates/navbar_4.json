@@ -1,0 +1,64 @@
+{
+  "name": "Navbar 4",
+  "description": "Top navigation bar with four menu items",
+  "shapes": [
+    {
+      "type": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 640,
+      "height": 48,
+      "color": "#111827"
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 14,
+      "width": 120,
+      "height": 20,
+      "text": "HØRIZON",
+      "fontSize": 14,
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "x": 420,
+      "y": 14,
+      "width": 60,
+      "height": 20,
+      "text": "Home",
+      "fontSize": 14,
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "x": 500,
+      "y": 14,
+      "width": 70,
+      "height": 20,
+      "text": "About",
+      "fontSize": 14,
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "x": 585,
+      "y": 14,
+      "width": 80,
+      "height": 20,
+      "text": "Projects",
+      "fontSize": 14,
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "x": 680,
+      "y": 14,
+      "width": 80,
+      "height": 20,
+      "text": "Contact",
+      "fontSize": 14,
+      "color": "#FFFFFF"
+    }
+  ]
+}

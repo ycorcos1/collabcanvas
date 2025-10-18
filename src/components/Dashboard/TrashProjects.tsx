@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useProjects } from "../../hooks/useProjects";
-import { Button } from "../shared";
+import { Button, ConfirmationModal } from "../shared";
 
 /**
  * Trash Projects View - Shows deleted projects with recovery options
@@ -14,6 +14,13 @@ import { Button } from "../shared";
  */
 export const TrashProjects: React.FC = () => {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showBulkRecoverConfirm, setShowBulkRecoverConfirm] = useState(false);
+  const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
 
   const {
     projects: trashedProjects,
@@ -35,12 +42,22 @@ export const TrashProjects: React.FC = () => {
   };
 
   const handlePermanentlyDeleteProject = async (projectId: string) => {
-    if (
-      window.confirm(
-        "Are you sure you want to permanently delete this project? This action cannot be undone."
-      )
-    ) {
-      await permanentlyDeleteProject(projectId);
+    setProjectToDelete(projectId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await permanentlyDeleteProject(projectToDelete);
+      setShowDeleteConfirm(false);
+      setProjectToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -62,44 +79,55 @@ export const TrashProjects: React.FC = () => {
 
   const handleBulkRecover = async () => {
     if (selectedProjects.length === 0) return;
-
-    if (
-      window.confirm(
-        `Recover ${selectedProjects.length} project${
-          selectedProjects.length !== 1 ? "s" : ""
-        }?`
-      )
-    ) {
-      await batchRecover(selectedProjects);
-      setSelectedProjects([]);
-    }
+    setShowBulkRecoverConfirm(true);
   };
 
   const handleBulkDelete = async () => {
     if (selectedProjects.length === 0) return;
+    setShowBulkDeleteConfirm(true);
+  };
 
-    if (
-      window.confirm(
-        `Permanently delete ${selectedProjects.length} project${
-          selectedProjects.length !== 1 ? "s" : ""
-        }? This action cannot be undone.`
-      )
-    ) {
+  const handleConfirmBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
       await batchDelete(selectedProjects);
       setSelectedProjects([]);
+      setShowBulkDeleteConfirm(false);
+    } catch (error) {
+      console.error("Failed to delete projects:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleEmptyTrash = async () => {
     if (trashedProjects.length === 0) return;
+    setShowEmptyTrashConfirm(true);
+  };
 
-    if (
-      window.confirm(
-        `Permanently delete all ${trashedProjects.length} projects in trash? This action cannot be undone.`
-      )
-    ) {
+  const handleConfirmBulkRecover = async () => {
+    setIsRecovering(true);
+    try {
+      await batchRecover(selectedProjects);
+      setSelectedProjects([]);
+      setShowBulkRecoverConfirm(false);
+    } catch (error) {
+      console.error("Failed to recover projects:", error);
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
+  const handleConfirmEmptyTrash = async () => {
+    setIsDeleting(true);
+    try {
       await batchDelete(trashedProjects.map((p) => p.id));
       setSelectedProjects([]);
+      setShowEmptyTrashConfirm(false);
+    } catch (error) {
+      console.error("Failed to empty trash:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -211,16 +239,26 @@ export const TrashProjects: React.FC = () => {
             </label>
           </div>
 
-          {selectedProjects.length > 0 && (
-            <div className="bulk-actions">
-              <Button variant="secondary" onClick={handleBulkRecover}>
-                Recover Selected ({selectedProjects.length})
-              </Button>
-              <Button variant="danger" onClick={handleBulkDelete}>
-                Delete Selected ({selectedProjects.length})
-              </Button>
-            </div>
-          )}
+          <div
+            className={`bulk-actions ${
+              selectedProjects.length === 0 ? "bulk-actions-hidden" : ""
+            }`}
+          >
+            <Button
+              variant="secondary"
+              onClick={handleBulkRecover}
+              disabled={selectedProjects.length === 0}
+            >
+              Recover Selected ({selectedProjects.length})
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleBulkDelete}
+              disabled={selectedProjects.length === 0}
+            >
+              Delete Selected ({selectedProjects.length})
+            </Button>
+          </div>
         </div>
       )}
 
@@ -246,6 +284,63 @@ export const TrashProjects: React.FC = () => {
           <p>💡 Projects in trash are automatically deleted after 30 days</p>
         </div>
       )}
+
+      {/* Confirmation Modals */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Permanently Delete Project"
+        message={`Are you sure you want to permanently delete this project? This action cannot be undone.`}
+        confirmText="Delete Forever"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
+
+      <ConfirmationModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Permanently Delete Projects"
+        message={`Are you sure you want to permanently delete ${
+          selectedProjects.length
+        } project${
+          selectedProjects.length !== 1 ? "s" : ""
+        }? This action cannot be undone.`}
+        confirmText="Delete Forever"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
+
+      <ConfirmationModal
+        isOpen={showBulkRecoverConfirm}
+        onClose={() => setShowBulkRecoverConfirm(false)}
+        onConfirm={handleConfirmBulkRecover}
+        title="Recover Projects"
+        message={`Are you sure you want to recover ${
+          selectedProjects.length
+        } project${
+          selectedProjects.length !== 1 ? "s" : ""
+        }? They will be moved back to your projects.`}
+        confirmText="Recover"
+        cancelText="Cancel"
+        isDestructive={false}
+        isLoading={isRecovering}
+      />
+
+      <ConfirmationModal
+        isOpen={showEmptyTrashConfirm}
+        onClose={() => setShowEmptyTrashConfirm(false)}
+        onConfirm={handleConfirmEmptyTrash}
+        title="Empty Trash"
+        message={`Are you sure you want to permanently delete all ${trashedProjects.length} projects in trash? This action cannot be undone.`}
+        confirmText="Empty Trash"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };
@@ -306,6 +401,12 @@ style.textContent = `
   .bulk-actions {
     display: flex;
     gap: var(--space-3);
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .bulk-actions-hidden {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .trash-grid {

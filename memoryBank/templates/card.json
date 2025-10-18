@@ -1,0 +1,42 @@
+{
+  "name": "Card",
+  "description": "A rounded card with shadow, commonly used for UI elements",
+  "shapes": [
+    {
+      "type": "rect",
+      "width": 200,
+      "height": 120,
+      "color": "#FFFFFF",
+      "strokeWidth": 1,
+      "stroke": "#E0E0E0",
+      "cornerRadius": 8,
+      "shadow": {
+        "color": "rgba(0, 0, 0, 0.1)",
+        "blur": 10,
+        "offset": { "x": 0, "y": 2 }
+      }
+    },
+    {
+      "type": "text",
+      "text": "Card Title",
+      "fontSize": 16,
+      "fontFamily": "Arial",
+      "color": "#000000",
+      "x": 10,
+      "y": 10,
+      "width": 180,
+      "height": 20
+    },
+    {
+      "type": "text",
+      "text": "Card description goes here",
+      "fontSize": 12,
+      "fontFamily": "Arial",
+      "color": "#666666",
+      "x": 10,
+      "y": 40,
+      "width": 180,
+      "height": 60
+    }
+  ]
+}

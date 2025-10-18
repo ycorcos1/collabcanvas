@@ -5,17 +5,10 @@ export const useCanvas = () => {
   // Persist canvas state across page refreshes (using sessionStorage)
   // Note: Zoom (scale) always resets to 100% (1.0) on refresh/logout as per requirements
   const [canvasState, setCanvasState] = useState<CanvasState>(() => {
-    const saved = sessionStorage.getItem("collabcanvas-canvas-state");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Always reset scale to 1 (100%) on page load
-        return { ...parsed, scale: 1 };
-      } catch {
-        // If parsing fails, use default state
-        return { x: 0, y: 0, scale: 1 };
-      }
-    }
+    // Clear any old/invalid session storage to ensure clean start
+    sessionStorage.removeItem("collabcanvas-canvas-state");
+
+    // Always start at 100% zoom (scale: 1)
     return { x: 0, y: 0, scale: 1 };
   });
 
@@ -37,36 +30,28 @@ export const useCanvas = () => {
   }, []);
 
   const centerCanvas = useCallback(
-    (canvasWidth: number, canvasHeight: number) => {
-      // Position the viewport so the center of the canvas is visible in the center of the viewport
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-
-      // Calculate the center of the canvas
-      const canvasCenterX = canvasWidth / 2;
-      const canvasCenterY = canvasHeight / 2;
-
-      // Position the canvas so its center appears in the viewport center
-      const x = viewportWidth / 2 - canvasCenterX;
-      const y = viewportHeight / 2 - canvasCenterY;
-
-      setCanvasState({ x, y, scale: 1 });
+    (_canvasWidth?: number, _canvasHeight?: number) => {
+      // For the new layout, we want the canvas to be positioned at the top-left of the viewport
+      // The centering is handled by CSS flexbox in the workspace
+      setCanvasState({ x: 0, y: 0, scale: 1 });
     },
     []
   );
 
   // Zoom functions for toolbar integration
+  // Zoom in 10% increments, max 200%
   const zoomIn = useCallback(() => {
     setCanvasState((prev) => ({
       ...prev,
-      scale: Math.min(prev.scale * 1.25, 5), // Max zoom 5x
+      scale: Math.min(prev.scale + 0.1, 2.0), // Max zoom 2.0x (200%)
     }));
   }, []);
 
+  // Zoom out in 10% increments, min 10%
   const zoomOut = useCallback(() => {
     setCanvasState((prev) => ({
       ...prev,
-      scale: Math.max(prev.scale / 1.25, 0.1), // Min zoom 0.1x
+      scale: Math.max(prev.scale - 0.1, 0.1), // Min zoom 0.1x (10%)
     }));
   }, []);
 
@@ -90,14 +75,19 @@ export const useCanvas = () => {
   );
 
   const zoomToFit = useCallback((width: number, height: number) => {
-    const padding = 100;
-    const scaleX = (window.innerWidth - padding) / width;
-    const scaleY = (window.innerHeight - padding) / height;
+    // For the new layout, we estimate the available viewport space
+    // Assuming sidebars take about 500px total and toolbar takes about 100px
+    const availableWidth = window.innerWidth - 500;
+    const availableHeight = window.innerHeight - 150;
+
+    const padding = 80; // Account for workspace padding
+    const scaleX = (availableWidth - padding) / width;
+    const scaleY = (availableHeight - padding) / height;
     const scale = Math.min(scaleX, scaleY, 1);
 
     setCanvasState({
-      x: (window.innerWidth - width * scale) / 2,
-      y: (window.innerHeight - height * scale) / 2,
+      x: 0,
+      y: 0,
       scale,
     });
   }, []);

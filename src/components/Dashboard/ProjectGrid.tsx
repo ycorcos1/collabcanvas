@@ -19,6 +19,8 @@ interface ProjectGridProps {
   showCollaborationIndicators?: boolean;
   /** Show host/collaborator indicators */
   showHostIndicators?: boolean;
+  /** Current user ID to check permissions */
+  currentUserId?: string;
 }
 
 /**
@@ -39,6 +41,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
   onDeleteProject,
   showCollaborationIndicators = false,
   showHostIndicators = false,
+  currentUserId,
 }) => {
   // Show loading skeleton
   if (isLoading) {
@@ -84,6 +87,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
           onDelete={onDeleteProject}
           showCollaborationIndicator={showCollaborationIndicators}
           showHostIndicator={showHostIndicators}
+          currentUserId={currentUserId}
         />
       ))}
     </div>

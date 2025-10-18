@@ -13,7 +13,7 @@ interface CollaborationRequest {
   toUserId: string;
   message?: string;
   createdAt: number;
-  status: 'pending' | 'accepted' | 'denied';
+  status: "pending" | "accepted" | "denied";
 }
 
 interface CollaborationRequestsProps {
@@ -23,13 +23,13 @@ interface CollaborationRequestsProps {
 }
 
 /**
- * Collaboration Requests Component - Minimizable requests panel
+ * Collaboration Invitations Component - Minimizable invitations panel
  *
  * Features:
  * - Minimizable/expandable interface
- * - Chronological request ordering
+ * - Chronological invitation ordering
  * - Accept/deny functionality
- * - Request count indicator
+ * - Invitation count indicator
  * - User information display
  */
 export const CollaborationRequests: React.FC<CollaborationRequestsProps> = ({
@@ -38,15 +38,29 @@ export const CollaborationRequests: React.FC<CollaborationRequestsProps> = ({
   onToggleMinimize,
 }) => {
   const { acceptRequest, denyRequest } = useCollaborationRequests();
-  
-  const pendingRequests = requests.filter(req => req.status === 'pending');
+
+  const pendingRequests = requests.filter((req) => req.status === "pending");
   const requestCount = pendingRequests.length;
 
   const handleAcceptRequest = async (requestId: string) => {
     try {
       await acceptRequest(requestId);
-    } catch (error) {
-      console.error('Failed to accept request:', error);
+    } catch (error: any) {
+      console.error("Failed to accept invitation:", error);
+
+      // Show user-friendly error message
+      if (
+        error.message?.includes("no longer exists") ||
+        error.message?.includes("never saved")
+      ) {
+        alert(
+          "This project doesn't exist yet.\n\n" +
+            "The sender needs to save the project before you can accept this invitation.\n\n" +
+            "You can deny this invitation and ask them to send a new one after saving."
+        );
+      } else {
+        alert("Failed to accept invitation: " + error.message);
+      }
     }
   };
 
@@ -54,16 +68,16 @@ export const CollaborationRequests: React.FC<CollaborationRequestsProps> = ({
     try {
       await denyRequest(requestId);
     } catch (error) {
-      console.error('Failed to deny request:', error);
+      console.error("Failed to deny invitation:", error);
     }
   };
 
   return (
-    <div className={`collaboration-requests ${isMinimized ? 'minimized' : ''}`}>
+    <div className={`collaboration-requests ${isMinimized ? "minimized" : ""}`}>
       {/* Header */}
       <div className="requests-header" onClick={onToggleMinimize}>
         <div className="requests-title">
-          <h3>Collaboration Requests</h3>
+          <h3>Collaboration Invitations</h3>
           {requestCount > 0 && (
             <span className="request-count">{requestCount}</span>
           )}
@@ -76,7 +90,7 @@ export const CollaborationRequests: React.FC<CollaborationRequestsProps> = ({
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            className={isMinimized ? 'rotated' : ''}
+            className={isMinimized ? "rotated" : ""}
           >
             <polyline points="6,9 12,15 18,9" />
           </svg>
@@ -88,7 +102,7 @@ export const CollaborationRequests: React.FC<CollaborationRequestsProps> = ({
         <div className="requests-content">
           {pendingRequests.length === 0 ? (
             <div className="no-requests">
-              <p>No pending collaboration requests</p>
+              <p>No pending collaboration invitations</p>
             </div>
           ) : (
             <div className="requests-list">
@@ -96,14 +110,22 @@ export const CollaborationRequests: React.FC<CollaborationRequestsProps> = ({
                 <div key={request.id} className="request-item">
                   <div className="request-info">
                     <div className="request-header">
-                      <span className="requester-name">{request.fromUserName}</span>
+                      <span className="requester-name">
+                        {request.fromUserName}
+                      </span>
                       <span className="request-time">
-                        {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(request.createdAt), {
+                          addSuffix: true,
+                        })}
                       </span>
                     </div>
                     <div className="request-details">
-                      <span className="requester-email">{request.fromUserEmail}</span>
-                      <span className="project-name">wants to collaborate on "{request.projectName}"</span>
+                      <span className="requester-email">
+                        {request.fromUserEmail}
+                      </span>
+                      <span className="project-name">
+                        wants to collaborate on "{request.projectName}"
+                      </span>
                     </div>
                     {request.message && (
                       <div className="request-message">

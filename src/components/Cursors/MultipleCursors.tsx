@@ -7,13 +7,15 @@ import "./MultipleCursors.css";
 interface MultipleCursorsProps {
   canvasState: CanvasState;
   stageRef: React.RefObject<any>;
+  projectId: string;
 }
 
 export const MultipleCursors: React.FC<MultipleCursorsProps> = ({
   canvasState,
   stageRef,
+  projectId,
 }) => {
-  const { cursors } = useCursors();
+  const { cursors } = useCursors(projectId);
 
   // Position cursor at canvas coordinates - it should stay at the same canvas position regardless of zoom/pan
   const getScreenPosition = (canvasX: number, canvasY: number) => {

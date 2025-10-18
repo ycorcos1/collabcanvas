@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { PresenceData } from "../types/canvas";
 import * as presenceService from "../services/presence";
+import { PresenceUser } from "../services/presence";
 import { useAuth } from "../components/Auth/AuthProvider";
 
-export const usePresence = () => {
+export const usePresence = (projectId: string) => {
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<PresenceData[]>([]);
 
@@ -19,45 +20,58 @@ export const usePresence = () => {
 
     // Set current user as online with error handling
     presenceService
-      .setUserOnline(currentUserId, currentUserName, currentUserColor, currentUserPhotoURL)
+      .setUserOnline(
+        projectId,
+        currentUserId,
+        currentUserName,
+        currentUserColor,
+        currentUserPhotoURL
+      )
       .then(() => {
         // User successfully set as online
       })
       .catch((error) => {
         console.error("Failed to set user online:", error);
-        // Don't crash - presence is not critical for core functionality
+        console.error("User data:", {
+          projectId,
+          userId: currentUserId,
+          userName: currentUserName,
+          userColor: currentUserColor,
+          photoURL: currentUserPhotoURL,
+        });
       });
 
     // Subscribe to presence changes with error handling
     const unsubscribe = presenceService.subscribeToPresence(
-      (users) => {
+      projectId,
+      (users: PresenceUser[]) => {
         if (!isActive) return;
 
         // Filter out current user from the online users list since we show them separately
-        const otherUsers = users.filter((u) => {
-          return u.userId !== currentUserId;
-        });
+        const otherUsers = users
+          .filter((u) => u.userId !== currentUserId)
+          .map((u) => ({
+            userId: u.userId,
+            userName: u.userName,
+            userColor: u.userColor,
+            photoURL: u.userPhotoURL,
+            isOnline: true,
+            lastSeen: u.joinedAt,
+          }));
 
         setOnlineUsers(otherUsers);
       },
-      (error) => {
-        console.error("Presence subscription error:", error);
-        // Don't crash - just log the error and keep existing presence data
-        if (
-          (error as any)?.code === "unavailable" ||
-          (error as any)?.code === "permission-denied"
-        ) {
-          // Presence temporarily unavailable, keeping existing data
-        }
+      (_error) => {
+        // Silently handle presence subscription errors - keep existing data
       }
     );
 
     // Update activity periodically with error handling
     const activityInterval = setInterval(() => {
       try {
-        presenceService.updateUserActivity(currentUserId);
-      } catch (error) {
-        console.error("Error updating user activity:", error);
+        presenceService.updateUserActivity(projectId, currentUserId);
+      } catch (_error) {
+        // Silently handle activity update errors
       }
     }, 30000); // Update every 30 seconds
 
@@ -66,12 +80,12 @@ export const usePresence = () => {
       try {
         unsubscribe();
         clearInterval(activityInterval);
-        presenceService.setUserOffline(currentUserId);
-      } catch (error) {
-        console.error("Error during presence cleanup:", error);
+        presenceService.setUserOffline(projectId, currentUserId);
+      } catch (_error) {
+        // Silently handle cleanup errors
       }
     };
-  }, [user]);
+  }, [user, projectId]);
 
   // Update presence when user profile changes (e.g., profile picture)
   useEffect(() => {
@@ -79,11 +93,17 @@ export const usePresence = () => {
 
     // Update presence data when user profile changes
     presenceService
-      .setUserOnline(user.id, user.displayName, user.color, user.photoURL)
-      .catch((error) => {
-        console.error("Failed to update user presence:", error);
+      .setUserOnline(
+        projectId,
+        user.id,
+        user.displayName,
+        user.color,
+        user.photoURL
+      )
+      .catch((_error) => {
+        // Silently handle presence update errors
       });
-  }, [user?.photoURL, user?.displayName]); // Only trigger when these specific properties change
+  }, [user?.photoURL, user?.displayName, projectId]); // Only trigger when these specific properties change
 
   const getUserCount = useCallback(() => {
     // Include current user in count

@@ -19,6 +19,11 @@ interface ModernToolbarProps {
   hasSelectedShapes: boolean;
   onDeleteSelected: () => void;
   onDuplicate: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  hasClipboardContent?: boolean;
+  selectedColor?: string;
+  onColorChange?: (color: string) => void;
   zoom?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
@@ -44,6 +49,11 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   hasSelectedShapes,
   onDeleteSelected,
   onDuplicate,
+  onCopy,
+  onPaste,
+  hasClipboardContent = false,
+  selectedColor = "#FF0000",
+  onColorChange,
   zoom = 100,
   onZoomIn,
   onZoomOut,
@@ -53,7 +63,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   // Initialize state from localStorage or defaults
   const [cursorMode, setCursorMode] = useState<CursorMode>(() => {
     const saved = localStorage.getItem("toolbar-cursor-mode");
-    return (saved as CursorMode) || "select";
+    return (saved as CursorMode) || "move"; // Default to move tool
   });
   const [shapeMode, setShapeMode] = useState<ShapeType>(() => {
     const saved = localStorage.getItem("toolbar-shape-mode");
@@ -87,6 +97,18 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   const shapeButtonRef = useRef<HTMLButtonElement>(null);
   const drawingButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Notify parent of initial cursor mode and tool selection on mount
+  useEffect(() => {
+    if (onCursorModeChange) {
+      onCursorModeChange(cursorMode);
+    }
+    // Set initial tool to null (move tool, no shape creation)
+    if (onToolSelect) {
+      onToolSelect(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
   // Persist state changes to localStorage
   useEffect(() => {
     localStorage.setItem("toolbar-cursor-mode", cursorMode);
@@ -113,9 +135,16 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
       id: "select" as const,
       name: "Move",
       icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-          <path d="m13 13 6 6"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+          <path d="m13 13 6 6" />
         </svg>
       ),
     },
@@ -295,9 +324,9 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           stroke="currentColor"
           strokeWidth="2"
         >
-          <path d="M15 5l4 4L8 20l-4-1 1-4L16 4z"/>
-          <path d="M13 7l4 4"/>
-          <path d="M8 13l-2 8 8-2"/>
+          <path d="M15 5l4 4L8 20l-4-1 1-4L16 4z" />
+          <path d="M13 7l4 4" />
+          <path d="M8 13l-2 8 8-2" />
         </svg>
       ),
     },
@@ -334,7 +363,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setShowCursorDropdown(false);
     setIsTextMode(false);
     setShowDrawingToolbar(false);
-    
+
     // Notify parent about cursor mode change
     if (onCursorModeChange) {
       if (mode === "select") {
@@ -343,7 +372,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
         onCursorModeChange("hand");
       }
     }
-    
+
     if (mode === "select") {
       onToolSelect(null); // Move tool - allows selection and manipulation
     } else if (mode === "grab") {
@@ -355,26 +384,38 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setShowShapeDropdown(false);
     setIsTextMode(false);
     setShowDrawingToolbar(false);
-    
+
     // Notify parent about cursor mode change
     if (onCursorModeChange) {
       onCursorModeChange("shape");
     }
-    
+
     // Handle image upload
     if (shape === "image") {
       handleImageUpload();
       // Don't update shapeMode for image - keep the last non-image shape as the displayed tool
       return;
     }
-    
+
     // Update shape mode and track as last non-image shape
     setShapeMode(shape);
     setLastNonImageShape(shape);
-    
-    // Only pass supported shapes to canvas (rectangle and circle for now)
-    if (shape === "rectangle" || shape === "circle") {
-      onToolSelect(shape);
+
+    // Map toolbar shape names to Canvas component shape types
+    const shapeTypeMap: Record<string, string> = {
+      rectangle: "rect",
+      circle: "ellipse",
+      polygon: "polygon",
+      triangle: "triangle",
+      line: "line",
+      arrow: "arrow",
+      star: "star",
+    };
+
+    // Pass the mapped shape type to canvas
+    const canvasShapeType = shapeTypeMap[shape];
+    if (canvasShapeType) {
+      onToolSelect(canvasShapeType as any);
     } else {
       // For unsupported shapes, clear the tool selection
       onToolSelect(null);
@@ -389,12 +430,14 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type.startsWith("image/")) {
       // For now, just show an alert that image upload is not fully implemented
-      alert('Image upload functionality is not yet fully implemented. This feature will be added in a future update.');
+      alert(
+        "Image upload functionality is not yet fully implemented. This feature will be added in a future update."
+      );
       // Reset the file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -405,7 +448,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setShowDrawingToolbar(true);
     setIsTextMode(false);
     onToolSelect(null); // Clear shape tool when drawing
-    
+
     // Notify parent about cursor mode change
     if (onCursorModeChange) {
       onCursorModeChange("brush");
@@ -417,12 +460,12 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     setIsTextMode(newTextMode);
     setShowDrawingToolbar(false);
     onToolSelect(null); // Clear shape tool when text mode
-    
+
     // Notify parent about cursor mode change
     if (onCursorModeChange) {
       onCursorModeChange(newTextMode ? "text" : "move");
     }
-    
+
     closeAllDropdowns();
   };
 
@@ -460,9 +503,9 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
         type="file"
         accept="image/*"
         onChange={handleFileChange}
-        style={{ display: 'none' }}
+        style={{ display: "none" }}
       />
-      
+
       {/* Drawing Toolbar (appears above main toolbar when in drawing mode) */}
       {showDrawingToolbar && (
         <div className="drawing-toolbar">
@@ -520,7 +563,9 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
               <button
                 ref={cursorButtonRef}
                 className={`main-tool-button ${
-                  selectedTool === null && !isTextMode && !showDrawingToolbar ? "active" : ""
+                  selectedTool === null && !isTextMode && !showDrawingToolbar
+                    ? "active"
+                    : ""
                 }`}
                 onClick={() => {
                   closeAllDropdowns();
@@ -576,7 +621,17 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
               <button
                 ref={shapeButtonRef}
                 className={`main-tool-button ${
-                  (selectedTool === "rectangle" || selectedTool === "circle") && !isTextMode && !showDrawingToolbar
+                  (selectedTool === "rectangle" ||
+                    selectedTool === "circle" ||
+                    selectedTool === "rect" ||
+                    selectedTool === "ellipse" ||
+                    selectedTool === "polygon" ||
+                    selectedTool === "triangle" ||
+                    selectedTool === "line" ||
+                    selectedTool === "arrow" ||
+                    selectedTool === "star") &&
+                  !isTextMode &&
+                  !showDrawingToolbar
                     ? "active"
                     : ""
                 }`}
@@ -632,7 +687,9 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           <div className="tool-group">
             <div className="split-button">
               <button
-                className={`main-tool-button ${isTextMode && !showDrawingToolbar ? "active" : ""}`}
+                className={`main-tool-button ${
+                  isTextMode && !showDrawingToolbar ? "active" : ""
+                }`}
                 onClick={handleTextSelect}
                 title="Text"
               >
@@ -711,46 +768,72 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
         <div className="toolbar-center">
           <div className="zoom-controls">
-            <button className="zoom-button" onClick={handleZoomOut} title="Zoom Out">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
+            <button
+              className="zoom-button"
+              onClick={handleZoomOut}
+              title="Zoom Out"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+                <line x1="8" y1="11" x2="14" y2="11" />
               </svg>
             </button>
-            <span className="zoom-level" onClick={handleZoomReset} title="Reset Zoom">{zoom}%</span>
-            <button className="zoom-button" onClick={handleZoomIn} title="Zoom In">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-                <line x1="11" y1="8" x2="11" y2="14"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
+            <span
+              className="zoom-level"
+              onClick={handleZoomReset}
+              title="Reset Zoom"
+            >
+              {zoom}%
+            </span>
+            <button
+              className="zoom-button"
+              onClick={handleZoomIn}
+              title="Zoom In"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+                <line x1="11" y1="8" x2="11" y2="14" />
+                <line x1="8" y1="11" x2="14" y2="11" />
               </svg>
             </button>
           </div>
         </div>
 
         <div className="toolbar-right">
+          {/* Color Picker - Show when shape tool is selected or shapes are selected */}
+          {(selectedTool || hasSelectedShapes) && onColorChange && (
+            <div className="color-picker-group">
+              <input
+                type="color"
+                value={selectedColor}
+                onChange={(e) => onColorChange(e.target.value)}
+                className="color-picker-input"
+                title="Shape Color"
+              />
+            </div>
+          )}
+
           {/* Quick Actions for Selected Shapes */}
           {hasSelectedShapes && (
             <div className="quick-actions">
-              <button
-                className="action-button"
-                onClick={onDuplicate}
-                title="Duplicate (⌘D)"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="9" y="9" width="13" height="13" rx="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
+              {/* Copy/Paste buttons removed as requested */}
+              {/* Duplicate action removed as requested */}
 
               <button
                 className="action-button"

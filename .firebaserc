@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "collabcursor"
+    "default": "horizon-prod-2dd83",
+    "production": "horizon-prod-2dd83"
   }
 }

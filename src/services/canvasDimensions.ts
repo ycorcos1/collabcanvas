@@ -9,8 +9,8 @@ export interface CanvasDimensions {
 }
 
 export const DEFAULT_CANVAS_DIMENSIONS = {
-  width: 10000,
-  height: 8000,
+  width: 800, // Standard document width
+  height: 1200, // Standard document height
 };
 
 const CANVAS_DIMENSIONS_DOC_ID = "global-canvas-dimensions";
@@ -22,11 +22,29 @@ export const subscribeToCanvasDimensions = (
   const docRef = doc(firestore, "canvasDimensions", CANVAS_DIMENSIONS_DOC_ID);
 
   return onSnapshot(
-    docRef, 
+    docRef,
     (docSnapshot) => {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data() as CanvasDimensions;
-        callback(data);
+
+        // Auto-migrate from old default dimensions to new ones (800x1200)
+        if (
+          (data.width === 10000 && data.height === 8000) ||
+          (data.width === 816 && data.height === 1056) ||
+          (data.width === 2000 && data.height === 2000)
+        ) {
+          const newDimensions: CanvasDimensions = {
+            ...DEFAULT_CANVAS_DIMENSIONS,
+            updatedAt: Date.now(),
+            updatedBy: "system-migration",
+          };
+          setDoc(docRef, newDimensions).catch((error) => {
+            console.error("Failed to migrate canvas dimensions:", error);
+          });
+          callback(newDimensions);
+        } else {
+          callback(data);
+        }
       } else {
         // If document doesn't exist, create it with default dimensions
         const defaultDimensions: CanvasDimensions = {
@@ -81,7 +99,26 @@ export const getCanvasDimensions = async (): Promise<CanvasDimensions> => {
   const docSnapshot = await getDoc(docRef);
 
   if (docSnapshot.exists()) {
-    return docSnapshot.data() as CanvasDimensions;
+    const data = docSnapshot.data() as CanvasDimensions;
+
+    // Auto-migrate from old default dimensions to new ones (800x1200)
+    if (
+      (data.width === 10000 && data.height === 8000) ||
+      (data.width === 816 && data.height === 1056) ||
+      (data.width === 2000 && data.height === 2000)
+    ) {
+      const newDimensions: CanvasDimensions = {
+        ...DEFAULT_CANVAS_DIMENSIONS,
+        updatedAt: Date.now(),
+        updatedBy: "system-migration",
+      };
+      setDoc(docRef, newDimensions).catch((error) => {
+        console.error("Failed to migrate canvas dimensions:", error);
+      });
+      return newDimensions;
+    }
+
+    return data;
   } else {
     // Return default dimensions if document doesn't exist
     return {

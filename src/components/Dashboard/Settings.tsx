@@ -1,9 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "../Auth/AuthProvider";
 import { useTheme } from "../../hooks/useTheme";
 import { Button, Input, Avatar, Modal } from "../shared";
-import { uploadProfilePhoto } from "../../services/storage";
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import {
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from "firebase/auth";
 import { auth } from "../../services/firebase";
 
 /**
@@ -26,11 +29,8 @@ export const Settings: React.FC = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [currentPhotoURL, setCurrentPhotoURL] = useState<string | undefined>(user?.photoURL);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [errorMessage] = useState(""); // Removed setter - profile upload disabled
 
   // Password change state
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -41,11 +41,6 @@ export const Settings: React.FC = () => {
     confirmPassword: "",
   });
   const [passwordError, setPasswordError] = useState("");
-
-  // Sync local photo state with user state
-  useEffect(() => {
-    setCurrentPhotoURL(user?.photoURL);
-  }, [user?.photoURL]);
 
   const handleProfileSave = async () => {
     setIsSaving(true);
@@ -85,59 +80,8 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const handlePhotoUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type - only allow PNG, JPG, JPEG
-    const allowedTypes = ['image/png', 'image/jpeg'];
-    if (!allowedTypes.includes(file.type.toLowerCase())) {
-      setErrorMessage("Please select a PNG, JPG, or JPEG image file.");
-      setShowErrorModal(true);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage("Image size must be less than 5MB.");
-      setShowErrorModal(true);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      return;
-    }
-
-    setIsUploadingPhoto(true);
-    
-    try {
-      // Upload and update user profile (compression is handled inside the function)
-      const newPhotoURL = await uploadProfilePhoto(file);
-      
-      // Update local state immediately for instant UI update
-      setCurrentPhotoURL(newPhotoURL);
-      
-    } catch (error: any) {
-      setErrorMessage(error.message || "Failed to upload photo. Please try again.");
-      setShowErrorModal(true);
-    } finally {
-      setIsUploadingPhoto(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
+  // Profile picture upload DISABLED - Storage not configured
+  // Users will use default avatar based on their initials
 
   const handlePasswordChange = async () => {
     if (!user?.email) {
@@ -192,10 +136,9 @@ export const Settings: React.FC = () => {
         confirmPassword: "",
       });
       setShowPasswordForm(false);
-
     } catch (error: any) {
       console.error("Error changing password:", error);
-      
+
       // Handle specific Firebase errors
       if (error.code === "auth/wrong-password") {
         setPasswordError("Current password is incorrect");
@@ -212,7 +155,7 @@ export const Settings: React.FC = () => {
   };
 
   const handlePasswordInputChange = (field: string, value: string) => {
-    setPasswordData(prev => ({ ...prev, [field]: value }));
+    setPasswordData((prev) => ({ ...prev, [field]: value }));
     setPasswordError(""); // Clear error when user types
   };
 
@@ -243,25 +186,11 @@ export const Settings: React.FC = () => {
           <div className="profile-card">
             <div className="profile-avatar">
               <Avatar
-                src={currentPhotoURL}
+                src={user?.photoURL}
                 name={user?.displayName || user?.email || "User"}
                 size="lg"
               />
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handlePhotoUpload}
-                disabled={isUploadingPhoto}
-              >
-                Change Photo
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpg,image/jpeg"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-              />
+              {/* Profile picture upload disabled - Storage not configured */}
             </div>
 
             <div className="profile-form">
@@ -412,44 +341,75 @@ export const Settings: React.FC = () => {
                       label="Current Password"
                       type="password"
                       value={passwordData.currentPassword}
-                      onChange={(e) => handlePasswordInputChange("currentPassword", e.target.value)}
+                      onChange={(e) =>
+                        handlePasswordInputChange(
+                          "currentPassword",
+                          e.target.value
+                        )
+                      }
                       placeholder="Enter your current password"
                       fullWidth
-                      error={passwordError && passwordError.includes("Current password") ? passwordError : undefined}
+                      error={
+                        passwordError &&
+                        passwordError.includes("Current password")
+                          ? passwordError
+                          : undefined
+                      }
                     />
 
                     <Input
                       label="New Password"
                       type="password"
                       value={passwordData.newPassword}
-                      onChange={(e) => handlePasswordInputChange("newPassword", e.target.value)}
+                      onChange={(e) =>
+                        handlePasswordInputChange("newPassword", e.target.value)
+                      }
                       placeholder="Enter your new password (min 6 characters)"
                       fullWidth
-                      error={passwordError && passwordError.includes("New password") ? passwordError : undefined}
+                      error={
+                        passwordError && passwordError.includes("New password")
+                          ? passwordError
+                          : undefined
+                      }
                     />
 
                     <Input
                       label="Confirm New Password"
                       type="password"
                       value={passwordData.confirmPassword}
-                      onChange={(e) => handlePasswordInputChange("confirmPassword", e.target.value)}
+                      onChange={(e) =>
+                        handlePasswordInputChange(
+                          "confirmPassword",
+                          e.target.value
+                        )
+                      }
                       placeholder="Confirm your new password"
                       fullWidth
-                      error={passwordError && passwordError.includes("do not match") ? passwordError : undefined}
+                      error={
+                        passwordError && passwordError.includes("do not match")
+                          ? passwordError
+                          : undefined
+                      }
                     />
 
-                    {passwordError && !passwordError.includes("Current password") && !passwordError.includes("New password") && !passwordError.includes("do not match") && (
-                      <div className="password-error">
-                        {passwordError}
-                      </div>
-                    )}
+                    {passwordError &&
+                      !passwordError.includes("Current password") &&
+                      !passwordError.includes("New password") &&
+                      !passwordError.includes("do not match") && (
+                        <div className="password-error">{passwordError}</div>
+                      )}
 
                     <div className="password-form-actions">
                       <Button
                         variant="primary"
                         onClick={handlePasswordChange}
                         loading={isChangingPassword}
-                        disabled={isChangingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                        disabled={
+                          isChangingPassword ||
+                          !passwordData.currentPassword ||
+                          !passwordData.newPassword ||
+                          !passwordData.confirmPassword
+                        }
                       >
                         Update Password
                       </Button>
@@ -491,9 +451,7 @@ export const Settings: React.FC = () => {
         <div style={{ padding: "var(--space-4)" }}>
           <p>{errorMessage}</p>
           <div style={{ marginTop: "var(--space-4)", textAlign: "right" }}>
-            <Button onClick={() => setShowErrorModal(false)}>
-              OK
-            </Button>
+            <Button onClick={() => setShowErrorModal(false)}>OK</Button>
           </div>
         </div>
       </Modal>

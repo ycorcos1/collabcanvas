@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Project } from "../../types/project";
+import { ConfirmationModal } from "../shared";
 
 interface ProjectCardProps {
   /** Project data to display */
@@ -16,6 +16,8 @@ interface ProjectCardProps {
   showCollaborationIndicator?: boolean;
   /** Show host/collaborator indicator */
   showHostIndicator?: boolean;
+  /** Current user ID to check permissions */
+  currentUserId?: string;
 }
 
 /**
@@ -35,10 +37,34 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   onDelete,
   showCollaborationIndicator = false,
   showHostIndicator = false,
+  currentUserId,
 }) => {
   const [showActions, setShowActions] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(project.name);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        actionsRef.current &&
+        !actionsRef.current.contains(event.target as Node)
+      ) {
+        setShowActions(false);
+      }
+    };
+
+    if (showActions) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showActions]);
 
   const handleCardClick = () => {
     if (onOpen) {
@@ -60,20 +86,50 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     setNewName(project.name);
   };
 
-  const handleDelete = () => {
-    if (
-      window.confirm(
-        `Are you sure you want to move "${project.name}" to trash?`
-      )
-    ) {
-      if (onDelete) {
-        onDelete(project.id);
-      }
-    }
+  const handleOpenInNewTab = () => {
+    window.open(`/canvas/${project.id}`, "_blank");
     setShowActions(false);
   };
 
-  const relativeTime = formatDistanceToNow(project.updatedAt.toDate(), {
+  const handleSendAccess = () => {
+    // TODO: Implement send access functionality
+    alert("Send access functionality coming soon!");
+    setShowActions(false);
+  };
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+    setShowActions(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!onDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await onDelete(project.id);
+      setShowDeleteConfirm(false);
+    } catch (error: any) {
+      console.error("Failed to delete project:", error);
+      // Show error to user
+      alert(`Failed to delete project: ${error.message || "Unknown error"}`);
+      // Keep modal open on error so user can try again
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Safe timestamp conversion
+  const getDate = (timestamp: any): Date => {
+    if (!timestamp) return new Date();
+    if (timestamp instanceof Date) return timestamp;
+    if (typeof timestamp.toDate === "function") return timestamp.toDate();
+    if (typeof timestamp === "number") return new Date(timestamp);
+    if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+    return new Date();
+  };
+
+  const relativeTime = formatDistanceToNow(getDate(project.updatedAt), {
     addSuffix: true,
   });
 
@@ -108,24 +164,38 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           />
         ) : null}
         {generateFallbackThumbnail()}
-        
+
         {/* Collaboration Indicator */}
         {showCollaborationIndicator && (
           <div className="collaboration-indicator">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
           </div>
         )}
-        
+
         {/* Host Indicator */}
         {showHostIndicator && (project as any).isHost && (
           <div className="host-indicator">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
             </svg>
           </div>
         )}
@@ -162,7 +232,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="project-actions">
+        <div className="project-actions" ref={actionsRef}>
           <button
             className="actions-trigger"
             onClick={() => setShowActions(!showActions)}
@@ -173,13 +243,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
           {showActions && (
             <div className="actions-menu">
-              <Link
-                to={`/canvas/${project.slug}`}
-                className="action-item"
-                onClick={() => setShowActions(false)}
-              >
+              <button className="action-item" onClick={handleCardClick}>
+                Open Project
+              </button>
+              <button className="action-item" onClick={handleOpenInNewTab}>
                 Open in New Tab
-              </Link>
+              </button>
               <button
                 className="action-item"
                 onClick={() => {
@@ -189,16 +258,38 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               >
                 Rename
               </button>
-              <button
-                className="action-item action-danger"
-                onClick={handleDelete}
-              >
-                Move to Trash
+              <button className="action-item" onClick={handleSendAccess}>
+                Send Access
               </button>
+              {/* Only show delete option if user is the project owner */}
+              {currentUserId && currentUserId === project.ownerId && (
+                <>
+                  <div className="action-divider"></div>
+                  <button
+                    className="action-item action-danger"
+                    onClick={handleDelete}
+                  >
+                    Delete Project
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Project"
+        message={`Are you sure you want to move "${project.name}" to trash? You can recover it later from the trash.`}
+        confirmText="Move to Trash"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };
@@ -210,7 +301,6 @@ style.textContent = `
     background-color: var(--bg-elevated);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
-    overflow: hidden;
     transition: all var(--duration-fast) var(--ease-out);
     cursor: pointer;
     position: relative;
@@ -227,6 +317,7 @@ style.textContent = `
     height: 160px;
     overflow: hidden;
     background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 
   .project-thumbnail-image {
@@ -286,6 +377,7 @@ style.textContent = `
     position: absolute;
     top: var(--space-3);
     right: var(--space-3);
+    z-index: 10;
   }
 
   .actions-trigger {
@@ -311,21 +403,22 @@ style.textContent = `
 
   .actions-menu {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     right: 0;
     background: var(--bg-elevated);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
-    min-width: 160px;
-    z-index: var(--z-dropdown);
-    overflow: hidden;
+    min-width: 180px;
+    z-index: 1000;
+    overflow: visible;
+    padding: var(--space-1) 0;
   }
 
   .action-item {
     display: block;
     width: 100%;
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     background: none;
     border: none;
     text-align: left;
@@ -334,10 +427,17 @@ style.textContent = `
     text-decoration: none;
     cursor: pointer;
     transition: background-color var(--duration-fast) var(--ease-out);
+    white-space: nowrap;
   }
 
   .action-item:hover {
     background-color: var(--interactive-secondary);
+  }
+
+  .action-divider {
+    height: 1px;
+    background-color: var(--border-primary);
+    margin: var(--space-2) 0;
   }
 
   .action-danger {

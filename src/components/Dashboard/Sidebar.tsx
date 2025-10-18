@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Auth/AuthProvider";
 import { Button, Avatar } from "../shared";
+import { generateProjectSlug } from "../../utils/projectUtils";
 
 interface SidebarProps {
   /** Whether sidebar is open (mobile) */
@@ -36,9 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   };
 
   const handleCreateProject = () => {
-    // Generate a unique slug for new project
-    const timestamp = Date.now();
-    const newProjectSlug = `untitled-${timestamp}`;
+    // Generate a unique project ID/slug for new project
+    const newProjectSlug = generateProjectSlug();
     navigate(`/canvas/${newProjectSlug}`);
     onClose(); // Close mobile menu
   };

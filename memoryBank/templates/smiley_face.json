@@ -1,0 +1,54 @@
+{
+  "name": "Smiley Face",
+  "description": "A simple smiley face built from basic shapes",
+  "shapes": [
+    {
+      "type": "ellipse",
+      "x": 0,
+      "y": 0,
+      "width": 180,
+      "height": 180,
+      "color": "#FFEB3B"
+    },
+    {
+      "type": "ellipse",
+      "x": 40,
+      "y": 50,
+      "width": 20,
+      "height": 20,
+      "color": "#111111"
+    },
+    {
+      "type": "ellipse",
+      "x": 120,
+      "y": 50,
+      "width": 20,
+      "height": 20,
+      "color": "#111111"
+    },
+    {
+      "type": "rect",
+      "x": 45,
+      "y": 110,
+      "width": 90,
+      "height": 40,
+      "color": "#FFEB3B"
+    },
+    {
+      "type": "ellipse",
+      "x": 45,
+      "y": 95,
+      "width": 90,
+      "height": 70,
+      "color": "#111111"
+    },
+    {
+      "type": "ellipse",
+      "x": 50,
+      "y": 100,
+      "width": 80,
+      "height": 60,
+      "color": "#FFEB3B"
+    }
+  ]
+}

@@ -40,7 +40,7 @@ export const AddCollaboratorsModal: React.FC<AddCollaboratorsModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim()) {
       setError("Please enter an email address");
       return;
@@ -64,10 +64,10 @@ export const AddCollaboratorsModal: React.FC<AddCollaboratorsModalProps> = ({
       );
 
       if (result.success) {
-        setSuccess("Collaboration request sent successfully!");
+        setSuccess("Collaboration invitation sent successfully!");
         setEmail("");
         setMessage("");
-        
+
         // Auto-close after success
         setTimeout(() => {
           onClose();
@@ -75,17 +75,25 @@ export const AddCollaboratorsModal: React.FC<AddCollaboratorsModalProps> = ({
         }, 2000);
       }
     } catch (err: any) {
-      console.error("Failed to send collaboration request:", err);
-      
+      console.error("Failed to send collaboration invitation:", err);
+
       // Handle specific error cases
-      if (err.message?.includes("already exists")) {
-        setError("A collaboration request has already been sent to this user");
-      } else if (err.message?.includes("already collaborator")) {
+      if (
+        err.message?.includes("already been sent") ||
+        err.message?.includes("already exists")
+      ) {
+        setError(
+          "A collaboration invitation has already been sent to this user"
+        );
+      } else if (
+        err.message?.includes("already collaborator") ||
+        err.message?.includes("already a collaborator")
+      ) {
         setError("This user is already a collaborator on this project");
       } else if (err.message?.includes("user not found")) {
         setError("No user found with this email address");
       } else {
-        setError("Failed to send collaboration request. Please try again.");
+        setError("Failed to send collaboration invitation. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -108,16 +116,24 @@ export const AddCollaboratorsModal: React.FC<AddCollaboratorsModalProps> = ({
         <div className="modal-header">
           <h2>Add Collaborators</h2>
           <button className="modal-close" onClick={handleCancel}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
 
         <div className="modal-body">
           <p className="project-info">
-            Share "<strong>{projectName}</strong>" with others to collaborate in real-time.
+            Share "<strong>{projectName}</strong>" with others to collaborate in
+            real-time.
           </p>
 
           <form onSubmit={handleSubmit}>
@@ -150,10 +166,17 @@ export const AddCollaboratorsModal: React.FC<AddCollaboratorsModalProps> = ({
 
             {error && (
               <div className="error-message">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="15" y1="9" x2="9" y2="15"/>
-                  <line x1="9" y1="9" x2="15" y2="15"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
                 {error}
               </div>
@@ -161,8 +184,15 @@ export const AddCollaboratorsModal: React.FC<AddCollaboratorsModalProps> = ({
 
             {success && (
               <div className="success-message">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20,6 9,17 4,12"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polyline points="20,6 9,17 4,12" />
                 </svg>
                 {success}
               </div>

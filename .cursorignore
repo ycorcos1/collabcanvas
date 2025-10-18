@@ -1,0 +1,12 @@
+# Prevent sensitive files from being loaded into AI context
+.env
+.env.*
+.firebase/
+node_modules/
+dist/
+**/*.pem
+**/*.key
+**/*.crt
+
+# Build artifacts
+*.map

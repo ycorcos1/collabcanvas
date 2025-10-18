@@ -1,0 +1,88 @@
+{
+  "name": "Login Form",
+  "description": "Simple login form with two fields and a submit button",
+  "shapes": [
+    {
+      "type": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 220,
+      "color": "#ffffff",
+      "stroke": "#E0E0E0",
+      "strokeWidth": 1,
+      "cornerRadius": 8
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 16,
+      "width": 288,
+      "height": 24,
+      "text": "Login",
+      "fontSize": 18,
+      "color": "#1F2937"
+    },
+    {
+      "type": "rect",
+      "x": 16,
+      "y": 56,
+      "width": 288,
+      "height": 36,
+      "color": "#F3F4F6",
+      "stroke": "#E5E7EB",
+      "strokeWidth": 1,
+      "cornerRadius": 6
+    },
+    {
+      "type": "text",
+      "x": 24,
+      "y": 64,
+      "width": 272,
+      "height": 20,
+      "text": "Email",
+      "fontSize": 12,
+      "color": "#6B7280"
+    },
+    {
+      "type": "rect",
+      "x": 16,
+      "y": 104,
+      "width": 288,
+      "height": 36,
+      "color": "#F3F4F6",
+      "stroke": "#E5E7EB",
+      "strokeWidth": 1,
+      "cornerRadius": 6
+    },
+    {
+      "type": "text",
+      "x": 24,
+      "y": 112,
+      "width": 272,
+      "height": 20,
+      "text": "Password",
+      "fontSize": 12,
+      "color": "#6B7280"
+    },
+    {
+      "type": "rect",
+      "x": 16,
+      "y": 160,
+      "width": 288,
+      "height": 40,
+      "color": "#2563EB",
+      "cornerRadius": 6
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 168,
+      "width": 288,
+      "height": 24,
+      "text": "Sign In",
+      "fontSize": 14,
+      "color": "#FFFFFF"
+    }
+  ]
+}

@@ -3,26 +3,67 @@
   pointer-events: none;
   z-index: 1000;
   transform-origin: top left;
+  /* Smooth cursor transitions */
+  transition: left 0.15s ease-out, top 0.15s ease-out;
+  will-change: left, top;
 }
 
 .cursor-pointer {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
 }
 
 .cursor-label {
   position: absolute;
-  left: 20px;
-  top: -2px;
-  color: white;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 12px;
+  left: 24px;
+  top: 0px;
+  padding: 5px 10px;
+  border-radius: 6px;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  /* Enhanced shadow for better depth */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* Add a subtle border for definition */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* Backdrop blur for better readability on busy backgrounds */
+  backdrop-filter: blur(4px);
 }
 
-/* Smooth cursor transitions */
+.cursor-label-text {
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  /* Text shadow for better readability */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.01em;
+  /* Ensure text is always crisp */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animation for cursor appearance */
+@keyframes cursor-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .cursor {
-  transition: all 0.1s ease-out;
+  animation: cursor-fade-in 0.2s ease-out;
+}
+
+/* Ensure cursor stays visible at different zoom levels */
+@media (max-width: 768px) {
+  .cursor-label-text {
+    font-size: 12px;
+  }
+
+  .cursor-label {
+    padding: 4px 8px;
+  }
 }

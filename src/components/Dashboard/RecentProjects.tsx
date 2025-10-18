@@ -1,27 +1,42 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useRecentProjects, useProjects } from "../../hooks/useProjects";
+import { useProjects } from "../../hooks/useProjects";
+import { useAuth } from "../Auth/AuthProvider";
 import { ProjectGrid } from "./ProjectGrid";
 import { Button } from "../shared";
+import { generateProjectSlug } from "../../utils/projectUtils";
 
 /**
- * Recent Projects View - Shows the 5 most recently accessed projects
+ * Recent Projects View - Shows the 10 most recently accessed projects
  *
  * Features:
  * - Display recent projects in grid layout
  * - Create new project button
  * - Empty state for new users
  * - Integration with project management hooks
+ * - Real-time updates when projects are deleted
  */
 export const RecentProjects: React.FC = () => {
   const navigate = useNavigate();
-  const { projects: recentProjects, isLoading, error } = useRecentProjects();
-  const { openProject, renameProject, deleteProject } = useProjects();
+  const { user } = useAuth();
+
+  // Use the main useProjects hook with recent projects configuration
+  const {
+    projects: recentProjects,
+    isLoading,
+    error,
+    openProject,
+    renameProject,
+    deleteProject,
+  } = useProjects({
+    orderBy: "updatedAt",
+    orderDirection: "desc",
+    limit: 10, // Show 10 most recent projects
+  });
 
   const handleCreateProject = () => {
-    // Generate a unique slug for new project
-    const timestamp = Date.now();
-    const newProjectSlug = `untitled-${timestamp}`;
+    // Generate a unique project ID/slug for new project
+    const newProjectSlug = generateProjectSlug();
     navigate(`/canvas/${newProjectSlug}`);
   };
 
@@ -35,6 +50,7 @@ export const RecentProjects: React.FC = () => {
 
   const handleDeleteProject = async (projectId: string) => {
     await deleteProject(projectId);
+    // Project will be automatically removed from the list by useProjects hook
   };
 
   // Empty state component for users with no projects
@@ -124,6 +140,7 @@ export const RecentProjects: React.FC = () => {
         onOpenProject={handleOpenProject}
         onRenameProject={handleRenameProject}
         onDeleteProject={handleDeleteProject}
+        currentUserId={user?.id}
       />
 
       {/* View All Link */}

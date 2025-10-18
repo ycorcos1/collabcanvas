@@ -201,10 +201,36 @@ export const Shape: React.FC<ShapeProps> = React.memo(
       [isPreview, isDragging, selectedTool]
     );
 
+    // Check if a shape creation tool is active
+    const isShapeToolActive =
+      selectedTool &&
+      [
+        "rectangle",
+        "rect",
+        "circle",
+        "ellipse",
+        "polygon",
+        "triangle",
+        "line",
+        "arrow",
+        "star",
+      ].includes(selectedTool);
+
+    // Defensive fallbacks for AI-created or partial shapes
+    const safeX = Number.isFinite((shape as any).x) ? (shape as any).x : 0;
+    const safeY = Number.isFinite((shape as any).y) ? (shape as any).y : 0;
+    const safeWidth = Number.isFinite((shape as any).width)
+      ? (shape as any).width
+      : 100;
+    const safeHeight = Number.isFinite((shape as any).height)
+      ? (shape as any).height
+      : 100;
+    const safeColor = (shape as any).color || (shape as any).fill || "#FF0000";
+
     const commonProps = {
-      x: shape.x,
-      y: shape.y,
-      fill: isPreview ? "rgba(33, 150, 243, 0.3)" : shape.color,
+      x: safeX,
+      y: safeY,
+      fill: isPreview ? "rgba(33, 150, 243, 0.3)" : safeColor,
       stroke: isSelected
         ? "#2196f3"
         : selectedByOther
@@ -214,11 +240,17 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         : "transparent",
       strokeWidth: isSelected ? 3 : selectedByOther ? 3 : isPreview ? 2 : 0,
       strokeScaleEnabled: false,
-      draggable: !isPreview && !isLockedByOther, // Disable dragging if locked by another user
-      onClick: isPreview ? undefined : handleClick,
-      onTap: isPreview ? undefined : handleClick,
-      onDragStart: isPreview || isLockedByOther ? undefined : handleDragStart, // Disable drag if locked
-      onDragEnd: isPreview || isLockedByOther ? undefined : handleDragEnd, // Disable drag if locked
+      draggable: !isPreview && !isLockedByOther && !isShapeToolActive, // Disable dragging if shape tool is active
+      onClick: isPreview || isShapeToolActive ? undefined : handleClick, // Disable clicking if shape tool is active
+      onTap: isPreview || isShapeToolActive ? undefined : handleClick,
+      onDragStart:
+        isPreview || isLockedByOther || isShapeToolActive
+          ? undefined
+          : handleDragStart,
+      onDragEnd:
+        isPreview || isLockedByOther || isShapeToolActive
+          ? undefined
+          : handleDragEnd,
       onMouseEnter: isPreview ? undefined : handleMouseEnter,
       onMouseLeave: isPreview ? undefined : handleMouseLeave,
       perfectDrawEnabled: false,
@@ -229,20 +261,22 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         : "transparent",
       shadowOffset: { x: 0, y: 2 },
       shadowBlur: isSelected || selectedByOther ? 8 : 0,
-      listening: !isPreview,
+      listening: !isPreview && !isShapeToolActive, // Disable listening if shape tool is active
       dash: isPreview ? [5, 5] : undefined,
       opacity: isLockedByOther ? 0.7 : 1, // Slightly transparent if locked by another user
+      rotation: shape.rotation || 0, // Apply rotation from shape data
     };
 
-    if (shape.type === "circle") {
+    // Handle circle/ellipse shapes (both "circle" and "ellipse" map to the same rendering)
+    if (shape.type === "circle" || shape.type === "ellipse") {
       return (
         <Group ref={groupRef}>
           <Circle
             ref={shapeRef as React.RefObject<Konva.Circle>}
-            x={shape.x + shape.width / 2} // Adjust x to center
-            y={shape.y + shape.height / 2} // Adjust y to center
-            radius={Math.min(shape.width, shape.height) / 2}
-            fill={isPreview ? "rgba(33, 150, 243, 0.3)" : shape.color}
+            x={safeX + safeWidth / 2}
+            y={safeY + safeHeight / 2}
+            radius={Math.min(safeWidth, safeHeight) / 2}
+            fill={isPreview ? "rgba(33, 150, 243, 0.3)" : safeColor}
             stroke={
               isSelected
                 ? "#2196f3"
@@ -256,14 +290,16 @@ export const Shape: React.FC<ShapeProps> = React.memo(
               isSelected ? 3 : selectedByOther ? 3 : isPreview ? 2 : 0
             }
             strokeScaleEnabled={false}
-            draggable={!isPreview && !isLockedByOther} // Disable dragging if locked by another user
-            onClick={isPreview ? undefined : handleClick}
-            onTap={isPreview ? undefined : handleClick}
+            draggable={!isPreview && !isLockedByOther && !isShapeToolActive} // Disable dragging if shape tool is active
+            onClick={isPreview || isShapeToolActive ? undefined : handleClick}
+            onTap={isPreview || isShapeToolActive ? undefined : handleClick}
             onDragStart={
-              isPreview || isLockedByOther ? undefined : handleDragStart
-            } // Disable drag if locked
+              isPreview || isLockedByOther || isShapeToolActive
+                ? undefined
+                : handleDragStart
+            }
             onDragEnd={
-              isPreview || isLockedByOther
+              isPreview || isLockedByOther || isShapeToolActive
                 ? undefined
                 : (e: KonvaEventObject<DragEvent>) => {
                     const node = e.target;
@@ -278,11 +314,11 @@ export const Shape: React.FC<ShapeProps> = React.memo(
                     // For circles, we need to adjust the position back to top-left corner
                     onDragEnd(
                       shape.id,
-                      node.x() - shape.width / 2,
-                      node.y() - shape.height / 2
+                      node.x() - safeWidth / 2,
+                      node.y() - safeHeight / 2
                     );
                   }
-            } // Disable drag if locked
+            }
             onMouseEnter={isPreview ? undefined : handleMouseEnter}
             onMouseLeave={isPreview ? undefined : handleMouseLeave}
             perfectDrawEnabled={false}
@@ -295,19 +331,15 @@ export const Shape: React.FC<ShapeProps> = React.memo(
             }
             shadowOffset={{ x: 0, y: 2 }}
             shadowBlur={isSelected || selectedByOther ? 8 : 0}
-            listening={!isPreview}
+            listening={!isPreview && !isShapeToolActive} // Disable listening if shape tool is active
             dash={isPreview ? [5, 5] : undefined}
             opacity={isLockedByOther ? 0.7 : 1} // Slightly transparent if locked by another user
           />
           {/* User label for shapes selected by others - positioned as tab above circle */}
           {selectedByOther && !isSelected && (
             <Group
-              x={shape.x + shape.width / 2}
-              y={
-                shape.y +
-                shape.height / 2 -
-                Math.min(shape.width, shape.height) / 2
-              }
+              x={safeX + safeWidth / 2}
+              y={safeY + safeHeight / 2 - Math.min(safeWidth, safeHeight) / 2}
               scaleX={uiScale}
               scaleY={uiScale}
             >
@@ -372,12 +404,12 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         <Rect
           ref={shapeRef as React.RefObject<Konva.Rect>}
           {...commonProps}
-          width={shape.width}
-          height={shape.height}
+          width={safeWidth}
+          height={safeHeight}
         />
         {/* User label for shapes selected by others - positioned as tab on top of outline */}
         {selectedByOther && !isSelected && (
-          <Group x={shape.x} y={shape.y} scaleX={uiScale} scaleY={uiScale}>
+          <Group x={safeX} y={safeY} scaleX={uiScale} scaleY={uiScale}>
             {/* Tab background with user's color */}
             <Rect
               x={0}

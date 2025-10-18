@@ -1,19 +1,107 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow authenticated users to read and write to canvases
-    match /canvases/{canvasId} {
-      allow read, write: if request.auth != null;
-      
-      // Allow authenticated users to read and write shapes within canvases
-      match /shapes/{shapeId} {
-        allow read, write: if request.auth != null;
-      }
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Allow authenticated users to read and write canvas dimensions
-    match /canvasDimensions/{documentId} {
-      allow read, write: if request.auth != null;
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isProjectOwner(resource) {
+      return isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+    
+    function isProjectCollaborator(resource) {
+      return isAuthenticated() && request.auth.uid in resource.data.collaborators;
+    }
+    
+    function isProjectMember(resource) {
+      return isProjectOwner(resource) || isProjectCollaborator(resource);
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isUser(userId);
+    }
+    
+    // Projects collection
+    match /projects/{projectId} {
+      // Read: allow if authenticated (application layer enforces access control)
+      // This is necessary for collaboration invitations to work
+      allow read: if isAuthenticated();
+      
+      // Create: authenticated users can create projects (they become owner)
+      allow create: if isAuthenticated() && 
+        request.resource.data.ownerId == request.auth.uid;
+      
+      // Update: owner, existing collaborator, or user being added as collaborator
+      allow update: if isAuthenticated() && (
+        // Owner can update
+        resource.data.ownerId == request.auth.uid ||
+        // Existing collaborator can update
+        request.auth.uid in resource.data.collaborators ||
+        // User being added as collaborator (for accepting invitations)
+        // Only allow adding self to collaborators, ensure owner isn't being changed
+        (request.auth.uid in request.resource.data.collaborators && 
+         !(request.auth.uid in resource.data.collaborators) &&
+         (!('ownerId' in request.resource.data.keys()) || 
+          resource.data.ownerId == request.resource.data.ownerId))
+      );
+      
+      // Delete: only owner can delete
+      allow delete: if isAuthenticated() && 
+        resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Collaboration requests collection
+    match /collaborationRequests/{requestId} {
+      // Read: sender or recipient can read
+      allow read: if isAuthenticated() && (
+        resource.data.fromUserId == request.auth.uid ||
+        resource.data.toUserId == request.auth.uid ||
+        resource.data.toUserEmail == request.auth.token.email
+      );
+      
+      // Create: authenticated users can send requests
+      allow create: if isAuthenticated() &&
+        request.resource.data.fromUserId == request.auth.uid;
+      
+      // Update: only recipient can update (accept/deny)
+      allow update: if isAuthenticated() && (
+        resource.data.toUserId == request.auth.uid ||
+        resource.data.toUserEmail == request.auth.token.email
+      );
+      
+      // Delete: sender or recipient can delete
+      allow delete: if isAuthenticated() && (
+        resource.data.fromUserId == request.auth.uid ||
+        resource.data.toUserId == request.auth.uid
+      );
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Read/Write: only the user who owns the notification
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Canvas dimensions collection
+    match /canvasDimensions/{docId} {
+      // Any authenticated user can read/write canvas dimensions
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Shapes collection (for individual shape docs - mostly unused but needed for compatibility)
+    match /shapes/{shapeId} {
+      // Any authenticated user can read/write shapes (shapes are mainly stored in projects now)
+      allow read, write: if isAuthenticated();
     }
   }
 }

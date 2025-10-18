@@ -99,14 +99,22 @@ export const useProjects = (
         setHasMore(result.hasMore);
         setNextCursor(result.nextCursor);
       } catch (err) {
-        console.error("Error loading projects:", err);
+        // Silently handle errors
         setError("Failed to load projects");
       } finally {
         setIsLoading(false);
         setHasInitialized(true);
       }
     },
-    [user, nextCursor, options.searchQuery, options.orderBy, options.orderDirection, options.limit, options.includeDeleted]
+    [
+      user,
+      nextCursor,
+      options.searchQuery,
+      options.orderBy,
+      options.orderDirection,
+      options.limit,
+      options.includeDeleted,
+    ]
   );
 
   // Reset initialization when search/filter options change
@@ -116,7 +124,12 @@ export const useProjects = (
     setError(null);
     setHasMore(false);
     setNextCursor(null);
-  }, [options.searchQuery, options.orderBy, options.orderDirection, options.includeDeleted]);
+  }, [
+    options.searchQuery,
+    options.orderBy,
+    options.orderDirection,
+    options.includeDeleted,
+  ]);
 
   // Load projects on mount and when user changes
   useEffect(() => {
@@ -138,7 +151,7 @@ export const useProjects = (
 
         return project;
       } catch (err) {
-        console.error("Error creating project:", err);
+        // Silently handle error
         setError("Failed to create project");
         return null;
       }
@@ -153,8 +166,9 @@ export const useProjects = (
       if (project) {
         // Update access time
         updateProjectAccess(projectId);
-        // Navigate to canvas
-        navigate(`/canvas/${project.slug}`);
+        // Navigate to canvas - use slug if available, otherwise use project ID
+        const routeParam = project.slug || project.id;
+        navigate(`/canvas/${routeParam}`);
       }
     },
     [projects, navigate]
@@ -178,7 +192,7 @@ export const useProjects = (
           );
         }
       } catch (err) {
-        console.error("Error renaming project:", err);
+        // Silently handle error
         setError("Failed to rename project");
       }
     },
@@ -192,9 +206,11 @@ export const useProjects = (
 
       // Update local state
       setProjects((prev) => prev.filter((project) => project.id !== projectId));
-    } catch (err) {
-      console.error("Error deleting project:", err);
-      setError("Failed to delete project");
+    } catch (err: any) {
+      console.error("Failed to delete project:", err);
+      const errorMessage = err.message || "Failed to delete project";
+      setError(errorMessage);
+      throw err; // Re-throw so UI can show error
     }
   }, []);
 
@@ -206,7 +222,7 @@ export const useProjects = (
       // Remove from local state (assuming we're viewing trash)
       setProjects((prev) => prev.filter((project) => project.id !== projectId));
     } catch (err) {
-      console.error("Error recovering project:", err);
+      // Silently handle error
       setError("Failed to recover project");
     }
   }, []);
@@ -219,7 +235,7 @@ export const useProjects = (
       // Remove from local state
       setProjects((prev) => prev.filter((project) => project.id !== projectId));
     } catch (err) {
-      console.error("Error permanently deleting project:", err);
+      // Silently handle error
       setError("Failed to permanently delete project");
     }
   }, []);
@@ -245,7 +261,7 @@ export const useProjects = (
         prev.filter((project) => !projectIds.includes(project.id))
       );
     } catch (err) {
-      console.error("Error batch recovering projects:", err);
+      // Silently handle error
       setError("Failed to recover projects");
     }
   }, []);
@@ -260,7 +276,7 @@ export const useProjects = (
         prev.filter((project) => !projectIds.includes(project.id))
       );
     } catch (err) {
-      console.error("Error batch deleting projects:", err);
+      // Silently handle error
       setError("Failed to delete projects");
     }
   }, []);
@@ -304,7 +320,7 @@ export const useRecentProjects = () => {
         const recentProjects = await getRecentProjects(user.id);
         setProjects(recentProjects);
       } catch (err) {
-        console.error("Error loading recent projects:", err);
+        // Silently handle error
         setError("Failed to load recent projects");
       } finally {
         setIsLoading(false);

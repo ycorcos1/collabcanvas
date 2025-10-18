@@ -12,7 +12,18 @@
  */
 export interface Shape {
   id: string; // Unique identifier (Firebase document ID)
-  type: "rectangle" | "circle" | "text" | "drawing"; // Shape geometry type
+  type:
+    | "rectangle" // Rectangle shape
+    | "circle" // Circle/Ellipse shape
+    | "text" // Text box
+    | "drawing" // Freehand drawing
+    | "rect" // Alternative name for rectangle (Konva compatibility)
+    | "ellipse" // Alternative name for circle (Konva compatibility)
+    | "polygon" // Polygon shape
+    | "triangle" // Triangle shape
+    | "line" // Line shape
+    | "arrow" // Arrow shape
+    | "star"; // Star shape
   x: number; // X coordinate (top-left for rectangles, center for circles)
   y: number; // Y coordinate (top-left for rectangles, center for circles)
   width: number; // Width in pixels
@@ -31,6 +42,9 @@ export interface Shape {
   // Drawing-specific properties
   points?: number[]; // Drawing path points (for drawing shapes)
   strokeWidth?: number; // Stroke width (for drawing shapes)
+
+  // Rotation
+  rotation?: number; // Rotation angle in degrees (for all shapes)
 
   // Collaborative selection state - tracks which user has selected this shape
   selectedBy?: string; // User ID of current selector (for shape locking)
@@ -56,6 +70,7 @@ export interface ShapeUpdate {
   fontFamily?: string; // New font family (for text shapes)
   points?: number[]; // New drawing points (for drawing shapes)
   strokeWidth?: number; // New stroke width (for drawing shapes)
+  rotation?: number; // New rotation angle (for all shapes)
   updatedAt: number;
 }
 

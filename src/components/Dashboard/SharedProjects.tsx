@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CollaborationRequests } from "./CollaborationRequests";
 import { ProjectGrid } from "./ProjectGrid";
 import { useSharedProjects } from "../../hooks/useSharedProjects";
+import { useAuth } from "../Auth/AuthProvider";
+import { useProjects } from "../../hooks/useProjects";
 
 /**
  * Shared Projects Component - Displays shared projects and collaboration requests
@@ -13,8 +16,22 @@ import { useSharedProjects } from "../../hooks/useSharedProjects";
  * - Accept/deny request functionality
  */
 export const SharedProjects: React.FC = () => {
-  const { sharedProjects, collaborationRequests, isLoading } = useSharedProjects();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { sharedProjects, collaborationRequests, isLoading } =
+    useSharedProjects();
   const [isRequestsMinimized, setIsRequestsMinimized] = useState(false);
+
+  // Get project management functions from useProjects hook
+  const { renameProject, deleteProject } = useProjects();
+
+  // Ensure invited users can open shared projects even if they don't own them
+  const handleOpenSharedProject = (projectId: string) => {
+    const project = sharedProjects.find((p) => p.id === projectId);
+    if (!project) return;
+    const routeParam = (project as any).slug || project.id;
+    navigate(`/canvas/${routeParam}`);
+  };
 
   if (isLoading) {
     return (
@@ -40,11 +57,12 @@ export const SharedProjects: React.FC = () => {
       <div className="empty-illustration">
         <div className="collaboration-icon">👥</div>
       </div>
-      
+
       <div className="empty-content">
         <h2>No Shared Projects</h2>
         <p>
-          You don't have any shared projects yet. Projects shared with you or by you will appear here.
+          You don't have any shared projects yet. Projects shared with you or by
+          you will appear here.
         </p>
       </div>
 
@@ -93,8 +111,12 @@ export const SharedProjects: React.FC = () => {
         projects={sharedProjects}
         isLoading={isLoading}
         emptyState={<EmptyState />}
+        onOpenProject={handleOpenSharedProject}
+        onRenameProject={renameProject}
+        onDeleteProject={deleteProject}
         showCollaborationIndicators={true}
         showHostIndicators={true}
+        currentUserId={user?.id}
       />
     </div>
   );

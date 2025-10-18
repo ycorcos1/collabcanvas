@@ -35,6 +35,14 @@ interface CanvasProps {
   onCopy?: () => void;
   onPaste?: () => void;
   hasClipboardContent?: boolean;
+  projectId: string;
+  onStageRef?: (stage: any) => void; // Callback to expose stage reference
+  canvasState?: { x: number; y: number; scale: number };
+  updateCanvasState?: (updates: {
+    x?: number;
+    y?: number;
+    scale?: number;
+  }) => void;
 }
 
 /**
@@ -68,33 +76,34 @@ export const Canvas: React.FC<CanvasProps> = ({
   onCopy,
   onPaste,
   hasClipboardContent = false,
+  projectId,
+  onStageRef,
+  canvasState: propCanvasState,
+  updateCanvasState: propUpdateCanvasState,
 }) => {
   const { user } = useAuth();
-  const { canvasState, updateCanvasState, resetCanvas, centerCanvas } =
-    useCanvas();
-  const { dimensions: canvasDimensions } = useCanvasDimensions();
-  const { updateCursorPosition } = useCursors();
+
+  // Use canvas state from props if provided, otherwise use local hook
+  const localCanvasHook = useCanvas();
+  const canvasState = propCanvasState || localCanvasHook.canvasState;
+  const updateCanvasState =
+    propUpdateCanvasState || localCanvasHook.updateCanvasState;
+
+  const { dimensions: canvasDimensions, isLoading: dimensionsLoading } =
+    useCanvasDimensions();
+  const { updateCursorPosition } = useCursors(projectId);
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Zoom optimization refs
-  const zoomAnimationRef = useRef<number | null>(null);
-  const pendingZoomUpdate = useRef<{
-    x: number;
-    y: number;
-    scale: number;
-  } | null>(null);
-  const lastZoomTime = useRef<number>(0);
-  const zoomAccumulator = useRef<{
-    deltaX: number;
-    deltaY: number;
-    count: number;
-  }>({
-    deltaX: 0,
-    deltaY: 0,
-    count: 0,
-  });
+  // Expose stage reference to parent component for thumbnail generation
+  useEffect(() => {
+    if (onStageRef && stageRef.current) {
+      onStageRef(stageRef.current);
+    }
+  }, [onStageRef]);
+
+  // Zoom is now handled by parent component via CSS transform
 
   // State for shape creation
   const [isDrawing, setIsDrawing] = useState(false);
@@ -111,12 +120,23 @@ export const Canvas: React.FC<CanvasProps> = ({
     color: string;
   } | null>(null);
 
+  // State for multi-select with move tool
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionBox, setSelectionBox] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
     hasSelectedShapes: boolean;
   } | null>(null);
+
+  // Hand tool panning is now handled by the parent CanvasPage component
 
   // Text editing state
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
@@ -132,45 +152,15 @@ export const Canvas: React.FC<CanvasProps> = ({
     // Drawing state changed
   }, [isDrawing, drawStartPos, previewShape]);
 
-  // Optimized zoom update using requestAnimationFrame with throttling for 60 FPS
-  const scheduleZoomUpdate = useCallback(() => {
-    if (zoomAnimationRef.current) return; // Animation already scheduled
-
-    zoomAnimationRef.current = requestAnimationFrame(() => {
-      if (pendingZoomUpdate.current) {
-        // Only update React state every 16ms (60 FPS) to prevent excessive re-renders
-        const now = Date.now();
-        if (now - lastZoomTime.current >= 16) {
-          updateCanvasState(pendingZoomUpdate.current);
-          lastZoomTime.current = now;
-        } else {
-          // Re-schedule if we're updating too frequently
-          zoomAnimationRef.current = null;
-          scheduleZoomUpdate();
-          return;
-        }
-        pendingZoomUpdate.current = null;
-      }
-      zoomAnimationRef.current = null;
-    });
-  }, [updateCanvasState]);
-
-  // Cleanup animation frame on unmount
-  useEffect(() => {
-    return () => {
-      if (zoomAnimationRef.current) {
-        cancelAnimationFrame(zoomAnimationRef.current);
-      }
-    };
-  }, []);
+  // Zoom update optimization removed - now handled by CSS transform in parent
 
   // Removed shift key tracking functionality
 
   // Handle canvas state based on user authentication
   useEffect(() => {
     if (!user) {
-      // Reset canvas state when user signs out (clears sessionStorage)
-      resetCanvas();
+      // Reset canvas state when user signs out
+      updateCanvasState({ x: 0, y: 0, scale: 1 });
       setHasInitialized(false);
     } else if (!hasInitialized) {
       // Center the canvas when user first signs in
@@ -179,27 +169,27 @@ export const Canvas: React.FC<CanvasProps> = ({
         const saved = sessionStorage.getItem("collabcanvas-canvas-state");
         if (!saved) {
           // No saved state means fresh sign-in, center the canvas
-          centerCanvas(canvasDimensions.width, canvasDimensions.height);
+          updateCanvasState({ x: 0, y: 0, scale: 1 });
         }
         setHasInitialized(true);
       }, 0);
     }
-  }, [user, resetCanvas, centerCanvas, hasInitialized, canvasDimensions]);
+  }, [user, updateCanvasState, hasInitialized, canvasDimensions]);
 
-  // Update stage size on window resize
+  // Update stage size based on canvas dimensions
   useEffect(() => {
     const updateSize = () => {
+      // Use canvas dimensions for the stage size with fallback values
       setStageSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: canvasDimensions?.width || 2000,
+        height: canvasDimensions?.height || 2000,
       });
-      // Note: We don't re-center on resize anymore to preserve user's position
     };
 
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, []);
+  }, [canvasDimensions?.width, canvasDimensions?.height]);
 
   // Handle keyboard shortcuts (Delete key)
   useEffect(() => {
@@ -224,87 +214,10 @@ export const Canvas: React.FC<CanvasProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedShapeIds, deleteSelectedShapes]);
 
-  // Handle zoom (wheel) - Ultra-smooth with event batching
-  const handleWheel = useCallback(
-    (e: KonvaEventObject<WheelEvent>) => {
-      e.evt.preventDefault();
-
-      const stage = stageRef.current;
-      if (!stage) return;
-
-      // Batch wheel events for smoother scrolling
-      const now = Date.now();
-      zoomAccumulator.current.deltaX += e.evt.deltaX;
-      zoomAccumulator.current.deltaY += e.evt.deltaY;
-      zoomAccumulator.current.count++;
-
-      // Process accumulated wheel events every few milliseconds
-      if (now - lastZoomTime.current < 8) {
-        return; // Batch more events
-      }
-
-      const avgDeltaY =
-        zoomAccumulator.current.deltaY / zoomAccumulator.current.count;
-
-      // Reset accumulator
-      zoomAccumulator.current = { deltaX: 0, deltaY: 0, count: 0 };
-
-      const oldScale = stage.scaleX();
-      const pointer = stage.getPointerPosition();
-
-      if (!pointer) return;
-
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
-
-      // Determine zoom direction and factor
-      const direction = avgDeltaY > 0 ? -1 : 1;
-      const scaleBy = 1.05; // Increased back for faster zooming while keeping smoothness
-      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
-      // Clamp scale between 0.1 and 5
-      const clampedScale = Math.max(0.1, Math.min(5, newScale));
-
-      const newPos = {
-        x: pointer.x - mousePointTo.x * clampedScale,
-        y: pointer.y - mousePointTo.y * clampedScale,
-      };
-
-      // Update Konva stage immediately for visual feedback
-      stage.scale({ x: clampedScale, y: clampedScale });
-      stage.position(newPos);
-      stage.batchDraw();
-
-      // Schedule React state update for next frame
-      pendingZoomUpdate.current = {
-        x: newPos.x,
-        y: newPos.y,
-        scale: clampedScale,
-      };
-      scheduleZoomUpdate();
-      lastZoomTime.current = now;
-    },
-    [scheduleZoomUpdate]
-  );
+  // Mouse wheel zoom disabled - zoom now controlled by toolbar buttons only
 
   // Handle pan (drag) - only when dragging the stage itself
-  const handleStageDragEnd = useCallback(
-    (e: KonvaEventObject<DragEvent>) => {
-      const stage = e.target as Konva.Stage;
-
-      // Only update canvas state if the Stage itself was dragged
-      // (not when a shape was dragged)
-      if (e.target === stage) {
-        updateCanvasState({
-          x: stage.x(),
-          y: stage.y(),
-        });
-      }
-    },
-    [updateCanvasState]
-  );
+  // Stage dragging disabled - panning now handled by parent component via scrolling
 
   // Handle mouse down - start shape creation or selection
   const handleMouseDown = useCallback(
@@ -336,13 +249,26 @@ export const Canvas: React.FC<CanvasProps> = ({
         // Always deselect shape when clicking on background
         selectShape(null);
 
+        // Handle multi-select with move tool - start selection box
+        if (cursorMode === "move" && !selectedTool) {
+          setIsSelecting(true);
+          setDrawStartPos(pos);
+          setSelectionBox({
+            x: pos.x,
+            y: pos.y,
+            width: 0,
+            height: 0,
+          });
+          return;
+        }
+
         // Handle text tool - create text immediately on click
         if (
           cursorMode === "text" &&
           pos.x >= 0 &&
-          pos.x <= canvasDimensions.width &&
+          pos.x <= (canvasDimensions?.width || 2000) &&
           pos.y >= 0 &&
-          pos.y <= canvasDimensions.height
+          pos.y <= (canvasDimensions?.height || 2000)
         ) {
           const textShape = {
             type: "text" as const,
@@ -370,9 +296,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         if (
           cursorMode === "brush" &&
           pos.x >= 0 &&
-          pos.x <= canvasDimensions.width &&
+          pos.x <= (canvasDimensions?.width || 2000) &&
           pos.y >= 0 &&
-          pos.y <= canvasDimensions.height
+          pos.y <= (canvasDimensions?.height || 2000)
         ) {
           setIsDrawingMode(true);
           setCurrentDrawing([pos.x, pos.y]);
@@ -383,9 +309,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         if (
           selectedTool &&
           pos.x >= 0 &&
-          pos.x <= canvasDimensions.width &&
+          pos.x <= (canvasDimensions?.width || 2000) &&
           pos.y >= 0 &&
-          pos.y <= canvasDimensions.height
+          pos.y <= (canvasDimensions?.height || 2000)
         ) {
           const newPreviewShape = {
             x: pos.x,
@@ -420,6 +346,26 @@ export const Canvas: React.FC<CanvasProps> = ({
       // Update cursor position for multiplayer
       updateCursorPosition(pos.x, pos.y);
 
+      // Handle multi-select box
+      if (isSelecting && drawStartPos) {
+        const startX = drawStartPos.x;
+        const startY = drawStartPos.y;
+
+        const width = Math.abs(pos.x - startX);
+        const height = Math.abs(pos.y - startY);
+
+        const x = Math.min(startX, pos.x);
+        const y = Math.min(startY, pos.y);
+
+        setSelectionBox({
+          x,
+          y,
+          width,
+          height,
+        });
+        return;
+      }
+
       // Handle drawing mode
       if (isDrawingMode && currentDrawing.length > 0) {
         const newPoints = [...currentDrawing, pos.x, pos.y];
@@ -433,8 +379,14 @@ export const Canvas: React.FC<CanvasProps> = ({
         const startY = drawStartPos.y;
 
         // Calculate dimensions (constrain to canvas)
-        const endX = Math.max(0, Math.min(canvasDimensions.width, pos.x));
-        const endY = Math.max(0, Math.min(canvasDimensions.height, pos.y));
+        const endX = Math.max(
+          0,
+          Math.min(canvasDimensions?.width || 2000, pos.x)
+        );
+        const endY = Math.max(
+          0,
+          Math.min(canvasDimensions?.height || 2000, pos.y)
+        );
 
         const width = Math.abs(endX - startX);
         const height = Math.abs(endY - startY);
@@ -463,39 +415,88 @@ export const Canvas: React.FC<CanvasProps> = ({
       isDrawingMode,
       currentDrawing,
       canvasDimensions,
+      isSelecting,
     ]
   );
 
   // Handle mouse up - finalize shape creation
   const handleMouseUp = useCallback(
     async (_e?: KonvaEventObject<MouseEvent | TouchEvent>) => {
-      // Handle drawing completion
-      if (isDrawingMode && currentDrawing.length > 2) {
-        // Calculate bounding box for the drawing
-        const minX = Math.min(...currentDrawing.filter((_, i) => i % 2 === 0));
-        const maxX = Math.max(...currentDrawing.filter((_, i) => i % 2 === 0));
-        const minY = Math.min(...currentDrawing.filter((_, i) => i % 2 === 1));
-        const maxY = Math.max(...currentDrawing.filter((_, i) => i % 2 === 1));
+      // Handle multi-select completion
+      if (isSelecting && selectionBox) {
+        // Find all shapes that intersect with the selection box
+        const selectedIds = shapes
+          .filter((shape) => {
+            // Check if shape intersects with selection box
+            const shapeRight = shape.x + shape.width;
+            const shapeBottom = shape.y + shape.height;
+            const boxRight = selectionBox.x + selectionBox.width;
+            const boxBottom = selectionBox.y + selectionBox.height;
 
-        const drawingShape = {
-          type: "drawing" as const,
-          x: minX,
-          y: minY,
-          width: maxX - minX,
-          height: maxY - minY,
-          color: drawingColor,
-          points: currentDrawing,
-          strokeWidth: drawingStrokeWidth,
-          createdBy: user!.id,
-        };
+            return !(
+              shape.x > boxRight ||
+              shapeRight < selectionBox.x ||
+              shape.y > boxBottom ||
+              shapeBottom < selectionBox.y
+            );
+          })
+          .map((shape) => shape.id);
 
-        try {
-          await createShape(drawingShape);
-        } catch (error) {
-          console.error("Failed to create drawing:", error);
+        // Select all shapes that intersect
+        if (selectedIds.length > 0) {
+          // For now, we'll just select the first shape to match the current architecture
+          // In the future, we could update the useShapes hook to support multi-select
+          selectShape(selectedIds[0]);
+          // TODO: Implement true multi-select in useShapes hook
         }
 
+        setIsSelecting(false);
+        setSelectionBox(null);
+        setDrawStartPos(null);
+        return;
+      }
+
+      // Handle drawing completion
+      if (isDrawingMode) {
+        // Always stop drawing mode on mouse up
         setIsDrawingMode(false);
+
+        // Only create shape if we have enough points
+        if (currentDrawing.length > 2) {
+          // Calculate bounding box for the drawing
+          const minX = Math.min(
+            ...currentDrawing.filter((_, i) => i % 2 === 0)
+          );
+          const maxX = Math.max(
+            ...currentDrawing.filter((_, i) => i % 2 === 0)
+          );
+          const minY = Math.min(
+            ...currentDrawing.filter((_, i) => i % 2 === 1)
+          );
+          const maxY = Math.max(
+            ...currentDrawing.filter((_, i) => i % 2 === 1)
+          );
+
+          const drawingShape = {
+            type: "drawing" as const,
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+            color: drawingColor,
+            points: currentDrawing,
+            strokeWidth: drawingStrokeWidth,
+            createdBy: user!.id,
+          };
+
+          try {
+            await createShape(drawingShape);
+          } catch (error) {
+            console.error("Failed to create drawing:", error);
+          }
+        }
+
+        // Clear drawing state
         setCurrentDrawing([]);
         return;
       }
@@ -536,6 +537,10 @@ export const Canvas: React.FC<CanvasProps> = ({
       currentDrawing,
       drawingColor,
       drawingStrokeWidth,
+      isSelecting,
+      selectionBox,
+      shapes,
+      selectShape,
     ]
   );
 
@@ -558,8 +563,8 @@ export const Canvas: React.FC<CanvasProps> = ({
       const minVisible = 20;
 
       // Calculate constrained position
-      const maxX = canvasDimensions.width - minVisible; // Allow shape to go mostly off-canvas to the right
-      const maxY = canvasDimensions.height - minVisible; // Allow shape to go mostly off-canvas to the bottom
+      const maxX = (canvasDimensions?.width || 2000) - minVisible; // Allow shape to go mostly off-canvas to the right
+      const maxY = (canvasDimensions?.height || 2000) - minVisible; // Allow shape to go mostly off-canvas to the bottom
       const minX = minVisible - shape.width; // Allow shape to go mostly off-canvas to the left
       const minY = minVisible - shape.height; // Allow shape to go mostly off-canvas to the top
 
@@ -664,11 +669,16 @@ export const Canvas: React.FC<CanvasProps> = ({
         selectedTool ? "creating-shape" : `cursor-${cursorMode}`
       }`}
     >
-      {/* Don't render canvas content if user is not authenticated */}
+      {/* Don't render canvas content if user is not authenticated or dimensions are loading */}
       {!user ? (
         <div className="canvas-loading">
           <div className="loading-spinner"></div>
           <p>Signing out...</p>
+        </div>
+      ) : dimensionsLoading ? (
+        <div className="canvas-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading canvas...</p>
         </div>
       ) : (
         <>
@@ -691,13 +701,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             ref={stageRef}
             width={stageSize.width}
             height={stageSize.height}
-            x={canvasState.x}
-            y={canvasState.y}
-            scaleX={canvasState.scale}
-            scaleY={canvasState.scale}
-            draggable={!selectedTool && !isDrawing}
-            onDragEnd={handleStageDragEnd}
-            onWheel={handleWheel}
+            x={0}
+            y={0}
+            scaleX={1}
+            scaleY={1}
+            draggable={false}
             onMouseDown={(e) => {
               handleMouseDown(e);
             }}
@@ -716,43 +724,46 @@ export const Canvas: React.FC<CanvasProps> = ({
             <Layer
               clipX={0}
               clipY={0}
-              clipWidth={canvasDimensions.width}
-              clipHeight={canvasDimensions.height}
+              clipWidth={canvasDimensions?.width || 2000}
+              clipHeight={canvasDimensions?.height || 2000}
               perfectDrawEnabled={false}
             >
-              {/* Canvas Background */}
+              {/* Canvas Background - Document-style page */}
               <Rect
                 x={0}
                 y={0}
-                width={canvasDimensions.width}
-                height={canvasDimensions.height}
+                width={canvasDimensions?.width || 2000}
+                height={canvasDimensions?.height || 2000}
                 fill="#ffffff"
-                stroke="#d0d0d0"
-                strokeWidth={3}
+                stroke="#e0e0e0"
+                strokeWidth={1}
+                shadowColor="rgba(0, 0, 0, 0.1)"
+                shadowOffset={{ x: 0, y: 2 }}
+                shadowBlur={4}
+                listening={true}
+                onClick={() => selectShape(null)}
+                onTap={() => selectShape(null)}
               />
 
-              {/* Grid pattern */}
-              {Array.from({
-                length: Math.floor(canvasDimensions.width / 100),
-              }).map((_, i) =>
-                Array.from({
-                  length: Math.floor(canvasDimensions.height / 100),
-                }).map((_, j) => (
-                  <Rect
-                    key={`grid-${i}-${j}`}
-                    x={i * 100}
-                    y={j * 100}
-                    width={100}
-                    height={100}
-                    fill="transparent"
-                    stroke="#f5f5f5"
-                    strokeWidth={1}
-                    listening={false}
-                    perfectDrawEnabled={false}
-                    strokeScaleEnabled={false}
-                  />
-                ))
-              )}
+              {/* Invisible overlay to prevent browser default empty canvas behavior */}
+              <Rect
+                x={0}
+                y={0}
+                width={canvasDimensions?.width || 2000}
+                height={canvasDimensions?.height || 2000}
+                fill="transparent"
+                listening={false}
+              />
+
+              {/* Force content to prevent any default browser icons */}
+              <Rect
+                x={-1}
+                y={-1}
+                width={1}
+                height={1}
+                fill="transparent"
+                listening={false}
+              />
 
               {/* Render all shapes */}
               {shapes.map((shape) => {
@@ -846,6 +857,21 @@ export const Canvas: React.FC<CanvasProps> = ({
                   />
                 ))}
 
+              {/* Multi-select selection box */}
+              {selectionBox && (
+                <Rect
+                  x={selectionBox.x}
+                  y={selectionBox.y}
+                  width={selectionBox.width}
+                  height={selectionBox.height}
+                  fill="rgba(33, 150, 243, 0.1)"
+                  stroke="#2196f3"
+                  strokeWidth={1}
+                  dash={[5, 5]}
+                  listening={false}
+                />
+              )}
+
               {/* Current drawing preview */}
               {isDrawingMode && currentDrawing.length > 2 && (
                 <DrawingPath
@@ -858,7 +884,11 @@ export const Canvas: React.FC<CanvasProps> = ({
           </Stage>
 
           {/* Multiplayer cursors overlay */}
-          <MultipleCursors canvasState={canvasState} stageRef={stageRef} />
+          <MultipleCursors
+            canvasState={canvasState}
+            stageRef={stageRef}
+            projectId={projectId}
+          />
         </>
       )}
 

@@ -1,0 +1,24 @@
+{
+  "name": "Button",
+  "description": "A rounded button with text, commonly used for UI elements",
+  "shapes": [
+    {
+      "type": "rect",
+      "width": 120,
+      "height": 40,
+      "color": "#4ECDC4",
+      "cornerRadius": 20
+    },
+    {
+      "type": "text",
+      "text": "Click Me",
+      "fontSize": 14,
+      "fontFamily": "Arial",
+      "color": "#FFFFFF",
+      "x": 25,
+      "y": 11,
+      "width": 70,
+      "height": 18
+    }
+  ]
+}

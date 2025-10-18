@@ -1,10 +1,55 @@
 .canvas-container {
   position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background: #fafafa;
+  width: 100%;
+  height: 100%;
+  overflow: visible; /* Allow interactions and proper event handling */
+  background: transparent; /* Let parent control background */
   cursor: default; /* Default cursor */
+}
+
+/* Cursor styles for different tools */
+.canvas-container.cursor-hand {
+  cursor: grab;
+}
+
+.canvas-container.cursor-hand:active {
+  cursor: grabbing;
+}
+
+.canvas-container.cursor-crosshair {
+  cursor: crosshair;
+}
+
+.canvas-container.cursor-text {
+  cursor: text;
+}
+
+/* Hide any browser default icons or placeholders */
+.canvas-container canvas {
+  display: block;
+}
+
+.canvas-container::before,
+.canvas-container::after {
+  display: none !important;
+}
+
+/* Force hide any broken image icons or default browser placeholders */
+.canvas-container img {
+  display: none !important;
+}
+
+/* Hide any text content that might appear */
+.canvas-container {
+  font-size: 0;
+  line-height: 0;
+}
+
+/* Ensure no pseudo-elements can show content */
+.canvas-container *::before,
+.canvas-container *::after {
+  content: none !important;
+  display: none !important;
 }
 
 /* Move tool cursor */
@@ -37,7 +82,9 @@
 
 /* Brush tool cursor */
 .canvas-container.cursor-brush {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"><circle cx="12" cy="12" r="3" fill="red" opacity="0.5"/></svg>') 12 12, crosshair;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"><circle cx="12" cy="12" r="3" fill="red" opacity="0.5"/></svg>')
+      12 12,
+    crosshair;
 }
 
 /* Loading and error states */

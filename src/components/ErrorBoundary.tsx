@@ -7,7 +7,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
-  errorType: 'auth' | 'network' | 'generic';
+  errorType: "auth" | "network" | "generic";
   retryCount: number;
 }
 
@@ -16,26 +16,30 @@ export class ErrorBoundary extends Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
-    this.state = { 
-      hasError: false, 
-      errorType: 'generic',
-      retryCount: 0
+    this.state = {
+      hasError: false,
+      errorType: "generic",
+      retryCount: 0,
     };
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     // Classify error types for better handling
-    let errorType: 'auth' | 'network' | 'generic' = 'generic';
-    
-    if (error.message?.includes('charAt') || 
-        error.message?.includes('displayName') ||
-        error.message?.includes('auth') ||
-        error.stack?.includes('AuthProvider')) {
-      errorType = 'auth';
-    } else if (error.message?.includes('network') || 
-               error.message?.includes('fetch') ||
-               error.message?.includes('Firebase')) {
-      errorType = 'network';
+    let errorType: "auth" | "network" | "generic" = "generic";
+
+    if (
+      error.message?.includes("charAt") ||
+      error.message?.includes("displayName") ||
+      error.message?.includes("auth") ||
+      error.stack?.includes("AuthProvider")
+    ) {
+      errorType = "auth";
+    } else if (
+      error.message?.includes("network") ||
+      error.message?.includes("fetch") ||
+      error.message?.includes("Firebase")
+    ) {
+      errorType = "network";
     }
 
     return { hasError: true, error, errorType };
@@ -43,14 +47,14 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error("Error caught by boundary:", error, errorInfo);
-    
+
     // Auto-retry for network errors
-    if (this.state.errorType === 'network' && this.state.retryCount < 3) {
+    if (this.state.errorType === "network" && this.state.retryCount < 3) {
       this.retryTimeout = setTimeout(() => {
-        this.setState(prevState => ({
+        this.setState((prevState) => ({
           hasError: false,
           error: undefined,
-          retryCount: prevState.retryCount + 1
+          retryCount: prevState.retryCount + 1,
         }));
       }, 2000 * (this.state.retryCount + 1)); // Exponential backoff
     }
@@ -66,21 +70,29 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: undefined,
-      retryCount: 0
+      retryCount: 0,
     });
   };
 
   handleSignOut = () => {
     // Clear all session data and redirect to sign-in
-    sessionStorage.clear();
-    localStorage.clear();
-    window.location.href = '/signin';
+    try {
+      sessionStorage.clear();
+      localStorage.clear();
+    } catch {}
+    // Prefer SPA navigation to avoid losing provider mount timing
+    if (window.location.pathname !== "/signin") {
+      window.history.replaceState({}, "", "/signin");
+      window.location.reload();
+    } else {
+      window.location.reload();
+    }
   };
 
   render() {
     if (this.state.hasError) {
       const { errorType, retryCount, error } = this.state;
-      
+
       return (
         <div
           style={{
@@ -95,21 +107,34 @@ export class ErrorBoundary extends Component<Props, State> {
           }}
         >
           <h1 style={{ color: "#dc2626", marginBottom: "16px" }}>
-            {errorType === 'auth' ? 'Authentication Error' : 
-             errorType === 'network' ? 'Connection Error' : 
-             'Something went wrong'}
+            {errorType === "auth"
+              ? "Authentication Error"
+              : errorType === "network"
+              ? "Connection Error"
+              : "Something went wrong"}
           </h1>
-          
+
           <p style={{ color: "#6b7280", marginBottom: "24px" }}>
-            {errorType === 'auth' ? 
-              'Your session has expired or there was an authentication issue. Please sign in again.' :
-             errorType === 'network' ? 
-              `Connection lost. ${retryCount > 0 ? `Retry attempt ${retryCount}/3` : 'Attempting to reconnect...'}` :
-              'The application encountered an unexpected error. Please try refreshing the page.'}
+            {errorType === "auth"
+              ? "Your session has expired or there was an authentication issue. Please sign in again."
+              : errorType === "network"
+              ? `Connection lost. ${
+                  retryCount > 0
+                    ? `Retry attempt ${retryCount}/3`
+                    : "Attempting to reconnect..."
+                }`
+              : "The application encountered an unexpected error. Please try refreshing the page."}
           </p>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {errorType === 'auth' ? (
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            {errorType === "auth" ? (
               <button
                 onClick={this.handleSignOut}
                 style={{
@@ -162,7 +187,13 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
 
           {error && (
-            <details style={{ marginTop: "24px", textAlign: "left", maxWidth: "600px" }}>
+            <details
+              style={{
+                marginTop: "24px",
+                textAlign: "left",
+                maxWidth: "600px",
+              }}
+            >
               <summary style={{ cursor: "pointer", color: "#6b7280" }}>
                 Technical Details
               </summary>

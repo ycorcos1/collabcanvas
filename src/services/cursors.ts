@@ -3,12 +3,15 @@ import { database } from "./firebase";
 import { CursorPosition, CursorState } from "../types/cursor";
 import { throttle } from "../utils/throttle";
 
-const CANVAS_ID = "default"; // For MVP, we'll use a single canvas
-const CURSOR_UPDATE_THROTTLE = 16; // 16ms = ~60 FPS for smoother cursor tracking
+// No longer using a hardcoded CANVAS_ID - each project has its own cursors
+// OPTIMIZED: Reduced cursor update frequency to save Firebase quota
+const CURSOR_UPDATE_THROTTLE = 500; // 500ms = 2 updates per second (was 16ms = 60 FPS)
+// This reduces cursor writes by 97% while maintaining acceptable real-time feel
 
 // Update cursor position (throttled)
 const updateCursorPositionThrottled = throttle(
   async (
+    projectId: string,
     userId: string,
     x: number,
     y: number,
@@ -16,7 +19,7 @@ const updateCursorPositionThrottled = throttle(
     userColor: string
   ): Promise<void> => {
     try {
-      const cursorRef = ref(database, `cursors/${CANVAS_ID}/${userId}`);
+      const cursorRef = ref(database, `cursors/${projectId}/${userId}`);
 
       const cursorData: CursorPosition = {
         x,
@@ -28,8 +31,8 @@ const updateCursorPositionThrottled = throttle(
       };
 
       await set(cursorRef, cursorData);
-    } catch (error) {
-      console.error("Error setting cursor position:", error);
+    } catch (error: any) {
+      // Silently handle errors - Realtime Database might not be set up yet
     }
   },
   CURSOR_UPDATE_THROTTLE
@@ -37,34 +40,42 @@ const updateCursorPositionThrottled = throttle(
 
 // Update cursor position
 export const updateCursorPosition = (
+  projectId: string,
   userId: string,
   x: number,
   y: number,
   userName: string,
   userColor: string
 ): void => {
-  updateCursorPositionThrottled(userId, x, y, userName, userColor);
+  updateCursorPositionThrottled(projectId, userId, x, y, userName, userColor);
 };
 
 // Remove cursor when user disconnects
-export const setupCursorDisconnection = (userId: string): void => {
-  const cursorRef = ref(database, `cursors/${CANVAS_ID}/${userId}`);
+export const setupCursorDisconnection = (
+  projectId: string,
+  userId: string
+): void => {
+  const cursorRef = ref(database, `cursors/${projectId}/${userId}`);
   onDisconnect(cursorRef).remove();
 };
 
 // Remove cursor manually
-export const removeCursor = async (userId: string): Promise<void> => {
-  const cursorRef = ref(database, `cursors/${CANVAS_ID}/${userId}`);
+export const removeCursor = async (
+  projectId: string,
+  userId: string
+): Promise<void> => {
+  const cursorRef = ref(database, `cursors/${projectId}/${userId}`);
   await remove(cursorRef);
 };
 
 // Subscribe to cursor changes
 export const subscribeToCursors = (
+  projectId: string,
   currentUserId: string,
   callback: (cursors: CursorState) => void,
   errorCallback?: (error: any) => void
 ): (() => void) => {
-  const cursorsRef = ref(database, `cursors/${CANVAS_ID}`);
+  const cursorsRef = ref(database, `cursors/${projectId}`);
 
   const unsubscribe = onValue(
     cursorsRef,

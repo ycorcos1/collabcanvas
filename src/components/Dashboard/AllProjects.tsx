@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects } from "../../hooks/useProjects";
+import { useAuth } from "../Auth/AuthProvider";
 import { ProjectGrid } from "./ProjectGrid";
 import { Button, Input } from "../shared";
+import { generateProjectSlug } from "../../utils/projectUtils";
 
 /**
  * All Projects View - Shows all user projects with search and pagination
@@ -15,6 +17,7 @@ import { Button, Input } from "../shared";
  */
 export const AllProjects: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "name">(
     "updatedAt"
@@ -22,12 +25,15 @@ export const AllProjects: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Memoize options to prevent unnecessary re-renders
-  const projectOptions = useMemo(() => ({
-    searchQuery,
-    orderBy: sortBy,
-    orderDirection: sortDirection,
-    limit: 12,
-  }), [searchQuery, sortBy, sortDirection]);
+  const projectOptions = useMemo(
+    () => ({
+      searchQuery,
+      orderBy: sortBy,
+      orderDirection: sortDirection,
+      limit: 12,
+    }),
+    [searchQuery, sortBy, sortDirection]
+  );
 
   const {
     projects,
@@ -56,9 +62,8 @@ export const AllProjects: React.FC = () => {
   };
 
   const handleCreateProject = () => {
-    // Generate a unique slug for new project
-    const timestamp = Date.now();
-    const newProjectSlug = `untitled-${timestamp}`;
+    // Generate a unique project ID/slug for new project
+    const newProjectSlug = generateProjectSlug();
     navigate(`/canvas/${newProjectSlug}`);
   };
 
@@ -214,6 +219,7 @@ export const AllProjects: React.FC = () => {
         onOpenProject={openProject}
         onRenameProject={renameProject}
         onDeleteProject={deleteProject}
+        currentUserId={user?.id}
       />
 
       {/* Load More */}

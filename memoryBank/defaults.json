@@ -1,0 +1,65 @@
+{
+  "canvas": {
+    "defaultWidth": 800,
+    "defaultHeight": 1200,
+    "backgroundColor": "#ffffff",
+    "minDimension": 500,
+    "maxDimension": 5000
+  },
+  "colors": {
+    "primary": "#FF6B6B",
+    "secondary": "#4ECDC4",
+    "accent": "#FFE66D",
+    "neutral": "#95E1D3",
+    "palette": [
+      "#FF0000",
+      "#00FF00",
+      "#0000FF",
+      "#FFFF00",
+      "#FF00FF",
+      "#00FFFF",
+      "#FFA500",
+      "#800080",
+      "#FFC0CB",
+      "#000000",
+      "#FFFFFF",
+      "#808080"
+    ]
+  },
+  "shapes": {
+    "rectangle": {
+      "defaultWidth": 100,
+      "defaultHeight": 100,
+      "defaultColor": "#FF0000"
+    },
+    "circle": {
+      "defaultRadius": 50,
+      "defaultColor": "#FF0000"
+    },
+    "text": {
+      "defaultFontSize": 18,
+      "defaultFontFamily": "Arial",
+      "defaultColor": "#000000",
+      "defaultWidth": 200,
+      "defaultHeight": 40
+    }
+  },
+  "spacing": {
+    "defaultMargin": 20,
+    "gridSize": 10,
+    "snapTolerance": 5
+  },
+  "duplicateOffset": {
+    "x": 50,
+    "y": 50
+  },
+  "aiPreferences": {
+    "defaultPosition": {
+      "x": 400,
+      "y": 600
+    },
+    "preferredShapeType": "rectangle",
+    "autoSelect": true,
+    "verboseResponses": false
+  }
+}

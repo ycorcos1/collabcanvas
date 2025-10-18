@@ -52,8 +52,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  // Defensive fallback: during rare edge cases (e.g., HMR, error recovery, or
+  // transient unmounts after idle session refresh), the provider may not be
+  // available for a single render. Instead of throwing (which breaks routing
+  // and triggers the error boundary), return a safe loading state so callers
+  // like ProtectedRoute/PublicRoute can gracefully show a spinner and allow the
+  // provider to remount.
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    return {
+      user: null,
+      isLoading: true,
+      error: null,
+      // Provide no-op auth methods that clearly indicate unavailability if
+      // they're ever called in this transient state.
+      signIn: async () => {
+        throw new Error(
+          "Auth context unavailable during recovery. Please retry."
+        );
+      },
+      signUp: async () => {
+        throw new Error(
+          "Auth context unavailable during recovery. Please retry."
+        );
+      },
+      signOut: async () => {
+        // no-op
+      },
+    } as AuthContextType;
   }
   return context;
 };
@@ -159,6 +184,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       async (firebaseUser: FirebaseUser | null) => {
         try {
           if (firebaseUser) {
+            // Ensure token validity for long-idle sessions
+            try {
+              await firebaseUser.getIdToken(/* forceRefresh */ false);
+            } catch (e) {
+              // If token read fails, force a refresh once
+              try {
+                await firebaseUser.getIdToken(true);
+              } catch {}
+            }
             const user = firebaseUserToUser(firebaseUser);
             if (user) {
               setAuthState({
@@ -205,6 +239,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setTimeout(() => {
               setRecoveryAttempts((prev) => prev + 1);
             }, 2000 * (recoveryAttempts + 1)); // Exponential backoff
+          } else if (recoveryAttempts < 2) {
+            // Attempt a soft reset once in non-network cases to avoid crash loops
+            setRecoveryAttempts((prev) => prev + 1);
+            setAuthState((prev) => ({ ...prev, isLoading: true }));
           } else {
             setAuthState({
               user: null,
@@ -275,6 +313,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       sessionStorage.removeItem("horizon-selected-tool");
       sessionStorage.removeItem("horizon-selected-shapes");
       sessionStorage.removeItem("horizon-canvas-state");
+
+      // Clear old localStorage data that might cause universal canvas issues
+      localStorage.removeItem("canvas-pages");
+      localStorage.removeItem("canvas-object-names");
 
       // Reset theme to light mode for auth pages
       const root = document.documentElement;

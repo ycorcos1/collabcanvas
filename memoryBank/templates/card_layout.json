@@ -1,0 +1,46 @@
+{
+  "name": "Card Layout",
+  "description": "Card with image, title, and description",
+  "shapes": [
+    {
+      "type": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 360,
+      "height": 260,
+      "color": "#ffffff",
+      "stroke": "#E0E0E0",
+      "strokeWidth": 1,
+      "cornerRadius": 12
+    },
+    {
+      "type": "rect",
+      "x": 16,
+      "y": 16,
+      "width": 328,
+      "height": 140,
+      "color": "#E5E7EB",
+      "cornerRadius": 8
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 168,
+      "width": 328,
+      "height": 24,
+      "text": "Card Title",
+      "fontSize": 16,
+      "color": "#111827"
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 196,
+      "width": 328,
+      "height": 40,
+      "text": "Description goes here.",
+      "fontSize": 12,
+      "color": "#374151"
+    }
+  ]
+}

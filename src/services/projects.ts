@@ -15,6 +15,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { firestore } from "./firebase";
+import { canAutoWriteToFirestore } from "../config/firebaseConfig";
 import {
   Project,
   CreateProjectData,
@@ -44,6 +45,25 @@ export async function createProject(
   data: CreateProjectData,
   ownerId: string
 ): Promise<Project> {
+  if (!canAutoWriteToFirestore()) {
+    // Auto-writes disabled - return mock project
+    const now = Timestamp.now();
+    return {
+      id: crypto.randomUUID(),
+      name: data.name,
+      slug: data.name.toLowerCase().replace(/\s+/g, "-"),
+      slugHistory: [],
+      ownerId,
+      collaborators: [],
+      description: data.description || "",
+      isPublic: data.isPublic || false,
+      createdAt: now,
+      updatedAt: now,
+      lastAccessedAt: now,
+      deletedAt: null,
+    };
+  }
+
   try {
     // Generate unique slug
     const slug = await generateUniqueSlug(data.name);
@@ -107,6 +127,11 @@ export async function updateProject(
   projectId: string,
   data: UpdateProjectData
 ): Promise<void> {
+  if (!canAutoWriteToFirestore()) {
+    // Auto-writes disabled - operation skipped
+    return;
+  }
+
   try {
     const docRef = doc(firestore, PROJECTS_COLLECTION, projectId);
     await updateDoc(docRef, {
@@ -121,22 +146,39 @@ export async function updateProject(
 
 /**
  * Soft delete a project (move to trash)
+ * This is a user action, not an auto-write, so it always executes
+ * Note: Only the project owner can delete/trash a project
  */
 export async function moveProjectToTrash(projectId: string): Promise<void> {
   try {
     const docRef = doc(firestore, PROJECTS_COLLECTION, projectId);
+
+    // First, verify the project exists
+    const projectSnap = await getDoc(docRef);
+    if (!projectSnap.exists()) {
+      throw new Error("Project not found");
+    }
+
+    const now = Timestamp.now();
+
     await updateDoc(docRef, {
-      deletedAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      deletedAt: now,
+      updatedAt: now,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error moving project to trash:", error);
-    throw new Error("Failed to move project to trash");
+    console.error("Error details:", {
+      code: error.code,
+      message: error.message,
+      projectId,
+    });
+    throw new Error(`Failed to move project to trash: ${error.message}`);
   }
 }
 
 /**
  * Recover a project from trash
+ * This is a user action, not an auto-write, so it always executes
  */
 export async function recoverProject(projectId: string): Promise<void> {
   try {
@@ -153,14 +195,16 @@ export async function recoverProject(projectId: string): Promise<void> {
 
 /**
  * Permanently delete a project
+ * This is a user action, not an auto-write, so it always executes
  */
 export async function deleteProjectPermanently(
   projectId: string
 ): Promise<void> {
   try {
-    // TODO: Also delete shapes subcollection
-    const docRef = doc(firestore, PROJECTS_COLLECTION, projectId);
-    await deleteDoc(docRef);
+    // Simply delete the main project document
+    // Shapes are stored within the project document (in pages field), not as subcollection
+    const projectRef = doc(firestore, PROJECTS_COLLECTION, projectId);
+    await deleteDoc(projectRef);
   } catch (error) {
     console.error("Error deleting project permanently:", error);
     throw new Error("Failed to delete project permanently");
@@ -191,13 +235,16 @@ export async function getProjects(
 
     // Filter by deleted status
     if (!includeDeleted) {
+      // For active projects, only get projects where deletedAt is null
       q = query(q, where("deletedAt", "==", null));
+      // Add ordering
+      q = query(q, orderBy(orderField, orderDirection));
     } else {
+      // For deleted projects, use a simpler approach
+      // Order by deletedAt first (which is the field we're filtering on)
       q = query(q, where("deletedAt", "!=", null));
+      q = query(q, orderBy("deletedAt", "desc")); // Most recently deleted first
     }
-
-    // Add ordering
-    q = query(q, orderBy(orderField, orderDirection));
 
     // Add pagination
     if (cursor) {
@@ -213,10 +260,11 @@ export async function getProjects(
     snapshot.docs.forEach((doc, index) => {
       if (index < queryLimit) {
         // Don't include the extra document
+        const projectData = doc.data() as Omit<Project, "id">;
         projects.push({
           id: doc.id,
-          ...doc.data(),
-        } as Project);
+          ...projectData,
+        });
       }
     });
 
@@ -239,9 +287,9 @@ export async function getProjects(
           ? snapshot.docs[queryLimit - 1]
           : undefined,
     };
-  } catch (error) {
-    console.error("Error getting projects:", error);
-    // For new users with no projects, return empty result instead of throwing
+  } catch (error: any) {
+    console.error("Error in getProjects:", error);
+    // Return empty result for new users
     return {
       projects: [],
       hasMore: false,
@@ -251,13 +299,13 @@ export async function getProjects(
 }
 
 /**
- * Get recent projects (last 5)
+ * Get recent projects (last 10)
  */
 export async function getRecentProjects(userId: string): Promise<Project[]> {
   try {
     const result = await getProjects(userId, {
-      limit: 5,
-      orderBy: "lastAccessedAt",
+      limit: 10,
+      orderBy: "updatedAt", // Use updatedAt instead of lastAccessedAt for auto-save compatibility
       orderDirection: "desc",
     });
 

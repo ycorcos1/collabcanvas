@@ -24,7 +24,8 @@ export const Cursor: React.FC<CursorProps> = ({ cursor, canvasScale }) => {
   const { x, y, userName, userColor } = cursor;
 
   // Scale factor for cursor size based on canvas zoom
-  const scaleFactor = Math.max(0.5, Math.min(1, 1 / canvasScale));
+  // Keep cursor visible at all zoom levels
+  const scaleFactor = Math.max(0.7, Math.min(1.2, 1 / canvasScale));
 
   return (
     <div
@@ -35,25 +36,33 @@ export const Cursor: React.FC<CursorProps> = ({ cursor, canvasScale }) => {
         transform: `scale(${scaleFactor})`,
       }}
     >
-      {/* Cursor pointer */}
+      {/* Cursor pointer - larger and more visible */}
       <svg
-        width="24"
-        height="24"
+        width="28"
+        height="28"
         viewBox="0 0 24 24"
-        fill={userColor}
+        fill="none"
         className="cursor-pointer"
       >
-        <path d="M2 2l8 16 2-6 6-2L2 2z" />
+        {/* White outline for better contrast */}
+        <path
+          d="M2 2l8 16 2-6 6-2L2 2z"
+          fill="white"
+          stroke="rgba(0, 0, 0, 0.3)"
+          strokeWidth="1"
+        />
+        {/* Main cursor color */}
+        <path d="M3 3l6 12 1.5-4.5L15 9 3 3z" fill={userColor} />
       </svg>
 
-      {/* User name label */}
+      {/* User name label with improved readability */}
       <div
         className="cursor-label"
         style={{
           backgroundColor: userColor,
         }}
       >
-        {userName}
+        <span className="cursor-label-text">{userName}</span>
       </div>
     </div>
   );
