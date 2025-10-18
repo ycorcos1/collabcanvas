@@ -11,7 +11,6 @@
  * - CORS protection
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 // Edge runtime for fast responses
@@ -66,10 +65,18 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000); // Every 5 minutes
 
-export default async function handler(req: NextRequest) {
+// Small helper to create JSON responses with proper headers
+function json(body: any, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("content-type"))
+    headers.set("content-type", "application/json");
+  return new Response(JSON.stringify(body), { ...init, headers });
+}
+
+export default async function handler(req: Request): Promise<Response> {
   // Only allow POST requests
   if (req.method !== "POST") {
-    return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
+    return json({ error: "Method not allowed" }, { status: 405 });
   }
 
   try {
@@ -79,14 +86,14 @@ export default async function handler(req: NextRequest) {
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json(
+      return json(
         { error: "Invalid request: messages array required" },
         { status: 400 }
       );
     }
 
     if (!userId || typeof userId !== "string") {
-      return NextResponse.json(
+      return json(
         { error: "Invalid request: userId required" },
         { status: 400 }
       );
@@ -94,7 +101,7 @@ export default async function handler(req: NextRequest) {
 
     // Check rate limit
     if (!checkRateLimit(userId)) {
-      return NextResponse.json(
+      return json(
         {
           error: "Rate limit exceeded",
           message:
@@ -118,16 +125,13 @@ export default async function handler(req: NextRequest) {
     });
 
     // Return successful response
-    return NextResponse.json({
-      success: true,
-      data: response,
-    });
+    return json({ success: true, data: response });
   } catch (error: any) {
     console.error("AI Proxy Error:", error);
 
     // Handle OpenAI-specific errors
     if (error.code === "insufficient_quota") {
-      return NextResponse.json(
+      return json(
         {
           error: "Service unavailable",
           message:
@@ -138,7 +142,7 @@ export default async function handler(req: NextRequest) {
     }
 
     if (error.code === "invalid_api_key") {
-      return NextResponse.json(
+      return json(
         {
           error: "Server configuration error",
           message:
@@ -149,7 +153,7 @@ export default async function handler(req: NextRequest) {
     }
 
     if (error.status === 429) {
-      return NextResponse.json(
+      return json(
         {
           error: "Service rate limit",
           message:
@@ -160,7 +164,7 @@ export default async function handler(req: NextRequest) {
     }
 
     // Generic error
-    return NextResponse.json(
+    return json(
       {
         error: "Internal server error",
         message: "An error occurred while processing your request.",
@@ -169,4 +173,3 @@ export default async function handler(req: NextRequest) {
     );
   }
 }
-
