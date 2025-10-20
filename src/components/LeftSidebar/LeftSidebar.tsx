@@ -56,9 +56,9 @@ interface LeftSidebarProps {
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
-  shapes,
+  shapes: _shapes, // Reserved for future objects list feature
   selectedShapeIds,
-  onSelectShape,
+  onSelectShape: _onSelectShape, // Reserved for future objects list feature
   onUndo,
   onRedo,
   onCopy,

@@ -151,13 +151,19 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   // Sync external cursor mode from parent (e.g., revert to move after using text tool)
   useEffect(() => {
     if (!currentCursorMode) return;
-    if (currentCursorMode !== cursorMode) {
-      setCursorMode(currentCursorMode);
+
+    // Type guard: only accept valid CursorMode values
+    const validModes: CursorMode[] = ["move", "hand", "text"];
+    if (validModes.includes(currentCursorMode as CursorMode)) {
+      const mode = currentCursorMode as CursorMode;
+      if (mode !== cursorMode) {
+        setCursorMode(mode);
+      }
+      if (mode !== "text" && isTextMode) {
+        setIsTextMode(false);
+      }
     }
-    if (currentCursorMode !== "text" && isTextMode) {
-      setIsTextMode(false);
-    }
-  }, [currentCursorMode]);
+  }, [currentCursorMode, cursorMode, isTextMode]);
 
   const cursorTools = [
     {

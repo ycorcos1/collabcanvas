@@ -21,6 +21,7 @@ import { useProjectManagement } from "../hooks/useProjectManagement";
 import { useProjectSync } from "../hooks/useProjectSync";
 import { useAIAgent } from "../hooks/useAIAgent";
 import { exportCanvas } from "../utils/exportUtils";
+import jsPDF from "jspdf";
 import {
   searchProjectsByName,
   getTrashedProjects,
@@ -64,7 +65,7 @@ const CanvasPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const { toasts, showError, closeToast } = useToast();
+  const { toasts, showToast, showSuccess, showError, closeToast } = useToast();
 
   // Project name is now completely separate from URL
   // The actual name will be loaded from Firestore or set by user
@@ -1505,44 +1506,6 @@ const CanvasPage: React.FC = () => {
     }
   }, [selectedShapeIds, selectShape]);
 
-  // Export functions
-  const handleExportPNG = useCallback(async () => {
-    try {
-      await exportCanvas(shapes, projectName, {
-        format: "png",
-        scale: 2, // High DPI export
-        padding: 20,
-        backgroundColor: "#ffffff",
-        quality: 0.9,
-      });
-    } catch (error) {
-      // silent
-    }
-  }, [shapes, projectName]);
-
-  const handleExportSVG = useCallback(async () => {
-    try {
-      await exportCanvas(shapes, projectName, {
-        format: "svg",
-        padding: 20,
-      });
-    } catch (error) {
-      // silent
-    }
-  }, [shapes, projectName]);
-
-  const handleExportPDF = useCallback(async () => {
-    try {
-      await exportCanvas(shapes, projectName, {
-        format: "pdf",
-        padding: 20,
-        backgroundColor: canvasBackground,
-      });
-    } catch (error) {
-      // silent
-    }
-  }, [shapes, projectName, canvasBackground]);
-
   // Grid and snap handlers
   const handleToggleGrid = useCallback(() => {
     setShowGrid((prev) => {
@@ -1580,6 +1543,209 @@ const CanvasPage: React.FC = () => {
       return false;
     }
   }, []);
+
+  // Helper function to download data URL
+  const downloadDataURL = useCallback((dataURL: string, filename: string) => {
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, []);
+
+  // Export functions - Save first, then export from live Konva stage
+  const handleExportPNG = useCallback(async () => {
+    try {
+      // Step 1: Save project (if initialized)
+      if (lifecycleSaveRef.current) {
+        const saved = await handleManualSave();
+        if (!saved) {
+          showToast("error", "Failed to save project before export");
+          return;
+        }
+      }
+      // If no lifecycle save, proceed with export (project may not be initialized yet)
+
+      // Step 2: Cache and clear selection to avoid blue outlines
+      const previousSelection = [...selectedShapeIds];
+      if (selectedShapeIds.length > 0) {
+        await selectShape(null);
+        // Wait for UI to update
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+
+      // Step 3: Export from live Konva stage
+      if (!stageRef) {
+        showToast("error", "Canvas not ready for export");
+        return;
+      }
+
+      const dataURL = stageRef.toDataURL({
+        mimeType: "image/png",
+        quality: 0.95,
+        pixelRatio: 2, // High DPI
+      });
+
+      // Step 4: Download
+      const filename = `${projectName
+        .replace(/[^a-z0-9]/gi, "_")
+        .toLowerCase()}_${Date.now()}.png`;
+      downloadDataURL(dataURL, filename);
+
+      // Step 5: Restore selection
+      if (previousSelection.length > 0) {
+        await selectShapes(previousSelection);
+      }
+
+      showSuccess("Canvas exported as PNG");
+    } catch (error) {
+      showError("Export failed. Please try again.");
+    }
+  }, [
+    stageRef,
+    projectName,
+    selectedShapeIds,
+    handleManualSave,
+    selectShape,
+    selectShapes,
+    showToast,
+    showSuccess,
+    showError,
+    downloadDataURL,
+  ]);
+
+  const handleExportSVG = useCallback(async () => {
+    try {
+      // Step 1: Save project (if initialized)
+      if (lifecycleSaveRef.current) {
+        const saved = await handleManualSave();
+        if (!saved) {
+          showToast("error", "Failed to save project before export");
+          return;
+        }
+      }
+      // If no lifecycle save, proceed with export (project may not be initialized yet)
+
+      // Step 2: Cache and clear selection
+      const previousSelection = [...selectedShapeIds];
+      if (selectedShapeIds.length > 0) {
+        await selectShape(null);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+
+      // Step 3: Export using shape-based SVG generation
+      await exportCanvas(shapes, projectName, {
+        format: "svg",
+        padding: 20,
+        backgroundColor: canvasBackground,
+      });
+
+      // Step 4: Restore selection
+      if (previousSelection.length > 0) {
+        await selectShapes(previousSelection);
+      }
+
+      showSuccess("Canvas exported as SVG");
+    } catch (error) {
+      showError("Export failed. Please try again.");
+    }
+  }, [
+    shapes,
+    projectName,
+    canvasBackground,
+    selectedShapeIds,
+    handleManualSave,
+    selectShape,
+    selectShapes,
+    showToast,
+    showSuccess,
+    showError,
+  ]);
+
+  const handleExportPDF = useCallback(async () => {
+    try {
+      // Step 1: Save project (if initialized)
+      if (lifecycleSaveRef.current) {
+        const saved = await handleManualSave();
+        if (!saved) {
+          showToast("error", "Failed to save project before export");
+          return;
+        }
+      }
+      // If no lifecycle save, proceed with export (project may not be initialized yet)
+
+      // Step 2: Cache and clear selection
+      const previousSelection = [...selectedShapeIds];
+      if (selectedShapeIds.length > 0) {
+        await selectShape(null);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+
+      // Step 3: Export from live Konva stage to PNG, then embed in PDF
+      if (!stageRef) {
+        showToast("error", "Canvas not ready for export");
+        return;
+      }
+
+      const dataURL = stageRef.toDataURL({
+        mimeType: "image/png",
+        quality: 0.95,
+        pixelRatio: 2,
+      });
+
+      // Step 4: Create PDF and embed the canvas image
+      const img = new Image();
+      img.src = dataURL;
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          try {
+            const pxToMm = 0.264583;
+            const pdfWidth = img.width * pxToMm;
+            const pdfHeight = img.height * pxToMm;
+
+            const pdf = new jsPDF({
+              orientation: pdfWidth > pdfHeight ? "landscape" : "portrait",
+              unit: "mm",
+              format: [pdfWidth, pdfHeight],
+            });
+
+            pdf.addImage(dataURL, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+            const filename = `${projectName
+              .replace(/[^a-z0-9]/gi, "_")
+              .toLowerCase()}_${Date.now()}.pdf`;
+            pdf.save(filename);
+
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        };
+        img.onerror = () => reject(new Error("Failed to load canvas image"));
+      });
+
+      // Step 5: Restore selection
+      if (previousSelection.length > 0) {
+        await selectShapes(previousSelection);
+      }
+
+      showSuccess("Canvas exported as PDF");
+    } catch (error) {
+      showError("Export failed. Please try again.");
+    }
+  }, [
+    stageRef,
+    projectName,
+    selectedShapeIds,
+    handleManualSave,
+    selectShape,
+    selectShapes,
+    showToast,
+    showSuccess,
+    showError,
+  ]);
 
   // Lifecycle save - manual + refresh/close/navigate only (no periodic auto-save)
   useEffect(() => {

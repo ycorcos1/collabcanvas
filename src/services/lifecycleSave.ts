@@ -94,7 +94,8 @@ export class LifecycleSave {
   /**
    * Perform a save (with debouncing to prevent duplicates)
    */
-  private async performSave(reason: string): Promise<boolean> {
+  private async performSave(_reason: string): Promise<boolean> {
+    // _reason parameter reserved for future logging/debugging
     if (!this.getCanvasState) {
       // silent
       return false;

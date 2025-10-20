@@ -80,9 +80,8 @@ export const usePresence = (projectId: string) => {
         // Always reflect current presence snapshot to avoid stale UI
         setOnlineUsers(otherUsers);
       },
-      (error) => {
-        // silent
-        // Keep existing data instead of clearing it
+      (_error) => {
+        // silent - intentionally unused, keeping existing data instead of clearing
       }
     );
 

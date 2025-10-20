@@ -22,7 +22,6 @@ import { AlignmentGuides, calculateAlignmentGuides } from "./AlignmentGuides";
 import { Grid, snapShapeToGrid } from "./Grid";
 import { Shape as ShapeType } from "../../types/shape";
 import { getRelativePointerPosition } from "../../utils/canvasHelpers";
-import { isEditableTarget } from "../../utils/keyboard";
 import "./Canvas.css";
 
 /**
@@ -87,7 +86,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   error,
   createShape,
   updateShape,
-  deleteSelectedShapes,
+  // deleteSelectedShapes,
   selectShape,
   isShapeLockedByOther,
   getShapeSelector,
@@ -223,35 +222,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     return () => window.removeEventListener("resize", updateSize);
   }, [canvasDimensions?.width, canvasDimensions?.height]);
 
-  // Handle keyboard shortcuts (Delete key)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Do not handle Delete/Backspace if the user is typing in any editable element
-      if (
-        isEditableTarget(e.target) ||
-        isEditableTarget(document.activeElement)
-      ) {
-        return;
-      }
-      if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedShapeIds.length > 0) {
-          e.preventDefault();
-
-          // Reset cursor when deleting via keyboard
-          const stage = stageRef.current;
-          if (stage) {
-            stage.container().style.cursor = "";
-          }
-
-          // Delete all selected shapes
-          deleteSelectedShapes();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedShapeIds, deleteSelectedShapes]);
+  // Keyboard shortcuts (Delete key) are now handled globally by useKeyboardShortcuts in CanvasPage
+  // This prevents duplicate event listeners and ensures consistent behavior
 
   // Mouse wheel zoom disabled - zoom now controlled by toolbar buttons only
 

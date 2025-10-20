@@ -6,7 +6,6 @@ import {
   deleteDoc,
   onSnapshot,
   query,
-  orderBy,
   where,
   writeBatch,
   deleteField,
