@@ -727,3 +727,100 @@
     color: black;
   }
 }
+
+/* Alignment and Distribution Tools */
+.alignment-group,
+.distribute-group {
+  position: relative;
+  display: inline-flex;
+}
+
+.alignment-button,
+.distribute-button {
+  position: relative;
+}
+
+.alignment-dropdown,
+.distribute-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 4px;
+  min-width: 200px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alignment-dropdown button,
+.distribute-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.alignment-dropdown button:hover,
+.distribute-dropdown button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.alignment-dropdown button svg,
+.distribute-dropdown button svg {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.alignment-dropdown button:hover svg,
+.distribute-dropdown button:hover svg {
+  opacity: 1;
+}
+
+.dropdown-separator {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 4px 0;
+}
+
+/* Light mode adjustments for alignment tools */
+@media (prefers-color-scheme: light) {
+  .alignment-dropdown,
+  .distribute-dropdown {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .alignment-dropdown button,
+  .distribute-dropdown button {
+    color: rgba(0, 0, 0, 0.9);
+  }
+
+  .alignment-dropdown button:hover,
+  .distribute-dropdown button:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: black;
+  }
+
+  .dropdown-separator {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}

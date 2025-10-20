@@ -39,6 +39,11 @@ interface ModernToolbarProps {
   onToggleGrid?: () => void;
   onToggleSnap?: () => void;
   onGridSizeChange?: (size: 10 | 20 | 50) => void;
+  // Alignment controls
+  onAlignShapes?: (
+    alignment: "left" | "center" | "right" | "top" | "middle" | "bottom"
+  ) => void;
+  onDistributeShapes?: (direction: "horizontal" | "vertical") => void;
 }
 
 type CursorMode = "move" | "hand" | "text";
@@ -87,6 +92,8 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   onToggleGrid,
   onToggleSnap,
   onGridSizeChange: _onGridSizeChange, // Reserved for future grid size picker
+  onAlignShapes,
+  onDistributeShapes,
 }) => {
   // Initialize state from localStorage or defaults
   const [cursorMode, setCursorMode] = useState<CursorMode>(() => {
@@ -111,6 +118,8 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   const [showShapeDropdown, setShowShapeDropdown] = useState(false);
   // Drawing removed
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showAlignMenu, setShowAlignMenu] = useState(false);
+  const [showDistributeMenu, setShowDistributeMenu] = useState(false);
 
   // Drawing controls removed
 
@@ -739,6 +748,359 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
             <div className="quick-actions">
               {/* Copy/Paste buttons removed as requested */}
               {/* Duplicate action removed as requested */}
+
+              {/* Alignment Tools */}
+              {onAlignShapes && (
+                <div className="alignment-group">
+                  <button
+                    className="action-button alignment-button"
+                    onClick={() => setShowAlignMenu(!showAlignMenu)}
+                    title="Align shapes"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M3 4h18M3 12h18M3 20h18" strokeLinecap="round" />
+                    </svg>
+                  </button>
+
+                  {showAlignMenu && (
+                    <div className="modern-toolbar-dropdown alignment-dropdown">
+                      <button
+                        onClick={() => {
+                          onAlignShapes("left");
+                          setShowAlignMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <line
+                            x1="4"
+                            y1="4"
+                            x2="4"
+                            y2="12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <rect
+                            x="6"
+                            y="4"
+                            width="6"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="6"
+                            y="7"
+                            width="8"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="6"
+                            y="10"
+                            width="4"
+                            height="2"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Align Left
+                      </button>
+                      <button
+                        onClick={() => {
+                          onAlignShapes("center");
+                          setShowAlignMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <line
+                            x1="8"
+                            y1="4"
+                            x2="8"
+                            y2="12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <rect
+                            x="5"
+                            y="4"
+                            width="6"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="4"
+                            y="7"
+                            width="8"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="6"
+                            y="10"
+                            width="4"
+                            height="2"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Align Center
+                      </button>
+                      <button
+                        onClick={() => {
+                          onAlignShapes("right");
+                          setShowAlignMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <line
+                            x1="12"
+                            y1="4"
+                            x2="12"
+                            y2="12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <rect
+                            x="4"
+                            y="4"
+                            width="6"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="2"
+                            y="7"
+                            width="8"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="6"
+                            y="10"
+                            width="4"
+                            height="2"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Align Right
+                      </button>
+                      <div className="dropdown-separator" />
+                      <button
+                        onClick={() => {
+                          onAlignShapes("top");
+                          setShowAlignMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <line
+                            x1="4"
+                            y1="4"
+                            x2="12"
+                            y2="4"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <rect
+                            x="4"
+                            y="6"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="7"
+                            y="6"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="10"
+                            y="6"
+                            width="2"
+                            height="4"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Align Top
+                      </button>
+                      <button
+                        onClick={() => {
+                          onAlignShapes("middle");
+                          setShowAlignMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <line
+                            x1="4"
+                            y1="8"
+                            x2="12"
+                            y2="8"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <rect
+                            x="4"
+                            y="5"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="7"
+                            y="4"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="10"
+                            y="6"
+                            width="2"
+                            height="4"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Align Middle
+                      </button>
+                      <button
+                        onClick={() => {
+                          onAlignShapes("bottom");
+                          setShowAlignMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <line
+                            x1="4"
+                            y1="12"
+                            x2="12"
+                            y2="12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <rect
+                            x="4"
+                            y="4"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="7"
+                            y="2"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="10"
+                            y="6"
+                            width="2"
+                            height="4"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Align Bottom
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Distribute Tools */}
+              {onDistributeShapes && (
+                <div className="distribute-group">
+                  <button
+                    className="action-button distribute-button"
+                    onClick={() => setShowDistributeMenu(!showDistributeMenu)}
+                    title="Distribute shapes"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <rect x="3" y="5" width="4" height="4" />
+                      <rect x="10" y="5" width="4" height="4" />
+                      <rect x="17" y="5" width="4" height="4" />
+                    </svg>
+                  </button>
+
+                  {showDistributeMenu && (
+                    <div className="modern-toolbar-dropdown distribute-dropdown">
+                      <button
+                        onClick={() => {
+                          onDistributeShapes("horizontal");
+                          setShowDistributeMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <rect
+                            x="2"
+                            y="5"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="7"
+                            y="5"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="12"
+                            y="5"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Distribute Horizontally
+                      </button>
+                      <button
+                        onClick={() => {
+                          onDistributeShapes("vertical");
+                          setShowDistributeMenu(false);
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                          <rect
+                            x="5"
+                            y="2"
+                            width="6"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="5"
+                            y="7"
+                            width="6"
+                            height="2"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="5"
+                            y="12"
+                            width="6"
+                            height="2"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        Distribute Vertically
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <button
                 className="action-button"

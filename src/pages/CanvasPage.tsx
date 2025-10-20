@@ -30,7 +30,16 @@ import {
 import { sendCollaborationInvitation } from "../services/collaboration";
 import { LifecycleSave } from "../services/lifecycleSave";
 import { updateProjectSlug } from "../services/slugs";
-// Alignment utils removed - will be added back when needed in right panel
+import {
+  alignLeft,
+  alignRight,
+  alignCenterHorizontal,
+  alignTop,
+  alignBottom,
+  alignCenterVertical,
+  distributeHorizontally,
+  distributeVertically,
+} from "../utils/alignmentUtils";
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
 import { ModernToolbar } from "../components/ModernToolbar/ModernToolbar";
 import { RightPanel } from "../components/RightPanel/RightPanel";
@@ -65,7 +74,8 @@ const CanvasPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const { toasts, showToast, showSuccess, showError, closeToast } = useToast();
+  const { toasts, showToast, showSuccess, showError, showInfo, closeToast } =
+    useToast();
 
   // Project name is now completely separate from URL
   // The actual name will be loaded from Firestore or set by user
@@ -133,6 +143,79 @@ const CanvasPage: React.FC = () => {
       } catch {}
     },
     [selectedShapeIds, updateShape]
+  );
+
+  // Alignment handlers
+  const handleAlignShapes = useCallback(
+    (alignment: "left" | "center" | "right" | "top" | "middle" | "bottom") => {
+      if (selectedShapeIds.length < 2) {
+        showInfo("Select at least 2 shapes to align");
+        return;
+      }
+
+      const selectedShapes = shapes.filter((s) =>
+        selectedShapeIds.includes(s.id)
+      );
+      let updates: Partial<Shape>[] = [];
+
+      switch (alignment) {
+        case "left":
+          updates = alignLeft(selectedShapes);
+          break;
+        case "right":
+          updates = alignRight(selectedShapes);
+          break;
+        case "center":
+          updates = alignCenterHorizontal(selectedShapes);
+          break;
+        case "top":
+          updates = alignTop(selectedShapes);
+          break;
+        case "bottom":
+          updates = alignBottom(selectedShapes);
+          break;
+        case "middle":
+          updates = alignCenterVertical(selectedShapes);
+          break;
+      }
+
+      // Apply updates
+      updates.forEach((update) => {
+        if (update.id) {
+          updateShape(update.id, update);
+        }
+      });
+
+      showSuccess(`Shapes aligned ${alignment}`);
+    },
+    [shapes, selectedShapeIds, updateShape, showInfo, showSuccess]
+  );
+
+  const handleDistributeShapes = useCallback(
+    (direction: "horizontal" | "vertical") => {
+      if (selectedShapeIds.length < 3) {
+        showInfo("Select at least 3 shapes to distribute");
+        return;
+      }
+
+      const selectedShapes = shapes.filter((s) =>
+        selectedShapeIds.includes(s.id)
+      );
+      const updates =
+        direction === "horizontal"
+          ? distributeHorizontally(selectedShapes)
+          : distributeVertically(selectedShapes);
+
+      // Apply updates
+      updates.forEach((update) => {
+        if (update.id) {
+          updateShape(update.id, update);
+        }
+      });
+
+      showSuccess(`Shapes distributed ${direction}ly`);
+    },
+    [shapes, selectedShapeIds, updateShape, showInfo, showSuccess]
   );
 
   // History management for undo/redo (init with empty, wire later)
@@ -2212,6 +2295,8 @@ const CanvasPage: React.FC = () => {
         onToggleGrid={handleToggleGrid}
         onToggleSnap={handleToggleSnap}
         onGridSizeChange={handleGridSizeChange}
+        onAlignShapes={handleAlignShapes}
+        onDistributeShapes={handleDistributeShapes}
       />
 
       {/* Connection Status */}

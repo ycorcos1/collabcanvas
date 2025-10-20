@@ -335,10 +335,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       id: `page${Date.now()}`, // Use timestamp for unique ID
       name: proposedName,
     };
-    
+
     const updatedPages = [...pages, newPage];
     setPages(updatedPages);
-    
+
     // Auto-switch to the new page
     if (onPageSwitch) {
       onPageSwitch(newPage.id);
@@ -405,7 +405,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       setPages((prev: { id: string; name: string }[]) =>
         prev.filter((page: { id: string; name: string }) => page.id !== pageId)
       );
-      
+
       // If deleting the current page, switch to the first remaining page
       if (pageId === currentPageId && onPageSwitch) {
         const remainingPages = pages.filter((page) => page.id !== pageId);
@@ -453,7 +453,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         name: `${copiedPage.name} Copy`,
       };
       setPages((prev: { id: string; name: string }[]) => [...prev, newPage]);
-      
+
       // Auto-switch to the new page
       if (onPageSwitch) {
         onPageSwitch(newPage.id);
