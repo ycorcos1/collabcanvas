@@ -1130,7 +1130,7 @@ export const createFromTemplateTool: Tool = {
       const groupId = `tpl-${Date.now()}`;
       const createdShapes: string[] = [];
       for (const templateShape of template.shapes) {
-        const shapeData: Partial<Shape> = {
+        const shapeData = {
           type: templateShape.type as any,
           x: x + (templateShape.x || 0),
           y: y + (templateShape.y || 0),
@@ -1138,7 +1138,7 @@ export const createFromTemplateTool: Tool = {
           height: templateShape.height || 100,
           color: colorNameToHex(templateShape.color || "#FF0000"),
           groupId,
-        };
+        } as Partial<Shape>;
 
         // Add type-specific properties
         if (templateShape.text) {

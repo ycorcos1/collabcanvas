@@ -32,6 +32,7 @@ export interface Shape {
   zIndex: number; // Layer order (higher values appear on top)
   visible?: boolean; // Visibility toggle (default: true)
   name?: string; // Custom layer name (optional)
+  groupId?: string; // Optional grouping identifier for composite shapes
   createdBy: string; // User ID who created the shape
   createdAt: number; // Creation timestamp (Unix time)
   updatedAt: number; // Last modification timestamp
@@ -77,6 +78,7 @@ export interface ShapeUpdate {
   zIndex?: number;
   visible?: boolean; // New visibility state
   name?: string; // New custom layer name
+  groupId?: string;
   text?: string; // New text content (for text shapes)
   fontSize?: number; // New font size (for text shapes)
   fontFamily?: string; // New font family (for text shapes)
