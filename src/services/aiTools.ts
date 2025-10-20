@@ -1429,29 +1429,27 @@ export const clearCanvasTool: Tool = {
   parameters: { type: "object", properties: {} },
   execute: async (_args: Record<string, any>, context: AICommandContext) => {
     try {
-      const ids = context.shapes.map((s) => s.id);
-      for (const id of ids) {
-        try {
-          context.shapeActions.deleteShape(id);
-        } catch {}
+      // Prefer app-provided atomic clear (matches right-panel Clear Canvas behavior)
+      if (typeof (context.shapeActions as any)?.clearAllShapes === "function") {
+        await (context.shapeActions as any).clearAllShapes();
+      } else {
+        // Fallback: delete shapes one by one
+        const ids = context.shapes.map((s) => s.id);
+        for (const id of ids) {
+          try {
+            await context.shapeActions.deleteShape(id);
+          } catch {}
+        }
       }
+      // Deselect after clear
       try {
         context.shapeActions.selectShape(null);
-      } catch {}
-
-      // Request an auto-save from the app (CanvasPage listens for this event)
-      try {
-        window.dispatchEvent(
-          new CustomEvent("ai:autoSaveRequested", {
-            detail: { reason: "clear_canvas" },
-          })
-        );
       } catch {}
 
       return {
         success: true,
         message: "Canvas cleared",
-        data: { removed: ids.length },
+        data: { removed: (context.shapes || []).length },
       };
     } catch (e: any) {
       return {
