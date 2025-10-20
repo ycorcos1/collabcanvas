@@ -534,31 +534,27 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       // Drawing tool disabled
 
-      // Finish text drag box -> create textbox and enter edit
+      // Finish text drag box or click -> create textbox and enter edit
       if (textDragBox && drawStartPos) {
         const w = Math.max(50, textDragBox.width);
         const h = Math.max(24, textDragBox.height);
-        // Use distance threshold to prevent click-only creation
+        // Detect click vs drag
         const dx = Math.abs(textDragBox.x - drawStartPos.x);
         const dy = Math.abs(textDragBox.y - drawStartPos.y);
         const dragDistance = Math.hypot(dx, dy);
-        if (dragDistance < 8) {
-          setTextDragBox(null);
-          setDrawStartPos(null);
-          return;
-        }
-        // Prevent click-only text creation (require minimal drag)
-        if (Math.abs(w) < 8 || Math.abs(h) < 8) {
-          setTextDragBox(null);
-          setDrawStartPos(null);
-          return;
-        }
+        const isClickOnly = dragDistance < 8 || (Math.abs(w) < 8 && Math.abs(h) < 8);
+
+        const boxX = isClickOnly ? drawStartPos.x : textDragBox.x;
+        const boxY = isClickOnly ? drawStartPos.y : textDragBox.y;
+        const boxW = isClickOnly ? 200 : w;
+        const boxH = isClickOnly ? 50 : h;
+
         const textShape = {
           type: "text" as const,
-          x: textDragBox.x,
-          y: textDragBox.y,
-          width: w,
-          height: h,
+          x: boxX,
+          y: boxY,
+          width: boxW,
+          height: boxH,
           color: currentColor || "#FF0000",
           text: "",
           fontSize: 16,
