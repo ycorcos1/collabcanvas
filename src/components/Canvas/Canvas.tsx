@@ -22,6 +22,7 @@ import { AlignmentGuides, calculateAlignmentGuides } from "./AlignmentGuides";
 import { Grid, snapShapeToGrid } from "./Grid";
 import { Shape as ShapeType } from "../../types/shape";
 import { getRelativePointerPosition } from "../../utils/canvasHelpers";
+import { isEditableTarget } from "../../utils/keyboard";
 import "./Canvas.css";
 
 /**
@@ -225,6 +226,10 @@ export const Canvas: React.FC<CanvasProps> = ({
   // Handle keyboard shortcuts (Delete key)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Do not handle Delete/Backspace if the user is typing in any editable element
+      if (isEditableTarget(e.target) || isEditableTarget(document.activeElement)) {
+        return;
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedShapeIds.length > 0) {
           e.preventDefault();
