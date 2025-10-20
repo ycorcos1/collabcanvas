@@ -18,6 +18,9 @@ export interface CanvasState {
   canvasBackground: string;
   canvasDimensions: { width: number; height: number };
   projectName?: string; // Project name for auto-save on rename
+  currentPageId?: string; // Current active page ID
+  pageMetadata?: { id: string; name: string }[]; // Page names and IDs
+  objectNames?: Record<string, string>; // Object custom names
 }
 
 export class LifecycleSave {
@@ -135,6 +138,9 @@ export class LifecycleSave {
       canvasBackground: state.canvasBackground,
       canvasDimensions: state.canvasDimensions,
       projectName: state.projectName,
+      currentPageId: state.currentPageId,
+      pageMetadata: state.pageMetadata,
+      objectNames: state.objectNames,
     });
 
     if (this.initialState === currentState) {
@@ -159,6 +165,21 @@ export class LifecycleSave {
       // Only include projectName if it's defined
       if (state.projectName !== undefined && state.projectName !== null) {
         updateData.name = state.projectName;
+      }
+
+      // Include currentPageId if defined
+      if (state.currentPageId !== undefined) {
+        updateData.currentPageId = state.currentPageId;
+      }
+
+      // Include pageMetadata if defined
+      if (state.pageMetadata !== undefined) {
+        updateData.pageMetadata = state.pageMetadata;
+      }
+
+      // Include objectNames if defined
+      if (state.objectNames !== undefined) {
+        updateData.objectNames = state.objectNames;
       }
 
       await updateDoc(projectRef, updateData);

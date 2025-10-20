@@ -1323,20 +1323,36 @@ const CanvasPage: React.FC = () => {
 
   // Handle page data changes from LeftSidebar
   const handlePageDataChange = useCallback(
-    (
+    async (
       pages: { id: string; name: string }[],
       objectNames: Record<string, string>
     ) => {
+      // Update local state
       setInMemoryPages(pages);
       setInMemoryObjectNames(objectNames);
+
+      // Mark as having unsaved changes
+      setHasUnsavedChanges(true);
+
+      // Trigger an auto-save after a short delay to persist to Firestore
+      if (lifecycleSaveRef.current) {
+        try {
+          await lifecycleSaveRef.current.saveNow();
+        } catch (error) {
+          // silent - will be retried on next manual save or navigation
+        }
+      }
     },
     []
   );
 
   // Handle page switching
   const handlePageSwitch = useCallback(
-    (pageId: string) => {
-      // Update current page data in memory before switching (no localStorage saving)
+    async (pageId: string) => {
+      // Don't switch to the same page
+      if (pageId === currentPageId) return;
+
+      // Save current page's canvas background before switching
       const updatedPageData = {
         ...pageCanvasData,
         [currentPageId]: {
@@ -1361,10 +1377,19 @@ const CanvasPage: React.FC = () => {
         setCanvasBackground("#ffffff");
       }
 
-      // Update page data in memory only (no localStorage until project save)
+      // Update page data in memory
       setPageCanvasData(updatedPageData);
+
+      // Save current page ID to Firestore immediately
+      if (lifecycleSaveRef.current && actualProjectId) {
+        try {
+          await lifecycleSaveRef.current.saveNow();
+        } catch (error) {
+          // silent - will retry on next save
+        }
+      }
     },
-    [pageCanvasData, currentPageId, shapes, canvasBackground]
+    [pageCanvasData, currentPageId, shapes, canvasBackground, actualProjectId]
   );
 
   // History operations
@@ -1758,6 +1783,9 @@ const CanvasPage: React.FC = () => {
       canvasBackground,
       canvasDimensions,
       projectName, // Include project name for auto-save on rename
+      currentPageId, // Include current page ID for page switching persistence
+      pageMetadata: inMemoryPages, // Include page metadata for pages feature
+      objectNames: inMemoryObjectNames, // Include object names
     }));
 
     lifecycleSaveRef.current = lifecycleSave;
