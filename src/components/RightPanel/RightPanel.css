@@ -128,6 +128,34 @@
   border-color: rgba(220, 38, 38, 0.55);
 }
 
+/* Small helper layouts for multi-select tools */
+.size-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.mini-button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.mini-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-focus);
+}
+
 /* Online Panel Specific Styling */
 .online-panel .section-content {
   padding: 0 16px 16px;

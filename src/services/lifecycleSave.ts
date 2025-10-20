@@ -50,7 +50,7 @@ export class LifecycleSave {
         projectName: state.projectName,
       });
     } catch (error) {
-      console.error("Failed to capture initial state:", error);
+      // silent
       this.initialState = null;
     }
 
@@ -67,9 +67,7 @@ export class LifecycleSave {
 
     window.addEventListener("beforeunload", this.beforeUnloadHandler);
 
-    console.log(
-      "✅ Lifecycle save initialized (manual + refresh/close/navigate)"
-    );
+    // silent
   }
 
   /**
@@ -80,7 +78,7 @@ export class LifecycleSave {
     await this.performSave("Save on navigate");
 
     this.cleanup();
-    console.log("Lifecycle save stopped");
+    // silent
   }
 
   /**
@@ -98,18 +96,18 @@ export class LifecycleSave {
    */
   private async performSave(reason: string): Promise<boolean> {
     if (!this.getCanvasState) {
-      console.log("⏭️ Save skipped: No canvas state getter");
+      // silent
       return false;
     }
 
     if (this.isSaving) {
-      console.log("⏭️ Save skipped: Already saving");
+      // silent
       return false;
     }
 
     const now = Date.now();
     if (now - this.lastSaveTime < this.minSaveInterval) {
-      console.log("⏭️ Save skipped: Too soon since last save");
+      // silent
       return false;
     }
 
@@ -121,12 +119,12 @@ export class LifecycleSave {
       state.canvasDimensions.width === undefined ||
       state.canvasDimensions.height === undefined
     ) {
-      console.log("⏭️ Save skipped: Canvas dimensions not ready");
+      // silent
       return false;
     }
 
     if (state.canvasBackground === undefined) {
-      console.log("⏭️ Save skipped: Canvas background not ready");
+      // silent
       return false;
     }
 
@@ -139,7 +137,7 @@ export class LifecycleSave {
     });
 
     if (this.initialState === currentState) {
-      console.log(`⏭️ ${reason} skipped: No changes detected`);
+      // silent
       return false;
     }
 
@@ -147,7 +145,7 @@ export class LifecycleSave {
       this.isSaving = true;
 
       // Allow saving even with 0 shapes (to clear canvas)
-      console.log(`💾 ${reason}...`);
+      // silent
 
       const projectRef = doc(firestore, "projects", this.projectId);
       const updateData: any = {
@@ -169,19 +167,13 @@ export class LifecycleSave {
       // Update initial state after successful save
       this.initialState = currentState;
 
-      console.log(`✅ ${reason} complete`);
+      // silent
       return true;
     } catch (error: any) {
-      console.error(`❌ ${reason} failed:`, error);
+      // silent
 
       // Log what we tried to save for debugging
-      if (import.meta.env.DEV) {
-        console.error("Failed to save state:", {
-          shapesCount: state.shapes.length,
-          canvasBackground: state.canvasBackground,
-          canvasDimensions: state.canvasDimensions,
-        });
-      }
+      // silent
 
       return false;
     } finally {
@@ -195,14 +187,12 @@ export class LifecycleSave {
    */
   private performSaveSync(_state: CanvasState): void {
     try {
-      console.log("💾 Save on close/refresh...");
+      // silent
 
       // Fire async save (best-effort)
-      this.performSave("Save on close/refresh").catch((error) => {
-        console.error("Unload save failed:", error);
-      });
+      this.performSave("Save on close/refresh").catch(() => {});
     } catch (error) {
-      console.error("Sync save error:", error);
+      // silent
     }
   }
 

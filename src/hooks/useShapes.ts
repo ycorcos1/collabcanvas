@@ -438,8 +438,7 @@ export const useShapes = (projectId: string, pageId: string) => {
             ...toSelect.map((shapeId) =>
               shapesService.updateShape(projectId, shapeId, {
                 selectedBy: user.id,
-                selectedByName:
-                  user.displayName || user.email || "Unknown",
+                selectedByName: user.displayName || user.email || "Unknown",
                 selectedByColor: user.color || "#000000",
                 selectedAt: Date.now(),
               } as any)
@@ -583,7 +582,9 @@ export const useShapes = (projectId: string, pageId: string) => {
   // Helper: select all shapes by groupId
   const selectGroup = useCallback(
     async (groupId: string) => {
-      const ids = shapes.filter((s) => (s as any).groupId === groupId).map((s) => s.id);
+      const ids = shapes
+        .filter((s) => (s as any).groupId === groupId)
+        .map((s) => s.id);
       if (ids.length) {
         await selectShapes(ids);
       }

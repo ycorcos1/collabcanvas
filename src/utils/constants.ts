@@ -18,5 +18,3 @@ export const DEFAULT_SHAPE_COLOR = "#FF0000";
 
 // Timing
 export const DEBOUNCE_DELAY_MS = 200;
-
-

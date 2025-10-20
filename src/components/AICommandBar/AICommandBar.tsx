@@ -300,4 +300,3 @@ export const AICommandBar: React.FC<AICommandBarProps> = ({
     </div>
   );
 };
-

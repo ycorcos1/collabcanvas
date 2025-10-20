@@ -29,7 +29,9 @@ interface ModernToolbarProps {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
-  onCursorModeChange?: (mode: string) => void;
+  onCursorModeChange?: (mode: CursorMode) => void;
+  // Sync from parent when cursor mode changes externally (e.g., after text creation)
+  currentCursorMode?: string | CursorMode;
   // Grid and snap controls
   showGrid?: boolean;
   gridSize?: 10 | 20 | 50;
@@ -79,6 +81,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   onZoomOut,
   onZoomReset,
   onCursorModeChange,
+  currentCursorMode,
   showGrid = false,
   snapToGridEnabled = false,
   onToggleGrid,
@@ -144,6 +147,17 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
     return () => clearTimeout(debounceTimer);
   }, [cursorMode, shapeMode, lastNonImageShape, isTextMode]);
+
+  // Sync external cursor mode from parent (e.g., revert to move after using text tool)
+  useEffect(() => {
+    if (!currentCursorMode) return;
+    if (currentCursorMode !== cursorMode) {
+      setCursorMode(currentCursorMode);
+    }
+    if (currentCursorMode !== "text" && isTextMode) {
+      setIsTextMode(false);
+    }
+  }, [currentCursorMode]);
 
   const cursorTools = [
     {

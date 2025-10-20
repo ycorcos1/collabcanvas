@@ -259,4 +259,3 @@ export const AIChat: React.FC<AIChatProps> = ({
     </div>
   );
 };
-

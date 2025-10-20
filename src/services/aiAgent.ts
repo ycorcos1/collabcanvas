@@ -1462,14 +1462,34 @@ const routeIntent = (
     if (!hasSelected && context.shapes.length >= 2) {
       const idsAll = context.shapes.map((s) => s.id);
       return [
-        { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
-        { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
-        { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+        {
+          tool: "select_many_shapes",
+          intentType: "select",
+          args: { shapeIds: idsAll },
+        },
+        {
+          tool: "align_shapes",
+          intentType: "align",
+          args: { alignment: "center" },
+        },
+        {
+          tool: "distribute_shapes",
+          intentType: "distribute",
+          args: { direction: "vertical" },
+        },
       ];
     }
     return [
-      { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
-      { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+      {
+        tool: "align_shapes",
+        intentType: "align",
+        args: { alignment: "center" },
+      },
+      {
+        tool: "distribute_shapes",
+        intentType: "distribute",
+        args: { direction: "vertical" },
+      },
     ];
   }
 
@@ -1536,25 +1556,51 @@ const routeIntent = (
           const ySpread = Math.max(...ys) - Math.min(...ys);
           const inferred = xSpread >= ySpread ? "horizontal" : "vertical";
           return [
-            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
-            { tool: "distribute_shapes", intentType: "distribute", args: { direction: inferred } },
+            {
+              tool: "select_many_shapes",
+              intentType: "select",
+              args: { shapeIds: idsAll },
+            },
+            {
+              tool: "distribute_shapes",
+              intentType: "distribute",
+              args: { direction: inferred },
+            },
           ];
         }
         return [
-          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
-          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
+          {
+            tool: "select_many_shapes",
+            intentType: "select",
+            args: { shapeIds: idsAll },
+          },
+          {
+            tool: "distribute_shapes",
+            intentType: "distribute",
+            args: { direction: "horizontal" },
+          },
         ];
       }
       if (isSpaceEvenly) {
         // No selection and <3 shapes: nothing to do, but avoid failure
         return null;
       }
-      return [{ tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } }];
+      return [
+        {
+          tool: "distribute_shapes",
+          intentType: "distribute",
+          args: { direction: "horizontal" },
+        },
+      ];
     }
   }
 
   // CLEAR CANVAS
-  if (/\b(clear (the )?canvas|delete (everything|all)|remove everything)\b/.test(t)) {
+  if (
+    /\b(clear (the )?canvas|delete (everything|all)|remove everything)\b/.test(
+      t
+    )
+  ) {
     return [{ tool: "clear_canvas", intentType: "clear", args: {} }];
   }
 

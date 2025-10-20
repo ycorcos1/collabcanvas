@@ -1882,7 +1882,7 @@ const CanvasPage: React.FC = () => {
           onRedo={handleRedo}
           onCopy={handleCopy}
           onPaste={handlePaste}
-        onDeleteSelected={handleSafeDelete}
+          onDeleteSelected={handleSafeDelete}
           onRenameShape={handleRenameShape}
           onSave={handleManualSave}
           onNewProject={handleNewProject}

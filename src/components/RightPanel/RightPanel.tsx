@@ -86,6 +86,21 @@ export const RightPanel: React.FC<RightPanelProps> = ({
     });
   };
 
+  // Batch helpers for multi-select
+  const handleBatchColor = (value: string) => handleShapeUpdate("color", value);
+  // const handleBatchSize = (width?: number, height?: number) => {
+  //   selectedShapes.forEach((shape) => {
+  //     const updates: Partial<Shape> = {};
+  //     if (typeof width === "number" && !Number.isNaN(width))
+  //       updates.width = Math.max(1, width);
+  //     if (typeof height === "number" && !Number.isNaN(height))
+  //       updates.height = Math.max(1, height);
+  //     if (Object.keys(updates).length) onUpdateShape(shape.id, updates);
+  //   });
+  // };
+  // Align controls removed from UI
+  // const handleDistribute = (direction: "horizontal" | "vertical") => { /* removed from UI */ };
+
   return (
     <div className="right-panel">
       {/* Header Tabs */}
@@ -288,22 +303,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                     </span>
                   </div>
                   <div className="section-content">
-                    {selectedShapes.length > 1 && (
-                      <div className="multi-select-actions">
-                        <button className="pill-button" onClick={onCopy}>
-                          Copy
-                        </button>
-                        <button className="pill-button" onClick={onPaste}>
-                          Paste
-                        </button>
-                        <button
-                          className="danger-button"
-                          onClick={onDeleteSelected}
-                        >
-                          Delete Selected
-                        </button>
-                      </div>
-                    )}
+                    {selectedShapes.length > 1 && <></>}
                     {selectedShapes.length === 1 ? (
                       <>
                         {/* Single shape - show all properties */}
@@ -360,16 +360,25 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                       </>
                     ) : (
                       <>
-                        {/* Multiple shapes - show only copy/paste/delete */}
+                        <div className="property-row">
+                          <label>Color (All)</label>
+                          <input
+                            type="color"
+                            className="color-input"
+                            value={selectedShapes[0]?.color || "#000000"}
+                            onChange={(e) => handleBatchColor(e.target.value)}
+                          />
+                        </div>
+                        {/* Align controls removed per request */}
                         <div className="multi-select-actions">
-                          <button className="action-button" onClick={onCopy}>
+                          <button className="pill-button" onClick={onCopy}>
                             Copy
                           </button>
-                          <button className="action-button" onClick={onPaste}>
+                          <button className="pill-button" onClick={onPaste}>
                             Paste
                           </button>
                           <button
-                            className="delete-button"
+                            className="danger-button"
                             onClick={onDeleteSelected}
                           >
                             Delete Selected
@@ -488,10 +497,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                       <button
                         className="style-button"
                         onClick={() =>
-                          handleShapeUpdate(
-                            "bold",
-                            !selectedShapes[0]?.bold
-                          )
+                          handleShapeUpdate("bold", !selectedShapes[0]?.bold)
                         }
                       >
                         <strong>B</strong>

@@ -57,7 +57,18 @@ export const TextBox: React.FC<TextBoxProps> = ({
     const node = textRef.current;
     if (!node) return;
     node.getLayer()?.batchDraw();
-  }, [bold, italic, underline, fontSize, fontFamily, fill, width, height, align, lineHeight]);
+  }, [
+    bold,
+    italic,
+    underline,
+    fontSize,
+    fontFamily,
+    fill,
+    width,
+    height,
+    align,
+    lineHeight,
+  ]);
 
   // Attach transformer when selected
   useEffect(() => {
@@ -220,7 +231,9 @@ export const TextBox: React.FC<TextBoxProps> = ({
         fontSize={fontSize}
         fontFamily={fontFamily}
         fill={fill}
-        fontStyle={`${bold ? "bold" : ""} ${italic ? "italic" : ""}`.trim() || undefined}
+        fontStyle={
+          `${bold ? "bold" : ""} ${italic ? "italic" : ""}`.trim() || undefined
+        }
         textDecoration={underline ? "underline" : undefined}
         width={width}
         height={height}

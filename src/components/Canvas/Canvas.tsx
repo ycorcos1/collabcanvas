@@ -227,7 +227,10 @@ export const Canvas: React.FC<CanvasProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Do not handle Delete/Backspace if the user is typing in any editable element
-      if (isEditableTarget(e.target) || isEditableTarget(document.activeElement)) {
+      if (
+        isEditableTarget(e.target) ||
+        isEditableTarget(document.activeElement)
+      ) {
         return;
       }
       if (e.key === "Delete" || e.key === "Backspace") {
