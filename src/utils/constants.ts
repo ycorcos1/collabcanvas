@@ -5,7 +5,7 @@
  */
 
 // Presence & Collaboration
-export const PRESENCE_UPDATE_INTERVAL_MS = 30_000; // 30 seconds
+export const PRESENCE_UPDATE_INTERVAL_MS = 5_000; // 5 seconds heartbeat for near-real-time presence
 
 // Canvas & Shapes
 export const DEFAULT_SHAPE_MARGIN_PX = 20;

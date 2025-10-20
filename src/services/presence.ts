@@ -6,7 +6,14 @@
  * This reduces Firebase writes by 99% compared to heartbeat-based presence
  */
 
-import { ref, set, onValue, onDisconnect, remove, update } from "firebase/database";
+import {
+  ref,
+  set,
+  onValue,
+  onDisconnect,
+  remove,
+  update,
+} from "firebase/database";
 import { database } from "./firebase";
 
 export interface PresenceUser {
@@ -102,8 +109,8 @@ export function subscribeToPresence(
           if (userData && typeof userData === "object") {
             const u = userData as PresenceUser;
             const seen = u.lastSeen || u.joinedAt;
-            // Consider online if seen within last 15 seconds
-            if (now - seen < 15000) {
+            // Consider online if seen within last 10 seconds
+            if (now - seen < 10000) {
               users.push(u);
             }
           }
