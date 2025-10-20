@@ -372,9 +372,8 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
   };
 
   const handleToggleVisibility = (shape: Shape) => {
-    onUpdateShape(shape.id, {
-      visible: shape.visible === false ? true : false,
-    });
+    const nextVisible = shape.visible === false ? true : false;
+    onUpdateShape(shape.id, { visible: nextVisible });
   };
 
   const handleSelectLayer = (shapeId: string) => {

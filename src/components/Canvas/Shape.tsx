@@ -432,7 +432,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         : "transparent",
       shadowOffset: { x: 0, y: 2 },
       shadowBlur: isSelected || selectedByOther ? 8 : 0,
-      listening: !isPreview && !isShapeToolActive, // Disable listening if shape tool is active
+      listening: isVisible && !isPreview && !isShapeToolActive, // Disable events if hidden
       dash: isPreview ? [5, 5] : undefined,
       opacity: isLockedByOther ? 0.7 : 1, // Slightly transparent if locked by another user
       rotation: shape.rotation || 0, // Apply rotation from shape data
