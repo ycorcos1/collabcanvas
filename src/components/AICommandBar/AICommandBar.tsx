@@ -185,6 +185,7 @@ export const AICommandBar: React.FC<AICommandBarProps> = ({
             placeholder={placeholder}
             disabled={isProcessing}
             className="ai-command-bar-input"
+            role="textbox"
           />
           <button
             type="submit"

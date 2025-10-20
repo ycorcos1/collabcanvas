@@ -227,6 +227,7 @@ export const AIChat: React.FC<AIChatProps> = ({
       <form className="ai-chat-input-form" onSubmit={handleSubmit}>
         <textarea
           className="ai-chat-input"
+          role="textbox"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}

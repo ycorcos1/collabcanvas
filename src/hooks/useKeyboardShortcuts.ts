@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import { isEditableTarget } from "../utils/keyboard";
 
 /**
  * Keyboard Shortcuts Hook - Handles global keyboard shortcuts
@@ -32,21 +33,10 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in inputs, textareas, or contentEditable elements
-      const target = event.target as HTMLElement;
-      const isInputElement =
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target.contentEditable === "true" ||
-        target.isContentEditable;
-
-      // Also skip when the focused element is our AI chat input explicitly
-      const activeEl = document.activeElement as HTMLElement | null;
-      const isAIChatInput =
-        !!activeEl && activeEl.classList?.contains("ai-chat-input");
-
-      if (isInputElement || isAIChatInput) {
-        // Allow all default behavior in input fields (incl. AI chat)
-        return;
+      const target = event.target as HTMLElement | null;
+      const activeEl = (document.activeElement as HTMLElement | null) || null;
+      if (isEditableTarget(target) || isEditableTarget(activeEl)) {
+        return; // let native editing behavior happen
       }
 
       // If user has a text selection, allow native copy/cut/paste
@@ -90,7 +80,7 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
         return;
       }
 
-      // Delete
+      // Delete (only when not typing in an editable)
       if (
         (event.key === "Delete" || event.key === "Backspace") &&
         handlers.onDelete

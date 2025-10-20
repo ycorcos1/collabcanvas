@@ -281,11 +281,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             if (onUndo) onUndo();
             break;
         }
-      } else if (event.key === "Delete" || event.key === "Backspace") {
-        if (selectedShapeIds.length > 0 && onDeleteSelected) {
-          event.preventDefault();
-          onDeleteSelected();
-        }
       }
     };
 
