@@ -26,87 +26,53 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
   projectId,
 }) => {
   const { onlineUsers, currentUser, getUserCount } = usePresence(projectId);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
 
+  // Fetch ownerId once for role labeling; presence remains the source of truth for who is online
   useEffect(() => {
-    const loadOnline = async () => {
+    const fetchOwner = async () => {
       try {
         const projectRef = doc(db, "projects", projectId);
         const snap = await getDoc(projectRef);
-        let ownerId: string | null = null;
-        let collaborators: string[] = [];
-        let ids: string[] = [];
         if (snap.exists()) {
           const data: any = snap.data();
-          ownerId = data.ownerId as string;
-          collaborators = (data.collaborators || []) as string[];
-          ids = [
-            ownerId,
-            ...collaborators.filter((c: string) => c !== ownerId),
-          ];
+          setOwnerId(data.ownerId as string);
         } else {
-          // Still render from presence even if project doc is not yet available
-          console.log("[UserPresence] Project not found:", projectId);
+          setOwnerId(null);
         }
-
-        // Debug logging
-        if (import.meta.env.DEV) {
-          console.log("[UserPresence] Debug:", {
-            projectId,
-            ownerId,
-            collaborators,
-            ids,
-            currentUser: currentUser?.id,
-            onlineUsersCount: onlineUsers.length,
-            onlineUsers: onlineUsers.map((u) => ({
-              id: u.userId,
-              name: u.userName,
-            })),
-          });
-        }
-
-        // Source of truth: presence list + current user
-        const out: Member[] = [];
-
-        // 1) Add current user first
-        if (currentUser) {
-          out.push({
-            id: currentUser.id,
-            name: currentUser.displayName || "You",
-            role:
-              ownerId && currentUser.id === ownerId ? "Host" : "Collaborator",
-            photoURL: currentUser.photoURL,
-            online: true,
-            color: currentUser.color || getUserColor(currentUser.id),
-          });
-        }
-
-        // 2) Add everyone from presence (excluding current user)
-        onlineUsers.forEach((u) => {
-          if (currentUser && u.userId === currentUser.id) return;
-          out.push({
-            id: u.userId,
-            name: u.userName || "User",
-            role: ownerId && u.userId === ownerId ? "Host" : "Collaborator",
-            photoURL: (u as any).photoURL,
-            online: true,
-            color: u.userColor || getUserColor(u.userId),
-          });
-        });
-
-        if (import.meta.env.DEV) {
-          console.log("[UserPresence] Final members list:", out.length, out);
-        }
-
-        setMembers(out);
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error("[UserPresence] Error loading online users:", error);
-        }
+      } catch {
+        setOwnerId(null);
       }
     };
-    loadOnline();
-  }, [projectId, onlineUsers, currentUser]);
+    fetchOwner();
+  }, [projectId]);
+
+  // Build members list directly from presence each render to avoid stale UI
+  const members: Member[] = useMemo(() => {
+    const list: Member[] = [];
+    if (currentUser) {
+      list.push({
+        id: currentUser.id,
+        name: currentUser.displayName || "You",
+        role: ownerId && currentUser.id === ownerId ? "Host" : "Collaborator",
+        photoURL: currentUser.photoURL,
+        online: true,
+        color: currentUser.color || getUserColor(currentUser.id),
+      });
+    }
+    onlineUsers.forEach((u) => {
+      if (currentUser && u.userId === currentUser.id) return;
+      list.push({
+        id: u.userId,
+        name: u.userName || "User",
+        role: ownerId && u.userId === ownerId ? "Host" : "Collaborator",
+        photoURL: (u as any).photoURL,
+        online: true,
+        color: u.userColor || getUserColor(u.userId),
+      });
+    });
+    return list;
+  }, [onlineUsers, currentUser, ownerId]);
 
   // Memoize sorted members for performance
   const sortedMembers = useMemo(
@@ -146,7 +112,7 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
         ))}
       </div>
 
-      {getUserCount() === 1 && (
+      {sortedMembers.length <= 1 && (
         <div className="empty-message">Invite others to collaborate!</div>
       )}
     </div>
