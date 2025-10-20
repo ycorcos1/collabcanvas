@@ -159,12 +159,7 @@ export const initializeAIAgent = (): void => {
   const basicTools = getBasicTools();
   registerTools(basicTools);
 
-  if (import.meta.env.DEV) {
-    console.log(
-      `AI Agent initialized with ${basicTools.length} tools:`,
-      basicTools.map((t) => t.name)
-    );
-  }
+  // Dev log removed
 };
 
 /** Ensure tools are registered (defensive for HMR/late init) */
@@ -173,12 +168,7 @@ const ensureToolsRegistered = (): void => {
     try {
       const basicTools = getBasicTools();
       registerTools(basicTools);
-      if (import.meta.env.DEV) {
-        console.log(
-          `AI Agent auto-initialized with ${basicTools.length} tools:`,
-          basicTools.map((t) => t.name)
-        );
-      }
+      // Dev log removed
     } catch (e) {
       // swallow - processCommand will surface lack of tools if still empty
     }

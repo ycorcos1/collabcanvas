@@ -157,18 +157,8 @@ const CanvasPage: React.FC = () => {
   // AI Agent integration
   const { executeCommand: executeAICommand } = useAIAgent({
     scopeId: (actualProjectId || projectSlug || "").toString(),
-    onSuccess: (response) => {
-      // Command executed successfully
-      if (import.meta.env.DEV) {
-        console.log("AI command success:", response);
-      }
-    },
-    onError: (error) => {
-      // Command failed
-      if (import.meta.env.DEV) {
-        console.error("AI command error:", error);
-      }
-    },
+    onSuccess: () => {},
+    onError: () => {},
   });
 
   // AI Chat state (in-memory, not persisted)
@@ -201,10 +191,6 @@ const CanvasPage: React.FC = () => {
       syncedProjectData.name &&
       syncedProjectData.name !== projectName
     ) {
-      console.log(
-        "📡 Real-time update: Project name changed to",
-        syncedProjectData.name
-      );
       setProjectName(syncedProjectData.name);
       setTempProjectName(syncedProjectData.name);
     }
@@ -476,7 +462,7 @@ const CanvasPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error("Failed to restore shape selection:", error);
+      // silent
     } finally {
       // Ensure we only attempt restore once to avoid loops
       didRestoreSelectionRef.current = true;
@@ -565,7 +551,7 @@ const CanvasPage: React.FC = () => {
 
   // Additional safety check for incomplete user data
   if (user && (!user.id || !user.email)) {
-    console.warn("Incomplete user data detected, redirecting to sign-in");
+    // silent
     return <Navigate to="/signin" replace />;
   }
 
@@ -594,9 +580,9 @@ const CanvasPage: React.FC = () => {
       if (actualProjectId) {
         try {
           await updateProjectSlug(actualProjectId, newName);
-          console.log("✅ Project renamed:", newName);
+          // silent
         } catch (error) {
-          console.error("❌ Failed to update project slug:", error);
+          // silent
         }
       }
 
@@ -718,7 +704,7 @@ const CanvasPage: React.FC = () => {
         try {
           thumbnailUrl = await generateKonvaThumbnail(stageRef, 280, 160);
         } catch (error) {
-          console.error("Failed to generate thumbnail:", error);
+          // silent
           // Continue saving without thumbnail
         }
       }
@@ -762,7 +748,7 @@ const CanvasPage: React.FC = () => {
         setSavingStatus("idle");
       }
     } catch (error) {
-      console.error("Save failed:", error);
+      // silent
       setSavingStatus("idle");
     }
   }, [
@@ -817,7 +803,7 @@ const CanvasPage: React.FC = () => {
             setLastSavedState(savedState);
           }
         } catch (error) {
-          console.error("Failed to initialize project:", error);
+          // silent
         }
       }
     };
@@ -926,12 +912,10 @@ const CanvasPage: React.FC = () => {
               setLastSavedState(initialState);
               setHasUnsavedChanges(false);
 
-              if (import.meta.env.DEV) {
-                console.log("✓ New project created immediately:", projectSlug);
-              }
+              // silent
             }
           } catch (saveError) {
-            console.error("Failed to create initial project:", saveError);
+            // silent
           }
 
           setIsProjectLoaded(true); // Mark as loaded even for new projects
@@ -1081,7 +1065,7 @@ const CanvasPage: React.FC = () => {
         // Update last synced signature only after successful write
         lastSelectionSigRef.current = selectionSig;
       } catch (error) {
-        console.error("Failed to sync selections:", error);
+        // silent
       }
     }, 100); // 100ms debounce - faster for better collaboration
 
@@ -1140,7 +1124,7 @@ const CanvasPage: React.FC = () => {
         // Open modal after save completes
         setIsCollaborationModalOpen(true);
       } catch (error) {
-        console.error("Failed to save project before sharing:", error);
+        // silent
         // Still open modal - user can try sending invitation
         // (Firestore validation will catch unsaved projects)
         setIsCollaborationModalOpen(true);
@@ -1210,9 +1194,7 @@ const CanvasPage: React.FC = () => {
             if ("points" in shape && shape.points !== undefined)
               shapeData.points = shape.points;
 
-            createShape(shapeData).catch((err) => {
-              console.error("Failed to create shape:", err);
-            });
+            createShape(shapeData).catch(() => {});
           },
           updateShape: (id: string, updates: Partial<Shape>) => {
             // Wrap the async updateShape function
@@ -1235,9 +1217,7 @@ const CanvasPage: React.FC = () => {
               delete (mapped as any).radius;
             }
 
-            updateShape(id, mapped).catch((err) => {
-              console.error("Failed to update shape:", err);
-            });
+            updateShape(id, mapped).catch(() => {});
           },
           deleteShape: (id: string) => {
             // Wrap the async deleteShape function (Firestore-enabled)
@@ -1303,7 +1283,7 @@ const CanvasPage: React.FC = () => {
       // Handle refresh trigger (for project management commands)
       if (response?.success && response.data?._triggerRefresh) {
         setTimeout(() => {
-          console.log("Canvas AI: Refreshing after project command");
+          // silent
           window.location.reload();
         }, 2000); // 2 seconds - enough time to see the success message
       }
@@ -1535,7 +1515,7 @@ const CanvasPage: React.FC = () => {
         quality: 0.9,
       });
     } catch (error) {
-      console.error("Export PNG failed:", error);
+      // silent
     }
   }, [shapes, projectName]);
 
@@ -1546,7 +1526,7 @@ const CanvasPage: React.FC = () => {
         padding: 20,
       });
     } catch (error) {
-      console.error("Export SVG failed:", error);
+      // silent
     }
   }, [shapes, projectName]);
 
@@ -1558,7 +1538,7 @@ const CanvasPage: React.FC = () => {
         backgroundColor: canvasBackground,
       });
     } catch (error) {
-      console.error("Export PDF failed:", error);
+      // silent
     }
   }, [shapes, projectName, canvasBackground]);
 
@@ -1587,7 +1567,7 @@ const CanvasPage: React.FC = () => {
   // Manual save handler
   const handleManualSave = useCallback(async (): Promise<boolean> => {
     if (!lifecycleSaveRef.current) {
-      console.error("❌ Lifecycle save not initialized");
+      // silent
       return false;
     }
 
@@ -1595,7 +1575,7 @@ const CanvasPage: React.FC = () => {
       const success = await lifecycleSaveRef.current.saveNow();
       return success;
     } catch (error) {
-      console.error("❌ Manual save failed:", error);
+      // silent
       return false;
     }
   }, []);
@@ -1615,11 +1595,10 @@ const CanvasPage: React.FC = () => {
 
     lifecycleSaveRef.current = lifecycleSave;
 
-    console.log("✅ Lifecycle save enabled for project:", actualProjectId);
-    console.log("📋 Save triggers: Manual, Refresh, Close, Navigate, Rename");
+    // silent
 
     return () => {
-      console.log("🛑 Stopping lifecycle save for project:", actualProjectId);
+      // silent
       lifecycleSave.stop(); // This will save before unmounting
     };
   }, [actualProjectId]); // Only reinitialize when project changes
@@ -1785,7 +1764,7 @@ const CanvasPage: React.FC = () => {
           canvasBackground,
         });
       } catch (e) {
-        console.error("Auto-save after clear failed:", e);
+        // silent
       }
     };
     window.addEventListener("ai:autoSaveRequested", handler as any);
@@ -2090,7 +2069,7 @@ const CanvasPage: React.FC = () => {
             setIsLeaveProjectOpen(false);
             navigate("/dashboard/recent", { replace: true });
           } catch (e: any) {
-            console.error("Leave project failed:", e);
+            // silent
             showError(e?.message || "Failed to leave project.");
           } finally {
             setIsLeaving(false);
