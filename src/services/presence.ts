@@ -6,7 +6,7 @@
  * This reduces Firebase writes by 99% compared to heartbeat-based presence
  */
 
-import { ref, set, onValue, onDisconnect, remove } from "firebase/database";
+import { ref, set, onValue, onDisconnect, remove, update } from "firebase/database";
 import { database } from "./firebase";
 
 export interface PresenceUser {
@@ -15,6 +15,7 @@ export interface PresenceUser {
   userColor: string;
   userPhotoURL?: string; // Optional - may not be present in Firebase
   joinedAt: number;
+  lastSeen?: number;
 }
 
 // Set user as online (called once when joining)
@@ -31,6 +32,7 @@ export async function setUserOnline(
     userName,
     userColor,
     joinedAt: Date.now(),
+    lastSeen: Date.now(),
   };
 
   // Only add userPhotoURL if it's defined
@@ -69,11 +71,15 @@ export async function setUserOffline(
 
 // No longer needed - we don't do heartbeat updates
 export async function updateUserActivity(
-  _projectId: string,
-  _userId: string
+  projectId: string,
+  userId: string
 ): Promise<void> {
-  // OPTIMIZED: No heartbeat updates to save Firebase quota
-  return Promise.resolve();
+  try {
+    const presenceRef = ref(database, `presence/${projectId}/${userId}`);
+    await update(presenceRef, { lastSeen: Date.now() });
+  } catch (error: any) {
+    // Silently ignore activity update errors
+  }
 }
 
 // Subscribe to presence changes
@@ -91,9 +97,15 @@ export function subscribeToPresence(
 
       if (snapshot.exists()) {
         const presenceData = snapshot.val();
+        const now = Date.now();
         Object.values(presenceData).forEach((userData) => {
           if (userData && typeof userData === "object") {
-            users.push(userData as PresenceUser);
+            const u = userData as PresenceUser;
+            const seen = u.lastSeen || u.joinedAt;
+            // Consider online if seen within last 15 seconds
+            if (now - seen < 15000) {
+              users.push(u);
+            }
           }
         });
       }
