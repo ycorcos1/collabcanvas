@@ -292,7 +292,8 @@ export const subscribeToShapes = (
   onError?: (error: Error) => void
 ): (() => void) => {
   const shapesCollection = getShapesCollection(projectId);
-  const q = query(shapesCollection, orderBy("createdAt", "asc"));
+  // Avoid requiring a composite index: fetch and sort client-side by createdAt
+  const q = query(shapesCollection);
 
   const unsubscribe = onSnapshot(
     q,
@@ -304,6 +305,8 @@ export const subscribeToShapes = (
         shapes.push(shape);
       });
 
+      // Sort by createdAt ASC on client
+      shapes.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       callback(shapes);
     },
     (error: any) => {
@@ -339,11 +342,8 @@ export const subscribeToShapesByPage = (
   onError?: (error: Error) => void
 ): (() => void) => {
   const shapesCollection = getShapesCollection(projectId);
-  const qy = query(
-    shapesCollection,
-    where("pageId", "==", pageId),
-    orderBy("createdAt", "asc")
-  );
+  // Avoid requiring composite index on (pageId, createdAt) by removing server-side orderBy
+  const qy = query(shapesCollection, where("pageId", "==", pageId));
   const unsubscribe = onSnapshot(
     qy,
     (snapshot) => {
@@ -352,6 +352,8 @@ export const subscribeToShapesByPage = (
         const shape = firestoreToShape({ id: doc.id, ...doc.data() });
         shapes.push(shape);
       });
+      // Sort client-side by createdAt ASC
+      shapes.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       callback(shapes);
     },
     (error: any) => {
