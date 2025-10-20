@@ -24,6 +24,7 @@ import {
   onSnapshot,
   query,
   where,
+  orderBy as qorderBy,
   limit as qlimit,
 } from "firebase/firestore";
 import { firestore } from "../services/firebase";
@@ -159,7 +160,7 @@ export const useProjects = (
       // Owned projects query
       const ownedBase = [where("ownerId", "==", user.id)];
       const ownedActive = options.includeDeleted
-        ? [where("deletedAt", "!=", null)]
+        ? [where("deletedAt", "!=", null), qorderBy("deletedAt", "desc")]
         : [where("deletedAt", "==", null)];
 
       const ownedQuery = query(
