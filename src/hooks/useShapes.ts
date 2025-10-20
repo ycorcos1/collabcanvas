@@ -298,6 +298,18 @@ export const useShapes = (projectId: string, pageId: string) => {
                 : shape
             )
           );
+          try {
+            await Promise.all(
+              selectedShapeIds.map((shapeId) =>
+                shapesService.updateShape(projectId, shapeId, {
+                  selectedBy: undefined as any,
+                  selectedByName: undefined as any,
+                  selectedByColor: undefined as any,
+                  selectedAt: undefined as any,
+                } as any)
+              )
+            );
+          } catch {}
           setSelectedShapeIds([]);
           return;
         }
@@ -347,6 +359,26 @@ export const useShapes = (projectId: string, pageId: string) => {
           });
         });
 
+        // Persist deselection for previous shapes and selection for target
+        try {
+          await Promise.all([
+            ...selectedShapeIds.map((shapeId) =>
+              shapesService.updateShape(projectId, shapeId, {
+                selectedBy: undefined as any,
+                selectedByName: undefined as any,
+                selectedByColor: undefined as any,
+                selectedAt: undefined as any,
+              } as any)
+            ),
+            shapesService.updateShape(projectId, id, {
+              selectedBy: user.id,
+              selectedByName: user.displayName || user.email || "Unknown",
+              selectedByColor: user.color || "#000000",
+              selectedAt: Date.now(),
+            } as any),
+          ]);
+        } catch {}
+
         // Update selected shape IDs
         setSelectedShapeIds([id]);
       } catch (error) {
@@ -391,6 +423,37 @@ export const useShapes = (projectId: string, pageId: string) => {
             return s;
           });
         });
+
+        // Persist selection/deselection in Firestore
+        try {
+          const idSet = new Set(ids);
+          const prevSet = new Set(selectedShapeIds);
+          const toSelect = shapes
+            .filter((s) => idSet.has(s.id) && !prevSet.has(s.id))
+            .map((s) => s.id);
+          const toDeselect = shapes
+            .filter((s) => !idSet.has(s.id) && prevSet.has(s.id))
+            .map((s) => s.id);
+          await Promise.all([
+            ...toSelect.map((shapeId) =>
+              shapesService.updateShape(projectId, shapeId, {
+                selectedBy: user.id,
+                selectedByName:
+                  user.displayName || user.email || "Unknown",
+                selectedByColor: user.color || "#000000",
+                selectedAt: Date.now(),
+              } as any)
+            ),
+            ...toDeselect.map((shapeId) =>
+              shapesService.updateShape(projectId, shapeId, {
+                selectedBy: undefined as any,
+                selectedByName: undefined as any,
+                selectedByColor: undefined as any,
+                selectedAt: undefined as any,
+              } as any)
+            ),
+          ]);
+        } catch {}
 
         setSelectedShapeIds(ids);
       } catch (error) {

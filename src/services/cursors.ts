@@ -5,8 +5,8 @@ import { throttle } from "../utils/throttle";
 
 // No longer using a hardcoded CANVAS_ID - each project has its own cursors
 // OPTIMIZED: Reduced cursor update frequency to save Firebase quota
-const CURSOR_UPDATE_THROTTLE = 500; // 500ms = 2 updates per second (was 16ms = 60 FPS)
-// This reduces cursor writes by 97% while maintaining acceptable real-time feel
+const CURSOR_UPDATE_THROTTLE = 80; // ~12.5 updates per second (~80ms)
+// Balanced for responsiveness (<100ms perceived latency) and quota
 
 // Update cursor position (throttled)
 const updateCursorPositionThrottled = throttle(
