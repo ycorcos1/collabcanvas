@@ -139,17 +139,6 @@ const CanvasPage: React.FC = () => {
   // Delete single shape uses hook's deleteShape
 
   // Handle reordering layers (for layers panel)
-  const handleReorderLayers = useCallback(
-    (reorderedShapes: Shape[]) => {
-      // Update all shapes with new z-index
-      reorderedShapes.forEach((shape) => {
-        updateShape(shape.id, { zIndex: shape.zIndex });
-      });
-      // Update local state to reflect new order immediately
-      setShapes(reorderedShapes);
-    },
-    [updateShape, setShapes]
-  );
 
   // Collaboration modal state
   const [isCollaborationModalOpen, setIsCollaborationModalOpen] =
@@ -1882,7 +1871,6 @@ const CanvasPage: React.FC = () => {
           shapes={shapes}
           selectedShapeIds={selectedShapeIds}
           onSelectShape={selectShape}
-          onUpdateShape={(id, updates) => updateShape(id, updates)}
           onUndo={handleUndo}
           onRedo={handleRedo}
           onCopy={handleCopy}
@@ -1915,8 +1903,7 @@ const CanvasPage: React.FC = () => {
           onPageDataChange={handlePageDataChange}
           pages={inMemoryPages}
           objectNames={inMemoryObjectNames}
-          onDeleteShape={deleteShape}
-          onReorderLayers={handleReorderLayers}
+          
         />
 
         {/* Canvas Area */}

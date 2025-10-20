@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Shape } from "../../types/shape";
-import { LayersPanel } from "../LayersPanel/LayersPanel";
 import "./LeftSidebar.css";
 
 /**
@@ -17,7 +16,7 @@ import "./LeftSidebar.css";
 interface LeftSidebarProps {
   shapes: Shape[];
   selectedShapeIds: string[];
-  onSelectShape: (id: string | null) => void;
+  onSelectShape?: (id: string | null) => void;
   onUndo?: () => void;
   onRedo?: () => void;
   onCopy?: () => void;
@@ -53,10 +52,7 @@ interface LeftSidebarProps {
   pages?: { id: string; name: string }[];
   objectNames?: Record<string, string>;
 
-  // Layers Panel props
-  onDeleteShape?: (id: string) => void;
-  onReorderLayers?: (shapes: Shape[]) => void;
-  onUpdateShape?: (id: string, updates: Partial<Shape>) => void;
+  // Layers Panel removed
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -85,12 +81,9 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onPageDataChange,
   pages: propPages,
   objectNames: propObjectNames,
-  onDeleteShape,
-  onReorderLayers,
-  onUpdateShape,
 }) => {
   // Tab management: pages or layers
-  const [activeTab, setActiveTab] = useState<"pages" | "layers">("pages");
+  const [activeTab, setActiveTab] = useState<"pages">("pages");
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -713,7 +706,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs - Pages and Layers */}
+      {/* Navigation Tabs - Pages */}
       <div className="sidebar-tabs">
         <button
           className={`tab-button ${activeTab === "pages" ? "active" : ""}`}
@@ -731,24 +724,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <polyline points="14,2 14,8 20,8" />
           </svg>
           Pages
-        </button>
-        <button
-          className={`tab-button ${activeTab === "layers" ? "active" : ""}`}
-          onClick={() => setActiveTab("layers")}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <rect x="7" y="7" width="10" height="10" />
-            <rect x="11" y="11" width="2" height="2" />
-          </svg>
-          Layers
         </button>
         {activeTab === "pages" && (
           <button
@@ -771,7 +746,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         )}
       </div>
 
-      {/* Content Area */}
+      {/* Content Area (Pages only) */}
       <div className="sidebar-content">
         {activeTab === "pages" ? (
           <div className="pages-panel">
@@ -899,18 +874,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </div>
             ))}
           </div>
-        ) : (
-          <div className="layers-panel-container">
-            <LayersPanel
-              shapes={shapes}
-              selectedShapeIds={selectedShapeIds}
-              onSelectShape={onSelectShape}
-              onUpdateShape={onUpdateShape || (() => {})}
-              onDeleteShape={onDeleteShape || (() => {})}
-              onReorderLayers={onReorderLayers || (() => {})}
-            />
-          </div>
-        )}
+        ) : null}
       </div>
 
       {/* Context Menu */}
