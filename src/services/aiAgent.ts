@@ -735,7 +735,8 @@ const routeIntent = (
   // UPDATE (color/size/resize)
   if (isUpdate) {
     const args: any = {
-      updateSelected: /\bselected\b/.test(t) || hasContextRef || !!selected,
+      // Only update selection when explicitly requested ("selected") or when we actually have a selection
+      updateSelected: /\bselected\b/.test(t) || hasSelected,
     };
     if (color) args.fill = color;
 
@@ -1065,95 +1066,74 @@ const routeIntent = (
 
   // LAYOUT COMPOSITES
   if (isArrangeRow) {
-    if (!context.selectedShapeIds?.length && shapeType) {
-      // Select all shapes of inferred type before arranging
-      const typeMap: Record<string, string[]> = {
-        rectangle: ["rect", "rectangle"],
-        triangle: ["triangle"],
-        circle: ["ellipse", "circle"],
-        text: ["text"],
-      };
-      const wanted = typeMap[shapeType] || [shapeType];
-      const ids = context.shapes
-        .filter((s) => wanted.includes(s.type))
-        .map((s) => s.id);
-      if (ids.length >= 2) {
+    if (!context.selectedShapeIds?.length) {
+      if (shapeType) {
+        const typeMap: Record<string, string[]> = {
+          rectangle: ["rect", "rectangle"],
+          triangle: ["triangle"],
+          circle: ["ellipse", "circle"],
+          text: ["text"],
+        };
+        const wanted = typeMap[shapeType] || [shapeType];
+        const ids = context.shapes
+          .filter((s) => wanted.includes(s.type))
+          .map((s) => s.id);
+        if (ids.length >= 2) {
+          return [
+            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: ids } },
+            { tool: "align_shapes", intentType: "align", args: { alignment: "middle" } },
+            { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
+          ];
+        }
+      }
+      if (context.shapes.length >= 2) {
+        const idsAll = context.shapes.map((s) => s.id);
         return [
-          {
-            tool: "select_many_shapes",
-            intentType: "select",
-            args: { shapeIds: ids },
-          },
-          {
-            tool: "align_shapes",
-            intentType: "align",
-            args: { alignment: "middle" },
-          },
-          {
-            tool: "distribute_shapes",
-            intentType: "distribute",
-            args: { direction: "horizontal" },
-          },
+          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
+          { tool: "align_shapes", intentType: "align", args: { alignment: "middle" } },
+          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
         ];
       }
     }
     return [
-      {
-        tool: "align_shapes",
-        intentType: "align",
-        args: { alignment: "middle" },
-      },
-      {
-        tool: "distribute_shapes",
-        intentType: "distribute",
-        args: { direction: "horizontal" },
-      },
+      { tool: "align_shapes", intentType: "align", args: { alignment: "middle" } },
+      { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
     ];
   }
 
   if (isArrangeCol) {
-    if (!context.selectedShapeIds?.length && shapeType) {
-      const typeMap: Record<string, string[]> = {
-        rectangle: ["rect", "rectangle"],
-        triangle: ["triangle"],
-        circle: ["ellipse", "circle"],
-        text: ["text"],
-      };
-      const wanted = typeMap[shapeType] || [shapeType];
-      const ids = context.shapes
-        .filter((s) => wanted.includes(s.type))
-        .map((s) => s.id);
-      if (ids.length >= 2) {
+    if (!context.selectedShapeIds?.length) {
+      if (shapeType) {
+        const typeMap: Record<string, string[]> = {
+          rectangle: ["rect", "rectangle"],
+          triangle: ["triangle"],
+          circle: ["ellipse", "circle"],
+          text: ["text"],
+        };
+        const wanted = typeMap[shapeType] || [shapeType];
+        const ids = context.shapes
+          .filter((s) => wanted.includes(s.type))
+          .map((s) => s.id);
+        if (ids.length >= 2) {
+          return [
+            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: ids } },
+            { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
+            { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+          ];
+        }
+      }
+      if (context.shapes.length >= 2) {
+        const idsAll = context.shapes.map((s) => s.id);
         return [
-          {
-            tool: "select_many_shapes",
-            intentType: "select",
-            args: { shapeIds: ids },
-          },
-          {
-            tool: "align_shapes",
-            intentType: "align",
-            args: { alignment: "center" },
-          },
-          {
-            tool: "distribute_shapes",
-            intentType: "distribute",
-            args: { direction: "vertical" },
-          },
+          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
+          { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
+          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
         ];
       }
     }
     return [
-      {
-        tool: "align_shapes",
-        intentType: "align",
-        args: { alignment: "center" },
-      },
-      {
-        tool: "distribute_shapes",
-        intentType: "distribute",
-        args: { direction: "vertical" },
-      },
+      { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
+      { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
     ];
   }
 
@@ -1237,8 +1217,8 @@ const routeIntent = (
       ? -90
       : 90;
 
-    // 1) If user refers to selected shape(s), rotate selection
-    if ((hasContextRef || hasSelected) && degrees !== undefined) {
+    // 1) If there is an actual selection, rotate selection
+    if (hasSelected && degrees !== undefined) {
       return [
         { tool: "rotate_shape", intentType: "rotate", args: { degrees } },
       ];
@@ -1271,14 +1251,12 @@ const routeIntent = (
             },
           ];
         }
+        // Auto-select candidates so the next rotate command can apply without further clarification
         return [
           {
-            tool: "select_shape",
+            tool: "select_many_shapes",
             intentType: "select",
-            args: {
-              type: shapeType || "all",
-              color: filterColorRaw || color || undefined,
-            },
+            args: { shapeIds: candidates.map((s) => s.id) },
           },
         ];
       }
@@ -1302,56 +1280,41 @@ const routeIntent = (
     if (dirMatch) {
       const direction = dirMatch[1];
       // If no selection, try distributing all shapes of inferred type
-      if (!hasSelected && shapeType) {
-        const typeMap: Record<string, string[]> = {
-          rectangle: ["rect", "rectangle"],
-          triangle: ["triangle"],
-          circle: ["ellipse", "circle"],
-          text: ["text"],
-        };
-        const wanted = typeMap[shapeType] || [shapeType];
-        const ids = context.shapes
-          .filter((s) => wanted.includes(s.type))
-          .map((s) => s.id);
+      if (!hasSelected) {
+        let ids: string[] = [];
+        if (shapeType) {
+          const typeMap: Record<string, string[]> = {
+            rectangle: ["rect", "rectangle"],
+            triangle: ["triangle"],
+            circle: ["ellipse", "circle"],
+            text: ["text"],
+          };
+          const wanted = typeMap[shapeType] || [shapeType];
+          ids = context.shapes.filter((s) => wanted.includes(s.type)).map((s) => s.id);
+        } else {
+          ids = context.shapes.map((s) => s.id);
+        }
         if (ids.length >= 3) {
-          // First align on perpendicular axis for nicer result
           const align = direction === "horizontal" ? "middle" : "center";
           return [
-            {
-              tool: "select_shape",
-              intentType: "select",
-              args: { type: shapeType },
-            },
-            {
-              tool: "align_shapes",
-              intentType: "align",
-              args: { alignment: align },
-            },
-            {
-              tool: "distribute_shapes",
-              intentType: "distribute",
-              args: { direction },
-            },
+            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: ids } },
+            { tool: "align_shapes", intentType: "align", args: { alignment: align } },
+            { tool: "distribute_shapes", intentType: "distribute", args: { direction } },
           ];
         }
       }
-      return [
-        {
-          tool: "distribute_shapes",
-          intentType: "distribute",
-          args: { direction },
-        },
-      ];
+      return [{ tool: "distribute_shapes", intentType: "distribute", args: { direction } }];
     }
     // Default to horizontal if not specified
     if (/\bhorizontal|even|space/.test(t)) {
-      return [
-        {
-          tool: "distribute_shapes",
-          intentType: "distribute",
-          args: { direction: "horizontal" },
-        },
-      ];
+      if (!hasSelected && context.shapes.length >= 3) {
+        const idsAll = context.shapes.map((s) => s.id);
+        return [
+          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
+          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
+        ];
+      }
+      return [{ tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } }];
     }
   }
 

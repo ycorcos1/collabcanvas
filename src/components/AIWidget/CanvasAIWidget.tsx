@@ -72,15 +72,11 @@ export const CanvasAIWidget: React.FC<CanvasAIWidgetProps> = ({
   // Canvas AI hook
   const { executeCommand, isProcessing, isEnabled } = useAIAgent({
     scopeId: projectId,
-    onSuccess: (response) => {
-      if (import.meta.env.DEV) {
-        console.log("Canvas AI command success:", response);
-      }
+    onSuccess: (_response) => {
+      // silent
     },
-    onError: (error) => {
-      if (import.meta.env.DEV) {
-        console.error("Canvas AI command error:", error);
-      }
+    onError: (_error) => {
+      // silent
     },
   });
 
