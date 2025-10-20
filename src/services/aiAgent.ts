@@ -830,6 +830,89 @@ const routeIntent = (
           args.height = side;
         }
       }
+    } else if (scale && !hasSelected) {
+      // No selection: try to resolve a unique target and compute its new size
+      const candidates = resolveCandidates(
+        wantedTypes,
+        filterColorRaw || color,
+        quotedText
+      );
+      if (candidates.length === 1) {
+        const target = candidates[0];
+        const w0 = target.width || 100;
+        const h0 = target.height || 100;
+        const upd: any = {};
+        if (scale.mode === "factor" && scale.factor) {
+          upd.width = Math.max(1, Math.round(w0 * scale.factor));
+          upd.height = Math.max(1, Math.round(h0 * scale.factor));
+        } else if (scale.mode === "byPercent" && scale.percent != null) {
+          const f = 1 + scale.percent / 100;
+          upd.width = Math.max(1, Math.round(w0 * f));
+          upd.height = Math.max(1, Math.round(h0 * f));
+        } else if (scale.mode === "byPx") {
+          upd.width = Math.max(1, w0 + (scale.dw || 0));
+          upd.height = Math.max(1, h0 + (scale.dh || 0));
+        } else if (scale.mode === "to") {
+          upd.width = scale.width;
+          upd.height = scale.height;
+        }
+        if (target.type === "circle" || target.type === "ellipse") {
+          const side = Math.min(upd.width || w0, upd.height || h0);
+          upd.width = side;
+          upd.height = side;
+        }
+        return [
+          {
+            tool: "update_shape",
+            intentType: "update",
+            args: { shapeId: target.id, ...upd },
+          },
+        ];
+      }
+      if (candidates.length > 1) {
+        if (/\ball\b/.test(t)) {
+          // Compute per-shape updates and return as multiple steps
+          const steps: RoutedStep[] = [];
+          for (const target of candidates) {
+            const w0 = target.width || 100;
+            const h0 = target.height || 100;
+            const upd: any = {};
+            if (scale.mode === "factor" && scale.factor) {
+              upd.width = Math.max(1, Math.round(w0 * scale.factor));
+              upd.height = Math.max(1, Math.round(h0 * scale.factor));
+            } else if (scale.mode === "byPercent" && scale.percent != null) {
+              const f = 1 + scale.percent / 100;
+              upd.width = Math.max(1, Math.round(w0 * f));
+              upd.height = Math.max(1, Math.round(h0 * f));
+            } else if (scale.mode === "byPx") {
+              upd.width = Math.max(1, w0 + (scale.dw || 0));
+              upd.height = Math.max(1, h0 + (scale.dh || 0));
+            } else if (scale.mode === "to") {
+              upd.width = scale.width;
+              upd.height = scale.height;
+            }
+            if (target.type === "circle" || target.type === "ellipse") {
+              const side = Math.min(upd.width || w0, upd.height || h0);
+              upd.width = side;
+              upd.height = side;
+            }
+            steps.push({
+              tool: "update_shape",
+              intentType: "update",
+              args: { shapeId: target.id, ...upd },
+            });
+          }
+          if (steps.length) return steps;
+        }
+        // Otherwise, auto-select all candidates to let user refine next command
+        return [
+          {
+            tool: "select_many_shapes",
+            intentType: "select",
+            args: { shapeIds: candidates.map((s) => s.id) },
+          },
+        ];
+      }
     } else {
       // Direct size specification - check for "WxH" format first
       if (customWidth !== undefined) args.width = customWidth;
@@ -874,7 +957,7 @@ const routeIntent = (
         if (typeof args.height === "number") updates.height = args.height;
         if (typeof args.x === "number") updates.x = args.x;
         if (typeof args.y === "number") updates.y = args.y;
-        if ((args as any).fill) updates.fill = (args as any).fill;
+        if ((args as any).fill) updates.color = (args as any).fill;
         if (/\ball\b/.test(t)) {
           return [
             {
@@ -1080,24 +1163,56 @@ const routeIntent = (
           .map((s) => s.id);
         if (ids.length >= 2) {
           return [
-            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: ids } },
-            { tool: "align_shapes", intentType: "align", args: { alignment: "middle" } },
-            { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
+            {
+              tool: "select_many_shapes",
+              intentType: "select",
+              args: { shapeIds: ids },
+            },
+            {
+              tool: "align_shapes",
+              intentType: "align",
+              args: { alignment: "middle" },
+            },
+            {
+              tool: "distribute_shapes",
+              intentType: "distribute",
+              args: { direction: "horizontal" },
+            },
           ];
         }
       }
       if (context.shapes.length >= 2) {
         const idsAll = context.shapes.map((s) => s.id);
         return [
-          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
-          { tool: "align_shapes", intentType: "align", args: { alignment: "middle" } },
-          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
+          {
+            tool: "select_many_shapes",
+            intentType: "select",
+            args: { shapeIds: idsAll },
+          },
+          {
+            tool: "align_shapes",
+            intentType: "align",
+            args: { alignment: "middle" },
+          },
+          {
+            tool: "distribute_shapes",
+            intentType: "distribute",
+            args: { direction: "horizontal" },
+          },
         ];
       }
     }
     return [
-      { tool: "align_shapes", intentType: "align", args: { alignment: "middle" } },
-      { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
+      {
+        tool: "align_shapes",
+        intentType: "align",
+        args: { alignment: "middle" },
+      },
+      {
+        tool: "distribute_shapes",
+        intentType: "distribute",
+        args: { direction: "horizontal" },
+      },
     ];
   }
 
@@ -1116,24 +1231,56 @@ const routeIntent = (
           .map((s) => s.id);
         if (ids.length >= 2) {
           return [
-            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: ids } },
-            { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
-            { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+            {
+              tool: "select_many_shapes",
+              intentType: "select",
+              args: { shapeIds: ids },
+            },
+            {
+              tool: "align_shapes",
+              intentType: "align",
+              args: { alignment: "center" },
+            },
+            {
+              tool: "distribute_shapes",
+              intentType: "distribute",
+              args: { direction: "vertical" },
+            },
           ];
         }
       }
       if (context.shapes.length >= 2) {
         const idsAll = context.shapes.map((s) => s.id);
         return [
-          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
-          { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
-          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+          {
+            tool: "select_many_shapes",
+            intentType: "select",
+            args: { shapeIds: idsAll },
+          },
+          {
+            tool: "align_shapes",
+            intentType: "align",
+            args: { alignment: "center" },
+          },
+          {
+            tool: "distribute_shapes",
+            intentType: "distribute",
+            args: { direction: "vertical" },
+          },
         ];
       }
     }
     return [
-      { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
-      { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+      {
+        tool: "align_shapes",
+        intentType: "align",
+        args: { alignment: "center" },
+      },
+      {
+        tool: "distribute_shapes",
+        intentType: "distribute",
+        args: { direction: "vertical" },
+      },
     ];
   }
 
@@ -1290,31 +1437,65 @@ const routeIntent = (
             text: ["text"],
           };
           const wanted = typeMap[shapeType] || [shapeType];
-          ids = context.shapes.filter((s) => wanted.includes(s.type)).map((s) => s.id);
+          ids = context.shapes
+            .filter((s) => wanted.includes(s.type))
+            .map((s) => s.id);
         } else {
           ids = context.shapes.map((s) => s.id);
         }
         if (ids.length >= 3) {
           const align = direction === "horizontal" ? "middle" : "center";
           return [
-            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: ids } },
-            { tool: "align_shapes", intentType: "align", args: { alignment: align } },
-            { tool: "distribute_shapes", intentType: "distribute", args: { direction } },
+            {
+              tool: "select_many_shapes",
+              intentType: "select",
+              args: { shapeIds: ids },
+            },
+            {
+              tool: "align_shapes",
+              intentType: "align",
+              args: { alignment: align },
+            },
+            {
+              tool: "distribute_shapes",
+              intentType: "distribute",
+              args: { direction },
+            },
           ];
         }
       }
-      return [{ tool: "distribute_shapes", intentType: "distribute", args: { direction } }];
+      return [
+        {
+          tool: "distribute_shapes",
+          intentType: "distribute",
+          args: { direction },
+        },
+      ];
     }
     // Default to horizontal if not specified
     if (/\bhorizontal|even|space/.test(t)) {
       if (!hasSelected && context.shapes.length >= 3) {
         const idsAll = context.shapes.map((s) => s.id);
         return [
-          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
-          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
+          {
+            tool: "select_many_shapes",
+            intentType: "select",
+            args: { shapeIds: idsAll },
+          },
+          {
+            tool: "distribute_shapes",
+            intentType: "distribute",
+            args: { direction: "horizontal" },
+          },
         ];
       }
-      return [{ tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } }];
+      return [
+        {
+          tool: "distribute_shapes",
+          intentType: "distribute",
+          args: { direction: "horizontal" },
+        },
+      ];
     }
   }
 

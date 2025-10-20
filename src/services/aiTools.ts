@@ -405,7 +405,9 @@ export const updateShapeTool: Tool = {
             (key === "fill" || key === "color") &&
             typeof value === "string"
           ) {
-            cleanUpdates[key as keyof Shape] = colorNameToHex(value) as any;
+            // Normalize to our canonical 'color' field
+            const hex = colorNameToHex(value);
+            (cleanUpdates as any).color = hex;
           } else {
             cleanUpdates[key as keyof Shape] = value as any;
           }
