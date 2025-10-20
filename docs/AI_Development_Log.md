@@ -1,95 +1,94 @@
-AI Development Log — CollabCanvas
+AI Development Log — CollabCanvas (Process & Methods)
 
 Date: 2025-10-20
 
-Overview
+Context and Goals
 
-This log summarizes the end-to-end effort to stabilize CollabCanvas and ensure real-time, error-free collaboration across the dashboard and canvas. The work focused on: fixing core canvas interactions, ensuring Firestore-backed persistence and real-time sync, improving security rules, and making AI Agent commands reliable. The outcome is a resilient canvas with multi-user features, robust undo/redo, and AI-assisted creation and arrangement of shapes, with dashboard lists updating instantly.
+- Address all “Fail” items in `03_CANVAS_TESTS.md` and `05_AI_AGENT_TESTS.md`.
+- Stabilize core canvas UX: drag/resize, text creation/resizing, layers visibility/reorder, multi‑select, copy/paste, undo/redo.
+- Ensure dashboard rename/delete reflect in real time.
+- Make AI Agent commands reliable (no Firestore index errors, no undefined payloads) and persist shapes.
 
-Objectives
+Constraints
 
-- Stabilize all items marked “Fail” in canvas tests (drag/resize, text, layers, multi-select, clipboard, undo/redo).
-- Ensure dashboard project rename/delete updates in real-time.
-- Make AI Agent commands execute reliably without Firestore/index errors; persist shapes properly.
-- Maintain secure Firestore access patterns for owners vs collaborators.
+- React + Konva functional architecture; hooks throughout.
+- Firestore must be the single source of truth with secure rules.
+- Real-time collaboration (presence, selections) and optimistic UI without breaking consistency.
 
-Architecture and Key Concepts
+Approach (End-to-End)
 
-- React + Konva for rendering and interaction (Stage, Layer, Group, Transformer).
-- Firestore for real-time synchronization (documents, queries, onSnapshot) with composite indexes.
-- Hooks-based state/control surfaces: `useShapes`, `useHistory`, `useProjects`, `useProjectSync`, `useAIAgent`.
-- AI Agent uses tool registry + intent routing and executes against real `shapeActions`.
-- Data model: `Shape` includes `pageId` for per-page scoping; `Project` documents control permissions and metadata.
+1. Discovery: traced failures from the test docs into components/hooks/services; reproduced issues (e.g., dashboard not updating, AI commands failing, shapes not persisting, index prompts).
+2. Systemic fixes: prioritized canonical state and one path for selection/history; removed ad-hoc flags and mock writes.
+3. Real-time by default: replaced one‑off loads with `onSnapshot` for projects and page‑scoped shapes.
+4. AI integration: routed intents to robust tools operating on live canvas state and selections.
 
-Methodology
+Implementation Phases
 
-1) Discovery: audited canvas flows, AI toolchain, and Firestore queries; identified missing event propagation and non-persistent shape creation.
-2) Systemic fixes over hot patches: standardized selection and keyboard handling, centralized history, and reliable Firestore persistence.
-3) Real-time-first mindset: replaced ad-hoc loads with `onSnapshot` subscriptions for dashboard and canvas.
-4) AI integration hardening: ensured tools operate on canonical state and provide multi-select when required.
+Phase 1 — Canvas Interaction Stability
 
-Major Changes Implemented
+- Passed native events into selection to enable Shift+Click multi‑select.
+- Enforced a minimum drag distance to create text; updated Konva text height during transform.
+- Sorted render order by `zIndex`; added `visible={isVisible}` across all shape types for layers panel.
+- Added `onShapeCreated` to reset tool/cursor after creation.
 
-- Canvas interaction fixes
-  - Passed native events to preserve Shift+Click multi-select; centralized selection logic.
-  - Enforced minimum drag distance to create text; accurate text resizing (width/height update).
-  - Sorted render order by `zIndex`; applied `visible={isVisible}` to all shape types for layer toggles.
-  - Added `onShapeCreated` to reset tool/cursor state post-creation.
+Phase 2 — Persistence and Data Model
 
-- Shape persistence and page scoping
-  - Extended `Shape` with `pageId`; all shape queries and mutations include `pageId`.
-  - Replaced clear-canvas hacks with `clearShapesForPage` for atomic Firestore deletes per page.
-  - Normalized creation payloads to avoid “Unsupported field value: undefined”.
+- Extended `Shape` with `pageId`; all queries/mutations include `pageId`.
+- Introduced `subscribeToShapesByPage(projectId, pageId)`; removed collection‑wide scans.
+- Implemented `clearShapesForPage` for atomic deletes; removed session storage hacks.
+- Normalized create payloads to avoid “Unsupported field value: undefined”.
 
-- Undo/redo, clipboard, and z-order
-  - Centralized keyboard shortcuts; robust copy/paste with cumulative offset and increasing `zIndex`.
-  - History snapshots persisted via `applySnapshot` which diffs add/update/delete against Firestore.
+Phase 3 — History, Clipboard, and Shortcuts
 
-- Layers panel and visibility
-  - Wired `onUpdateShape` through sidebar/panel; visibility toggles affect all shape types.
+- Centralized keyboard shortcuts (undo/redo/copy/paste/delete/move).
+- Implemented `applySnapshot` to diff add/update/delete against Firestore.
+- Paste now uses cumulative offset and increasing `zIndex` for clarity.
 
-- Dashboard real-time updates
-  - Replaced one-off loads with `onSnapshot` subscriptions for owned and shared projects; merged/deduped streams.
+Phase 4 — Dashboard Real-Time Updates
 
-- Firestore security rules and indexes
-  - Owners can rename/move-to-trash; collaborators restricted to canvas-related fields.
-  - Added composite index: `shapes(pageId ASC, createdAt ASC)` to support page-scoped queries.
+- Replaced manual loads with `onSnapshot` listeners for owned and shared projects.
+- Merged and de‑duplicated streams; rename/delete reflected instantly.
 
-- AI Agent reliability
-  - `CanvasAIWidget` passes live `shapes`, selection, dimensions, and real `shapeActions`.
-  - Tools support `triangle`; normalized color and circle/rect coercions.
-  - Introduced `select_many_shapes` and auto-selection for align/distribute when nothing selected.
-  - Improved ambiguity detection and routing to reduce invalid command executions.
+Phase 5 — Security Rules and Indexes
 
-Key Issues and Resolutions
+- Firestore rules: owners can rename/move‑to‑trash; collaborators limited to canvas fields.
+- Added composite index for `shapes(pageId ASC, createdAt ASC)`; documented deployment.
 
-- “Requires an index” Firestore errors: added and documented indexes; instructed deploy.
-- “Unsupported field value: undefined” on shape creation: ensured complete payloads and always using Firestore writes.
-- Missing shift-multi-select: passed native events and consolidated selection path.
-- Text sizing inaccuracies: updated Konva text node height during transforms.
-- Dashboard not updating on rename/delete: switched to `onSnapshot` for real-time lists.
-- Type/linter regressions: corrected missing symbols, updated `CreateShapeData` with `pageId`, and reordered declarations.
+Phase 6 — AI Agent Reliability
 
-Testing and Validation
+- `CanvasAIWidget` now passes live `shapes`, `selectedShapeIds`, dimensions, and real `shapeActions`.
+- Tools: added `triangle`, normalized circle/rect sizing and color inputs.
+- Introduced `select_many_shapes`; auto‑select by type before align/distribute when nothing is selected.
+- Improved intent routing and ambiguity handling to reduce invalid executions.
 
-- Canvas tests: verified drag/resize, text creation with threshold, layers visibility, multi-select via Shift+Click, copy/paste offset and zOrder increments, and undo/redo through `applySnapshot`.
-- AI Agent tests: validated create/select/align/distribute across types; ensured shape persistence and no index errors post-deploy.
-- Dashboard: rename and delete actions reflect instantly across owned and shared lists.
+Key Decisions and Rationale
 
-Operational Notes
+- Page‑scoped shapes: aligns queries with UI pages, reduces overfetch, simplifies clear operations.
+- Single selection path: reduces event handling drift and fixes multi‑select.
+- Snapshot‑based history: deterministic undo/redo across clients; easy Firestore reconciliation.
+- Real‑time subscriptions: eliminates stale dashboard and canvas views.
 
-- Deploy Firestore composite indexes and updated security rules for changes to take effect.
-- Shape queries must include `pageId` and be indexed; avoid collection-wide scans.
+Problems and Resolutions (from chat‑driven reports)
 
-Risks and Next Steps
+- Dashboard rename/delete not updating → Switched to `onSnapshot` in `useProjects` and merged owned/shared streams.
+- AI “requires an index” errors → Added composite index; instructed deployment.
+- “Unsupported field value: undefined” on shape creation → Enforced complete create payloads; removed mock returns to always write to Firestore.
+- AI “create project” not persisting → `createProject` now always writes to Firestore with unique slug generation.
+- Multi‑select and arrange/distribute failures → Passed native events; added `select_many_shapes` and auto‑selection logic.
+- Text creation creating tiny boxes → Added drag threshold; fixed height updates on transform.
 
-- After index deployment, re-run AI canvas commands to confirm no index-related failures.
-- Add automated e2e tests for AI command flows and undo/redo interactions.
-- Monitor performance for large documents; consider pagination/virtualization for layers.
-- Expand presence and conflict resolution safeguards if concurrent edits rise.
+Validation
+
+- Canvas: drag/resize/text, layers visibility, multi‑select, clipboard offsets, z‑order, undo/redo via `applySnapshot`.
+- AI Agent: create/select/align/distribute across types; shape persistence verified; no index prompts after deploy.
+- Dashboard: rename/delete reflected instantly in owned/shared lists.
 
 Outcome
 
-CollabCanvas now persists shapes consistently per page, updates dashboards in real time, and executes AI Agent commands reliably with secure Firestore rules. The canvas interaction model is simplified and maintainable, with history and selection behavior aligned to user expectations.
+CollabCanvas now delivers real‑time collaboration with reliable AI commands and durable Firestore persistence. Canvas interactions are predictable, history is robust, and the dashboard reflects changes instantly.
 
+Next Steps
 
+- Add e2e tests around AI commands and undo/redo flows.
+- Monitor performance for large pages; consider virtualization for layers.
+- Expand presence/conflict resolution for concurrent edits.
