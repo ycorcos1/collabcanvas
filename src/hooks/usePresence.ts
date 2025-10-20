@@ -14,7 +14,6 @@ const pendingOfflineTimers: Record<string, number> = {};
 export const usePresence = (projectId: string) => {
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<PresenceData[]>([]);
-  const [isPrimed, setIsPrimed] = useState(false);
 
   // Set user as online and subscribe to presence
   useEffect(() => {
@@ -68,15 +67,6 @@ export const usePresence = (projectId: string) => {
       projectId,
       (users: PresenceUser[]) => {
         if (!isActive) return;
-
-        // Debug log in development
-        if (import.meta.env.DEV) {
-          console.log(
-            `[Presence] Received ${users.length} online users for project ${projectId}`
-          );
-        }
-
-        // Filter out current user; preserve previous list until first payload to avoid flicker
         const otherUsers = users
           .filter((u) => u.userId !== currentUserId)
           .map((u) => ({
@@ -85,18 +75,13 @@ export const usePresence = (projectId: string) => {
             userColor: u.userColor,
             photoURL: u.userPhotoURL,
             isOnline: true,
-            lastSeen: u.joinedAt,
+            lastSeen: u.lastSeen || u.joinedAt,
           }));
-        setOnlineUsers((prev) =>
-          isPrimed ? otherUsers : otherUsers.length ? otherUsers : prev
-        );
-        if (!isPrimed) setIsPrimed(true);
+        // Always reflect current presence snapshot to avoid stale UI
+        setOnlineUsers(otherUsers);
       },
       (error) => {
-        // Log errors in development, keep existing data in production
-        if (import.meta.env.DEV) {
-          console.error("[Presence] Subscription error:", error);
-        }
+        // silent
         // Keep existing data instead of clearing it
       }
     );
