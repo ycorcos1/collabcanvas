@@ -315,7 +315,7 @@ const routeIntent = (
   const isArrangeCol = /\b(arrange).*(column|vertical)\b/.test(t);
   const isSpaceEvenly = /\b(space).*(evenly)\b/.test(t);
   const gridMatch = t.match(
-    /\bgrid\s+(?:of\s+)?(\d+)\s*x\s*(\d+)(?:\s*(squares|rectangles))?\b/
+    /\bgrid\s+(?:of\s+)?(\d+)\s*x\s*(\d+)(?:\s*(circles?|rectangles?|squares?))?\b/
   );
 
   // Quoted identifier support (e.g., "Hello World")
@@ -463,6 +463,43 @@ const routeIntent = (
 
     return pool;
   };
+
+  // GRID creation
+  if (gridMatch) {
+    const rows = Number(gridMatch[1]);
+    const cols = Number(gridMatch[2]);
+    const token = (gridMatch[3] || "circle").toLowerCase();
+    let gridType: "rectangle" | "circle" = /rect|square/.test(token)
+      ? "rectangle"
+      : "circle";
+    const cw = context.canvasDimensions?.width ?? 800;
+    const ch = context.canvasDimensions?.height ?? 600;
+    const margin = 20;
+    const cellW = Math.floor((cw - margin * (cols + 1)) / cols);
+    const cellH = Math.floor((ch - margin * (rows + 1)) / rows);
+    const size = gridType === "circle" ? Math.min(cellW, cellH) : undefined;
+    const steps: RoutedStep[] = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = margin + c * (gridType === "circle" ? size! : cellW + margin);
+        const y = margin + r * (gridType === "circle" ? size! : cellH + margin);
+        const w = gridType === "circle" ? size! : cellW;
+        const h = gridType === "circle" ? size! : cellH;
+        steps.push({
+          tool: "create_shape",
+          intentType: "create",
+          args: {
+            type: gridType === "circle" ? "circle" : "rectangle",
+            x,
+            y,
+            width: w,
+            height: h,
+          },
+        });
+      }
+    }
+    return steps;
+  }
 
   // Shape-agnostic: "move ... to the center"
   if (/\bmove\b/.test(t) && hasCenterWord) {
@@ -1420,9 +1457,24 @@ const routeIntent = (
       ];
     }
   }
+  // Arrange in vertical row
+  if (/\b(vertical row|row vertically)\b/.test(t)) {
+    if (!hasSelected && context.shapes.length >= 2) {
+      const idsAll = context.shapes.map((s) => s.id);
+      return [
+        { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
+        { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
+        { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+      ];
+    }
+    return [
+      { tool: "align_shapes", intentType: "align", args: { alignment: "center" } },
+      { tool: "distribute_shapes", intentType: "distribute", args: { direction: "vertical" } },
+    ];
+  }
 
-  // DISTRIBUTE
-  if (isDistribute) {
+  // DISTRIBUTE or SPACE EVENLY
+  if (isDistribute || isSpaceEvenly) {
     const dirMatch = t.match(/\b(horizontal|vertical)ly?\b/);
     if (dirMatch) {
       const direction = dirMatch[1];
@@ -1472,31 +1524,38 @@ const routeIntent = (
         },
       ];
     }
-    // Default to horizontal if not specified
-    if (/\bhorizontal|even|space/.test(t)) {
+    // Default when not specified: infer by spread or default horizontal
+    if (isSpaceEvenly || /\bhorizontal|even|space/.test(t)) {
       if (!hasSelected && context.shapes.length >= 3) {
         const idsAll = context.shapes.map((s) => s.id);
+        if (isSpaceEvenly) {
+          // infer direction by spread
+          const xs = context.shapes.map((s) => s.x);
+          const ys = context.shapes.map((s) => s.y);
+          const xSpread = Math.max(...xs) - Math.min(...xs);
+          const ySpread = Math.max(...ys) - Math.min(...ys);
+          const inferred = xSpread >= ySpread ? "horizontal" : "vertical";
+          return [
+            { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
+            { tool: "distribute_shapes", intentType: "distribute", args: { direction: inferred } },
+          ];
+        }
         return [
-          {
-            tool: "select_many_shapes",
-            intentType: "select",
-            args: { shapeIds: idsAll },
-          },
-          {
-            tool: "distribute_shapes",
-            intentType: "distribute",
-            args: { direction: "horizontal" },
-          },
+          { tool: "select_many_shapes", intentType: "select", args: { shapeIds: idsAll } },
+          { tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } },
         ];
       }
-      return [
-        {
-          tool: "distribute_shapes",
-          intentType: "distribute",
-          args: { direction: "horizontal" },
-        },
-      ];
+      if (isSpaceEvenly) {
+        // No selection and <3 shapes: nothing to do, but avoid failure
+        return null;
+      }
+      return [{ tool: "distribute_shapes", intentType: "distribute", args: { direction: "horizontal" } }];
     }
+  }
+
+  // CLEAR CANVAS
+  if (/\b(clear (the )?canvas|delete (everything|all)|remove everything)\b/.test(t)) {
+    return [{ tool: "clear_canvas", intentType: "clear", args: {} }];
   }
 
   return null; // fall back to OpenAI
