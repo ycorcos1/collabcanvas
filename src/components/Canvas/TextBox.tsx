@@ -12,6 +12,10 @@ interface TextBoxProps {
   isSelected: boolean;
   isEditing: boolean;
   visible?: boolean; // Add visibility support
+  width: number;
+  height: number;
+  align?: "left" | "center" | "right";
+  lineHeight?: number;
   onTextChange: (text: string) => void;
   onEditingChange: (editing: boolean) => void;
   onSelect: (event?: any) => void;
@@ -29,6 +33,10 @@ export const TextBox: React.FC<TextBoxProps> = ({
   isSelected,
   isEditing,
   visible = true,
+  width,
+  height,
+  align = "left",
+  lineHeight = 1.2,
   onTextChange,
   onEditingChange,
   onSelect,
@@ -51,7 +59,7 @@ export const TextBox: React.FC<TextBoxProps> = ({
     }
   }, [isSelected, isEditing]);
 
-  // Handle text editing
+  // Handle text editing (textarea overlay)
   useEffect(() => {
     if (!isEditing) return;
 
@@ -91,7 +99,7 @@ export const TextBox: React.FC<TextBoxProps> = ({
     textarea.style.overflow = "hidden";
     textarea.style.resize = "none";
     textarea.style.outline = "none";
-    textarea.style.lineHeight = "1.2";
+    textarea.style.lineHeight = String(lineHeight);
     textarea.style.zIndex = "1000";
 
     // Focus and select all text
@@ -100,10 +108,10 @@ export const TextBox: React.FC<TextBoxProps> = ({
 
     // Handle textarea events
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        finishEditing();
-      } else if (e.key === "Escape") {
+      // Enter inserts newline; finish with Cmd/Ctrl+Enter or Escape
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const cmdKey = isMac ? (e as any).metaKey : (e as any).ctrlKey;
+      if ((cmdKey && e.key === "Enter") || e.key === "Escape") {
         e.preventDefault();
         finishEditing();
       }
@@ -119,7 +127,28 @@ export const TextBox: React.FC<TextBoxProps> = ({
       if (document.body.contains(textarea)) {
         document.body.removeChild(textarea);
       }
+      // After text updates, compute height from content and persist
+      requestAnimationFrame(() => {
+        const node = textRef.current;
+        if (!node || !onResize) return;
+        const newWidth = Math.max(50, node.width());
+        node.getLayer()?.batchDraw();
+        const newHeight = Math.max(24, node.height());
+        onResize(node.x(), node.y(), newWidth, newHeight);
+      });
     };
+
+    // Keep overlay positioned on scroll/resize
+    const reposition = () => {
+      const pos = textNode.absolutePosition();
+      const box = stage.container().getBoundingClientRect();
+      textarea.style.top = box.top + pos.y + "px";
+      textarea.style.left = box.left + pos.x + "px";
+      textarea.style.width = Math.max(textNode.width(), 100) + "px";
+      textarea.style.height = Math.max(textNode.height(), 50) + "px";
+    };
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
 
     textarea.addEventListener("keydown", handleKeyDown);
     textarea.addEventListener("blur", handleBlur);
@@ -130,6 +159,8 @@ export const TextBox: React.FC<TextBoxProps> = ({
       if (document.body.contains(textarea)) {
         document.body.removeChild(textarea);
       }
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
     };
     // Only re-run when isEditing state changes (not when text/styles change)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,29 +180,18 @@ export const TextBox: React.FC<TextBoxProps> = ({
     onDragEnd(node.x(), node.y());
   };
 
-  const handleTransform = () => {
+  // Width-only resize: adjust width and recompute height; avoid font scaling
+  const handleTransformEnd = () => {
     const textNode = textRef.current;
     if (!textNode || !onResize) return;
-
     const scaleX = textNode.scaleX();
-    const scaleY = textNode.scaleY();
-
-    // Calculate new dimensions based on scale
-    const newWidth = Math.max(20, textNode.width() * scaleX);
-    const newHeight = Math.max(10, textNode.height() * scaleY);
-
-    // Calculate new font size - use the average of scaleX and scaleY
-    const scaleFactor = Math.max(scaleX, scaleY);
-    const newFontSize = Math.max(8, fontSize * scaleFactor);
-
-    // Reset scale and apply new dimensions
-    textNode.scaleX(1);
+    // lock vertical scale
     textNode.scaleY(1);
+    const newWidth = Math.max(50, textNode.width() * scaleX);
+    textNode.scaleX(1);
     textNode.width(newWidth);
-    textNode.height(newHeight);
-    textNode.fontSize(newFontSize);
-
-    // Report the new position and dimensions
+    textNode.getLayer()?.batchDraw();
+    const newHeight = Math.max(24, textNode.height());
     onResize(textNode.x(), textNode.y(), newWidth, newHeight);
   };
 
@@ -185,9 +205,11 @@ export const TextBox: React.FC<TextBoxProps> = ({
         fontSize={fontSize}
         fontFamily={fontFamily}
         fill={fill}
-        width={200} // Default width for text wrapping
-        wrap="word" // Enable word wrapping
-        align="left" // Left align text
+        width={width}
+        height={height}
+        wrap="word"
+        align={align}
+        lineHeight={lineHeight}
         draggable={!isEditing}
         onClick={handleClick}
         onTap={handleClick}
@@ -203,10 +225,12 @@ export const TextBox: React.FC<TextBoxProps> = ({
       {isSelected && !isEditing && (
         <Transformer
           ref={transformerRef}
-          onTransform={handleTransform}
+          onTransformEnd={handleTransformEnd}
+          enabledAnchors={["middle-left", "middle-right"]}
+          rotateEnabled={false}
           boundBoxFunc={(oldBox, newBox) => {
             // Minimum size constraints
-            if (newBox.width < 20 || newBox.height < 10) {
+            if (newBox.width < 50 || newBox.height < 24) {
               return oldBox;
             }
             return newBox;

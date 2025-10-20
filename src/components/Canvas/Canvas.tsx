@@ -561,8 +561,8 @@ export const Canvas: React.FC<CanvasProps> = ({
           height: h,
           color: currentColor || "#FF0000",
           text: "",
-          fontSize: 18,
-          fontFamily: "Times New Roman",
+          fontSize: 16,
+          fontFamily: "Inter",
           createdBy: user!.id,
         };
         try {
@@ -927,6 +927,10 @@ export const Canvas: React.FC<CanvasProps> = ({
                         fontSize={shape.fontSize || 16}
                         fontFamily={shape.fontFamily || "Arial"}
                         fill={shape.color}
+                        width={Math.max(50, shape.width || 200)}
+                        height={Math.max(24, shape.height || 50)}
+                        align="left"
+                        lineHeight={1.2}
                         isSelected={isSelected}
                         isEditing={editingTextId === shape.id}
                         visible={shape.visible !== false}
