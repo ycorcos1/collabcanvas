@@ -212,6 +212,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               onChange={(e) => setNewName(e.target.value)}
               className="project-rename-input"
               autoFocus
+              role="textbox"
               onBlur={handleRenameCancel}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {

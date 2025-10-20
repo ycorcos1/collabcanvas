@@ -14,6 +14,7 @@ import { ThemeInitializer } from "../components/ThemeInitializer";
 import { useShapes } from "../hooks/useShapes";
 import { useHistory } from "../hooks/useHistory";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+import { isEditableTarget } from "../utils/keyboard";
 import { useCanvas } from "../hooks/useCanvas";
 import { useCanvasDimensions } from "../hooks/useCanvasDimensions";
 import { useProjectManagement } from "../hooks/useProjectManagement";
@@ -1792,10 +1793,16 @@ const CanvasPage: React.FC = () => {
   }, [shapes, pushState]);
 
   // Setup keyboard shortcuts
+  const handleSafeDelete = useCallback(() => {
+    const active = (document.activeElement as HTMLElement | null) || null;
+    if (isEditableTarget(active)) return;
+    deleteSelectedShapes();
+  }, [deleteSelectedShapes]);
+
   useKeyboardShortcuts({
     onUndo: handleUndo,
     onRedo: handleRedo,
-    onDelete: deleteSelectedShapes,
+    onDelete: handleSafeDelete,
     onDuplicate: handleDuplicate,
     onCopy: handleCopy,
     onPaste: handlePaste,
@@ -1875,7 +1882,7 @@ const CanvasPage: React.FC = () => {
           onRedo={handleRedo}
           onCopy={handleCopy}
           onPaste={handlePaste}
-          onDeleteSelected={deleteSelectedShapes}
+        onDeleteSelected={handleSafeDelete}
           onRenameShape={handleRenameShape}
           onSave={handleManualSave}
           onNewProject={handleNewProject}
@@ -1903,7 +1910,6 @@ const CanvasPage: React.FC = () => {
           onPageDataChange={handlePageDataChange}
           pages={inMemoryPages}
           objectNames={inMemoryObjectNames}
-          
         />
 
         {/* Canvas Area */}
