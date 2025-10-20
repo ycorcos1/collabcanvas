@@ -326,7 +326,7 @@ const routeIntent = (
   // 1) Parse type first
   const typeCircle = /(circle|ellipse|oval)/.test(t) ? "circle" : null;
   const typeRect = /(rectangle|rect|square)/.test(t) ? "rectangle" : null;
-  const typeTriangle = /\btriangle\b/.test(t) ? "triangle" : null;
+  const typeTriangle = /\btriangles?\b/.test(t) ? "triangle" : null;
   const typeLine = /\bline\b/.test(t) ? "line" : null;
   const typeArrow = /\barrow\b/.test(t) ? "arrow" : null;
   const typeText = /\b(text|label|title)\b/.test(t) ? "text" : null;
@@ -702,7 +702,7 @@ const routeIntent = (
       ];
     }
     if (candidates.length > 1) {
-      if (/\ball\b/.test(t)) {
+      if (/\ball\b/.test(t) || (wantedTypes && !color)) {
         return [
           {
             tool: "delete_many_shapes",
