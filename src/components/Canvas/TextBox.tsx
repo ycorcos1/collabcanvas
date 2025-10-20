@@ -52,6 +52,13 @@ export const TextBox: React.FC<TextBoxProps> = ({
   const textRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
 
+  // Force redraw when visual text style props change to ensure immediate update
+  useEffect(() => {
+    const node = textRef.current;
+    if (!node) return;
+    node.getLayer()?.batchDraw();
+  }, [bold, italic, underline, fontSize, fontFamily, fill, width, height, align, lineHeight]);
+
   // Attach transformer when selected
   useEffect(() => {
     if (isSelected && !isEditing) {
