@@ -542,7 +542,8 @@ export const Canvas: React.FC<CanvasProps> = ({
         const dx = Math.abs(textDragBox.x - drawStartPos.x);
         const dy = Math.abs(textDragBox.y - drawStartPos.y);
         const dragDistance = Math.hypot(dx, dy);
-        const isClickOnly = dragDistance < 8 || (Math.abs(w) < 8 && Math.abs(h) < 8);
+        const isClickOnly =
+          dragDistance < 8 || (Math.abs(w) < 8 && Math.abs(h) < 8);
 
         const boxX = isClickOnly ? drawStartPos.x : textDragBox.x;
         const boxY = isClickOnly ? drawStartPos.y : textDragBox.y;
@@ -923,6 +924,9 @@ export const Canvas: React.FC<CanvasProps> = ({
                         fontSize={shape.fontSize || 16}
                         fontFamily={shape.fontFamily || "Arial"}
                         fill={shape.color}
+                        bold={(shape as any).bold}
+                        italic={(shape as any).italic}
+                        underline={(shape as any).underline}
                         width={Math.max(50, shape.width || 200)}
                         height={Math.max(24, shape.height || 50)}
                         align="left"

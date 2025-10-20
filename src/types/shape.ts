@@ -40,6 +40,9 @@ export interface Shape {
   text?: string; // Text content (for text shapes)
   fontSize?: number; // Font size (for text shapes)
   fontFamily?: string; // Font family (for text shapes)
+  bold?: boolean; // Bold style (for text shapes)
+  italic?: boolean; // Italic style (for text shapes)
+  underline?: boolean; // Underline decoration (for text shapes)
 
   // Drawing-specific properties
   points?: number[]; // Drawing path points (for drawing shapes)

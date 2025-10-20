@@ -9,6 +9,9 @@ interface TextBoxProps {
   fontSize: number;
   fontFamily: string;
   fill: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
   isSelected: boolean;
   isEditing: boolean;
   visible?: boolean; // Add visibility support
@@ -30,6 +33,9 @@ export const TextBox: React.FC<TextBoxProps> = ({
   fontSize,
   fontFamily,
   fill,
+  bold = false,
+  italic = false,
+  underline = false,
   isSelected,
   isEditing,
   visible = true,
@@ -131,9 +137,10 @@ export const TextBox: React.FC<TextBoxProps> = ({
       requestAnimationFrame(() => {
         const node = textRef.current;
         if (!node || !onResize) return;
-        const newWidth = Math.max(50, node.width());
+        const newWidth = Math.max(50, Math.round(node.width()));
         node.getLayer()?.batchDraw();
-        const newHeight = Math.max(24, node.height());
+        const measured = node.getSelfRect();
+        const newHeight = Math.max(24, Math.round(measured.height));
         onResize(node.x(), node.y(), newWidth, newHeight);
       });
     };
@@ -187,11 +194,12 @@ export const TextBox: React.FC<TextBoxProps> = ({
     const scaleX = textNode.scaleX();
     // lock vertical scale
     textNode.scaleY(1);
-    const newWidth = Math.max(50, textNode.width() * scaleX);
+    const newWidth = Math.max(50, Math.round(textNode.width() * scaleX));
     textNode.scaleX(1);
     textNode.width(newWidth);
     textNode.getLayer()?.batchDraw();
-    const newHeight = Math.max(24, textNode.height());
+    const measured = textNode.getSelfRect();
+    const newHeight = Math.max(24, Math.round(measured.height));
     onResize(textNode.x(), textNode.y(), newWidth, newHeight);
   };
 
@@ -205,6 +213,8 @@ export const TextBox: React.FC<TextBoxProps> = ({
         fontSize={fontSize}
         fontFamily={fontFamily}
         fill={fill}
+        fontStyle={`${bold ? "bold" : ""} ${italic ? "italic" : ""}`.trim() || undefined}
+        textDecoration={underline ? "underline" : undefined}
         width={width}
         height={height}
         wrap="word"
@@ -228,6 +238,8 @@ export const TextBox: React.FC<TextBoxProps> = ({
           onTransformEnd={handleTransformEnd}
           enabledAnchors={["middle-left", "middle-right"]}
           rotateEnabled={false}
+          keepRatio={false}
+          flipEnabled={false}
           boundBoxFunc={(oldBox, newBox) => {
             // Minimum size constraints
             if (newBox.width < 50 || newBox.height < 24) {

@@ -68,6 +68,11 @@ const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => {
   if (shape.text !== undefined) data.text = shape.text;
   if (shape.fontSize !== undefined) data.fontSize = shape.fontSize;
   if (shape.fontFamily !== undefined) data.fontFamily = shape.fontFamily;
+  if ((shape as any).bold !== undefined) (data as any).bold = (shape as any).bold;
+  if ((shape as any).italic !== undefined)
+    (data as any).italic = (shape as any).italic;
+  if ((shape as any).underline !== undefined)
+    (data as any).underline = (shape as any).underline;
 
   // Add drawing properties if they exist
   if (shape.points !== undefined) data.points = shape.points;
@@ -146,6 +151,12 @@ export const updateShape = async (
       firestoreUpdates.fontSize = updates.fontSize;
     if (updates.fontFamily !== undefined)
       firestoreUpdates.fontFamily = updates.fontFamily;
+  if ((updates as any).bold !== undefined)
+    (firestoreUpdates as any).bold = (updates as any).bold;
+  if ((updates as any).italic !== undefined)
+    (firestoreUpdates as any).italic = (updates as any).italic;
+  if ((updates as any).underline !== undefined)
+    (firestoreUpdates as any).underline = (updates as any).underline;
 
     // Drawing properties
     if (updates.points !== undefined) firestoreUpdates.points = updates.points;

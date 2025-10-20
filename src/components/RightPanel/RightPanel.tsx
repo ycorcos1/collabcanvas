@@ -485,13 +485,37 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                   <div className="property-row">
                     <label>Style</label>
                     <div className="text-style-buttons">
-                      <button className="style-button">
+                      <button
+                        className="style-button"
+                        onClick={() =>
+                          handleShapeUpdate(
+                            "bold",
+                            !selectedShapes[0]?.bold
+                          )
+                        }
+                      >
                         <strong>B</strong>
                       </button>
-                      <button className="style-button">
+                      <button
+                        className="style-button"
+                        onClick={() =>
+                          handleShapeUpdate(
+                            "italic",
+                            !selectedShapes[0]?.italic
+                          )
+                        }
+                      >
                         <em>I</em>
                       </button>
-                      <button className="style-button">
+                      <button
+                        className="style-button"
+                        onClick={() =>
+                          handleShapeUpdate(
+                            "underline",
+                            !selectedShapes[0]?.underline
+                          )
+                        }
+                      >
                         <u>U</u>
                       </button>
                     </div>
