@@ -30,6 +30,8 @@ const firestoreToShape = (docData: DocumentData): Shape => ({
   width: docData.width,
   height: docData.height,
   color: docData.color,
+  visible: docData.visible,
+  groupId: docData.groupId,
   zIndex: docData.zIndex || 0, // Default to 0 if not set
   createdBy: docData.createdBy,
   createdAt: docData.createdAt?.toMillis?.() || docData.createdAt,
@@ -78,6 +80,12 @@ const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => {
   if (shape.points !== undefined) data.points = shape.points;
   if (shape.strokeWidth !== undefined) data.strokeWidth = shape.strokeWidth;
 
+  // Visibility and grouping
+  if ((shape as any).visible !== undefined)
+    (data as any).visible = (shape as any).visible;
+  if ((shape as any).groupId !== undefined)
+    (data as any).groupId = (shape as any).groupId;
+
   return data;
 };
 
@@ -121,7 +129,7 @@ export const createShape = async (
       // Return a temporary ID - shapes will be synced when project is saved
       return crypto.randomUUID();
     }
-    console.error("🔥 SHAPES ERROR - Failed to create shape:", error);
+    // silent
     throw error;
   }
 };
@@ -323,9 +331,7 @@ export const subscribeToShapes = (
     (error: any) => {
       // Don't log permission errors for new projects - they're expected
       if (error.code === "permission-denied") {
-        if (import.meta.env.DEV) {
-          console.log("⏳ Shapes subscription waiting for project creation...");
-        }
+        // silent
         if (onError) {
           onError(error);
         }
@@ -333,9 +339,7 @@ export const subscribeToShapes = (
       }
 
       // Log other errors normally
-      console.error("🔥 SHAPES ERROR - Error listening to shapes:", error);
-      console.error("🔥 SHAPES ERROR - Error code:", error.code);
-      console.error("🔥 SHAPES ERROR - Error message:", error.message);
+      // silent
       if (onError) {
         onError(error);
       }
@@ -369,13 +373,11 @@ export const subscribeToShapesByPage = (
     },
     (error: any) => {
       if (error.code === "permission-denied") {
-        if (import.meta.env.DEV) {
-          console.log("⏳ Shapes subscription waiting for project creation...");
-        }
+        // silent
         if (onError) onError(error);
         return;
       }
-      console.error("🔥 SHAPES ERROR - Error listening to shapes:", error);
+      // silent
       if (onError) onError(error);
     }
   );

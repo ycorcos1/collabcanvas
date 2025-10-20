@@ -79,9 +79,7 @@ export const useShapes = (projectId: string, pageId: string) => {
         if (wasCleared && updatedShapes.length > 0) {
           // Canvas was cleared but Firestore still has shapes (race condition)
           // Ignore the shapes and keep canvas empty
-          console.log(
-            `⏭️ Ignoring ${updatedShapes.length} shapes - canvas was just cleared`
-          );
+          // silent
           setShapes([]);
           setIsLoading(false);
           return;
@@ -97,11 +95,11 @@ export const useShapes = (projectId: string, pageId: string) => {
           error.code === "permission-denied" ||
           error.message?.includes("Missing or insufficient permissions")
         ) {
-          console.log("⏳ Waiting for project to be created in Firestore...");
+          // silent
           setIsLoading(false);
           return;
         }
-        console.error("Failed to sync shapes:", error);
+        // silent
         setError(error.message);
         setIsLoading(false);
       }
@@ -519,6 +517,17 @@ export const useShapes = (projectId: string, pageId: string) => {
     [shapes]
   );
 
+  // Helper: select all shapes by groupId
+  const selectGroup = useCallback(
+    async (groupId: string) => {
+      const ids = shapes.filter((s) => (s as any).groupId === groupId).map((s) => s.id);
+      if (ids.length) {
+        await selectShapes(ids);
+      }
+    },
+    [shapes, selectShapes]
+  );
+
   return {
     shapes,
     setShapes, // Export setShapes for direct shape manipulation (e.g., loading from saved data)
@@ -534,6 +543,7 @@ export const useShapes = (projectId: string, pageId: string) => {
     clearShapes,
     clearAllShapes,
     getShapeById,
+    selectGroup,
     isShapeLockedByOther,
     getShapeSelector,
   };

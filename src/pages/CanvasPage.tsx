@@ -119,11 +119,19 @@ const CanvasPage: React.FC = () => {
   });
 
   // Handle color change - applies to new shapes AND selected shapes
-  const handleColorChange = useCallback((color: string) => {
-    setSelectedColor(color);
-    sessionStorage.setItem("horizon-selected-color", color);
-    // Selected shapes color update is handled after shapes hook is initialized
-  }, []);
+  const handleColorChange = useCallback(
+    (color: string) => {
+      setSelectedColor(color);
+      sessionStorage.setItem("horizon-selected-color", color);
+      // Immediately apply to selected shapes
+      try {
+        if (selectedShapeIds && selectedShapeIds.length > 0) {
+          selectedShapeIds.forEach((id) => updateShape(id, { color } as any));
+        }
+      } catch {}
+    },
+    [selectedShapeIds, updateShape]
+  );
 
   // History management for undo/redo (init with empty, wire later)
   const { undo, redo, pushState, canUndo, canRedo } = useHistory([]);
@@ -252,7 +260,9 @@ const CanvasPage: React.FC = () => {
   });
 
   // Cursor mode state; per-project persistence handled below
-  const [cursorMode, setCursorMode] = useState(() => "move");
+  const [cursorMode, setCursorMode] = useState<"move" | "hand" | "text">(
+    () => "move"
+  );
 
   // Project naming state
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -280,7 +290,8 @@ const CanvasPage: React.FC = () => {
 
     const key = `canvas-cursor-mode:${pid}`;
     const saved = sessionStorage.getItem(key);
-    const mode = saved || "move";
+    const mode: "move" | "hand" | "text" =
+      saved === "move" || saved === "hand" || saved === "text" ? saved : "move";
     setCursorMode(mode);
 
     // Persist both project-scoped and global toolbar state for visual sync
@@ -627,7 +638,7 @@ const CanvasPage: React.FC = () => {
   };
 
   // Handle cursor mode changes from toolbar
-  const handleCursorModeChange = (mode: string) => {
+  const handleCursorModeChange = (mode: "move" | "hand" | "text") => {
     setCursorMode(mode);
   };
 
@@ -2007,6 +2018,7 @@ const CanvasPage: React.FC = () => {
         onZoomOut={zoomOut}
         onZoomReset={zoomReset}
         onCursorModeChange={handleCursorModeChange}
+        currentCursorMode={cursorMode}
         showGrid={showGrid}
         gridSize={gridSize}
         snapToGridEnabled={snapToGridEnabled}
