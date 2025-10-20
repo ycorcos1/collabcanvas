@@ -30,6 +30,7 @@ const firestoreToShape = (docData: DocumentData): Shape => ({
   width: docData.width,
   height: docData.height,
   color: docData.color,
+  rotation: docData.rotation,
   visible: docData.visible,
   groupId: docData.groupId,
   zIndex: docData.zIndex || 0, // Default to 0 if not set
@@ -60,6 +61,7 @@ const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => {
     width: shape.width,
     height: shape.height,
     color: shape.color,
+  ...(shape.rotation !== undefined && { rotation: shape.rotation }),
     zIndex: shape.zIndex,
     createdBy: shape.createdBy,
     createdAt: Timestamp.fromMillis(shape.createdAt),
@@ -152,8 +154,10 @@ export const updateShape = async (
     if (updates.width !== undefined) firestoreUpdates.width = updates.width;
     if (updates.height !== undefined) firestoreUpdates.height = updates.height;
     if (updates.color !== undefined) firestoreUpdates.color = updates.color;
+  if (updates.rotation !== undefined) firestoreUpdates.rotation = updates.rotation;
     if (updates.zIndex !== undefined) firestoreUpdates.zIndex = updates.zIndex;
-    if (updates.visible !== undefined) firestoreUpdates.visible = updates.visible;
+    if (updates.visible !== undefined)
+      firestoreUpdates.visible = updates.visible;
     if ((updates as any).groupId !== undefined)
       (firestoreUpdates as any).groupId = (updates as any).groupId;
 
