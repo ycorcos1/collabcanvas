@@ -8,38 +8,7 @@ import { Tool, AICommandContext, AIToolResult } from "../types/ai";
 import { Shape } from "../types/shape";
 import { memoryBank } from "./memoryBank";
 import { pushCheckpoint } from "./aiCheckpoints";
-
-/**
- * Convert color names to hex codes
- */
-const colorNameToHex = (color: string): string => {
-  const colorMap: Record<string, string> = {
-    red: "#FF0000",
-    blue: "#0000FF",
-    green: "#00FF00",
-    yellow: "#FFFF00",
-    orange: "#FFA500",
-    purple: "#800080",
-    pink: "#FFC0CB",
-    black: "#000000",
-    white: "#FFFFFF",
-    gray: "#808080",
-    grey: "#808080",
-    brown: "#A52A2A",
-    cyan: "#00FFFF",
-    magenta: "#FF00FF",
-  };
-
-  const lowerColor = color.toLowerCase().trim();
-
-  // If it's already a hex code, return it
-  if (/^#[0-9a-f]{3,6}$/i.test(color)) {
-    return color;
-  }
-
-  // Convert color name to hex
-  return colorMap[lowerColor] || "#FF0000"; // Default to red if unknown
-};
+import { colorNameToHex } from "../utils/colorHelpers";
 
 /**
  * Check if a shape is locked by another user
@@ -702,6 +671,52 @@ export const selectShapeTool: Tool = {
 };
 
 /**
+ * Tool: Select Many Shapes
+ * Selects multiple shapes by IDs (requires selectShapes support)
+ */
+export const selectManyShapesTool: Tool = {
+  name: "select_many_shapes",
+  description: "Select multiple shapes by IDs in one operation.",
+  parameters: {
+    type: "object",
+    properties: {
+      shapeIds: { type: "array", items: { type: "string" } },
+    },
+    required: ["shapeIds"],
+  },
+  execute: async (args: Record<string, any>, context: AICommandContext) => {
+    try {
+      const { shapeIds } = args as { shapeIds: string[] };
+      if (!Array.isArray(shapeIds) || shapeIds.length === 0) {
+        return { success: false, message: "No shapeIds provided" };
+      }
+
+      if (typeof (context.shapeActions as any)?.selectShapes === "function") {
+        await (context.shapeActions as any).selectShapes(shapeIds);
+        return {
+          success: true,
+          message: `Selected ${shapeIds.length} shapes`,
+          data: { count: shapeIds.length },
+        };
+      }
+
+      // Fallback not supported since single-select API clears previous
+      return {
+        success: false,
+        message:
+          "Multi-select is not available. Please select shapes manually or update shapeActions.selectShapes.",
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        message: "Failed to select many shapes",
+        error: e?.message || "Unknown error",
+      };
+    }
+  },
+};
+
+/**
  * Tool: Duplicate Shape
  * Duplicates a shape or selected shapes with an offset
  */
@@ -734,7 +749,7 @@ export const duplicateShapeTool: Tool = {
     try {
       const { shapeId, offsetX = 50, offsetY = 50 } = args;
 
-      let shapesToDuplicate: any[] = [];
+      let shapesToDuplicate: Shape[] = [];
 
       if (shapeId) {
         const shape = context.shapes.find((s) => s.id === shapeId);
@@ -823,7 +838,7 @@ export const rotateShapeTool: Tool = {
     try {
       const { degrees, shapeId } = args;
 
-      let shapesToRotate: any[] = [];
+      let shapesToRotate: Shape[] = [];
 
       if (shapeId) {
         const shape = context.shapes.find((s) => s.id === shapeId);
@@ -1159,6 +1174,7 @@ export const createFromTemplateTool: Tool = {
  */
 export const getBasicTools = (): Tool[] => {
   return [
+    selectManyShapesTool,
     createShapeTool,
     deleteShapeTool,
     updateShapeTool,

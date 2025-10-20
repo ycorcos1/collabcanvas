@@ -381,6 +381,62 @@ Expected: Circle becomes 200x200
 Result: ✅ PASS
 ```
 
+### Scenario 7b: Multi-clause with resize
+
+```
+Steps:
+1. Create a 100x100 red rectangle and a 100x100 blue circle
+2. Command: "move the red rectangle to the center and resize the blue circle twice as big"
+
+Expected: Rectangle centers; blue circle becomes 200x200
+Result: ✅ PASS
+```
+
+### Scenario 7c: Scale synonyms
+
+```
+Steps:
+1. Select a 100x100 circle
+2. Command: "scale 2x"
+
+Expected: Circle becomes 200x200
+Result: ✅ PASS
+```
+
+### Scenario 8b: Relational target resolution (next to/near/closest)
+
+```
+Steps:
+1. Create two red circles; place one near a blue square, the other far from it
+2. Command: "move the red circle next to the blue square to the center"
+
+Expected: Only the red circle nearest to the blue square is moved to center
+Result: ✅ PASS
+```
+
+### Scenario 12: Image upload and manipulation
+
+```
+Steps:
+1. Click Image tool → choose a local jpg/png/webp (<=10MB)
+2. Image is uploaded, downscaled if >4096px any side, inserted at center with natural size
+3. Select image and rotate 30 degrees; resize via transformer
+
+Expected: Image appears centered; rotation and resize work, no errors
+Result: ✅ PASS
+```
+
+### Scenario 13: Image synonyms in AI
+
+```
+Steps:
+1. Upload an image via toolbar (creates an image shape)
+2. Command: "rotate the picture 45 degrees"
+
+Expected: The image shape rotates 45 degrees
+Result: ✅ PASS
+```
+
 ### Scenario 8: Alignment
 
 ```
@@ -456,4 +512,3 @@ Automated + Manual Testing
 **All tests passed successfully. AI Agent is production-ready!** ✅
 
 _Last Updated: October 18, 2025_
-

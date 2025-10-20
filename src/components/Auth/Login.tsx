@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import "./Login.css";
 
 export const Login: React.FC = () => {
   const { signIn, signUp, error, isLoading } = useAuth();
+  const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -11,23 +13,48 @@ export const Login: React.FC = () => {
     displayName: "",
   });
   const [localError, setLocalError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      // Check if redirected due to verification needed
+      const needsVerification = sessionStorage.getItem("auth:needsVerification");
+      if (needsVerification === "true") {
+        setInfo(
+          "Email verification required. Please verify your email to access protected content."
+        );
+        sessionStorage.removeItem("auth:needsVerification");
+      } else if (sessionStorage.getItem("auth:verificationSent") === "true") {
+        setInfo(
+          "Verification email sent! Please check your inbox (including spam folder). The link expires in 1 hour."
+        );
+        sessionStorage.removeItem("auth:verificationSent");
+      }
+      
+      // Check location state for verification flag
+      const locationState = location.state as any;
+      if (locationState?.needsVerification) {
+        setInfo(
+          "Email verification required. Please verify your email to continue."
+        );
+      }
+    } catch {}
+  }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
 
-    try {
-      if (isSignUp) {
-        if (!formData.displayName.trim()) {
-          setLocalError("Display name is required");
-          return;
-        }
-        await signUp(formData.email, formData.password, formData.displayName);
-      } else {
-        await signIn(formData.email, formData.password);
+    // Errors are handled by AuthProvider and set in the error state
+    // No need to catch here - just call the auth functions
+    if (isSignUp) {
+      if (!formData.displayName.trim()) {
+        setLocalError("Display name is required");
+        return;
       }
-    } catch (err: any) {
-      setLocalError(err.message || "Authentication failed");
+      await signUp(formData.email, formData.password, formData.displayName);
+    } else {
+      await signIn(formData.email, formData.password);
     }
   };
 
@@ -88,8 +115,42 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          {(error || localError) && (
-            <div className="error-message">{error || localError}</div>
+          <div className="auth-message-slot">
+            {info && <div className="info-message">{info}</div>}
+            {(error || localError) && (
+              <div className="error-message">
+                {error || localError}
+                {(error || localError)
+                  ?.toLowerCase()
+                  ?.includes("no account") && (
+                  <div style={{ marginTop: "8px" }}>
+                    <span style={{ fontSize: "0.85rem" }}>
+                      Don't have an account?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setIsSignUp(true)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#667eea",
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                          padding: 0,
+                          font: "inherit",
+                        }}
+                      >
+                        Sign up here
+                      </button>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {error?.toLowerCase()?.includes("verify") && (
+            <div className="info-message">
+              Didn’t receive the email? Check spam or try again in a minute.
+            </div>
           )}
 
           <button type="submit" className="auth-button" disabled={isLoading}>

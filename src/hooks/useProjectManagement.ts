@@ -19,6 +19,7 @@ import {
   canManualSaveToFirestore,
 } from "../config/firebaseConfig";
 import { memorySync } from "../services/memorySync";
+import { generateUniqueSlug } from "../services/slugs";
 
 /**
  * Hook for managing project creation, saving, and dashboard integration
@@ -65,10 +66,8 @@ export const useProjectManagement = () => {
 
       try {
         const now = Timestamp.now();
-        const slug = projectData.name
-          .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "");
+        // Generate unique slug to avoid collisions
+        const slug = await generateUniqueSlug(projectData.name);
 
         const newProjectData = {
           name: projectData.name,

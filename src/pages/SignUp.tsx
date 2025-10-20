@@ -28,19 +28,20 @@ export const SignUp: React.FC = () => {
         setLocalError("Display name is required");
         return;
       }
-      
+
       if (formData.password !== formData.confirmPassword) {
         setLocalError("Passwords do not match");
         return;
       }
-      
+
       if (formData.password.length < 6) {
         setLocalError("Password must be at least 6 characters");
         return;
       }
-      
+
       await signUp(formData.email, formData.password, formData.displayName);
-      navigate("/dashboard", { replace: true });
+      // Redirect to Sign In with a verification banner
+      navigate("/signin", { replace: true });
     } catch (err: any) {
       setLocalError(err.message || "Authentication failed");
     }
@@ -84,9 +85,7 @@ export const SignUp: React.FC = () => {
             }
             placeholder="Enter your email"
             disabled={isLoading}
-            error={
-              error && !localError ? error : undefined
-            }
+            error={error && !localError ? error : undefined}
             fullWidth
           />
 
@@ -100,7 +99,8 @@ export const SignUp: React.FC = () => {
             placeholder="Enter your password (min 6 characters)"
             disabled={isLoading}
             error={
-              localError && localError.includes("Password must be at least 6 characters")
+              localError &&
+              localError.includes("Password must be at least 6 characters")
                 ? localError
                 : undefined
             }
@@ -112,7 +112,10 @@ export const SignUp: React.FC = () => {
             type="password"
             value={formData.confirmPassword}
             onChange={(e) =>
-              setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))
+              setFormData((prev) => ({
+                ...prev,
+                confirmPassword: e.target.value,
+              }))
             }
             placeholder="Confirm your password"
             disabled={isLoading}

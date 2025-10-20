@@ -195,7 +195,7 @@ export const AllProjects: React.FC = () => {
         {/* Sort Options */}
         <div className="sort-section">
           <span className="sort-label">Sort by:</span>
-          <div className="sort-buttons">
+          <div className="sort-buttons" role="tablist" aria-label="Sort">
             {(["updatedAt", "createdAt", "name"] as const).map((field) => (
               <button
                 key={field}
@@ -203,12 +203,15 @@ export const AllProjects: React.FC = () => {
                   sortBy === field ? "sort-button-active" : ""
                 }`}
                 onClick={() => handleSortChange(field)}
+                aria-pressed={sortBy === field}
               >
                 {getSortLabel(field)} {getSortIcon(field)}
               </button>
             ))}
           </div>
         </div>
+
+        {/* Filter removed intentionally */}
       </div>
 
       {/* Projects Grid */}
@@ -217,8 +220,20 @@ export const AllProjects: React.FC = () => {
         isLoading={!hasInitialized && isLoading}
         emptyState={searchQuery ? <EmptySearchState /> : <EmptyProjectsState />}
         onOpenProject={openProject}
-        onRenameProject={renameProject}
-        onDeleteProject={deleteProject}
+        onRenameProject={async (id, name) => {
+          try {
+            await renameProject(id, name);
+          } catch (e: any) {
+            alert(e?.message || "Failed to rename project");
+          }
+        }}
+        onDeleteProject={async (id) => {
+          try {
+            await deleteProject(id);
+          } catch (e: any) {
+            alert(e?.message || "Failed to delete project");
+          }
+        }}
         currentUserId={user?.id}
       />
 

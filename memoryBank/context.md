@@ -31,9 +31,12 @@ HØRIZON is a collaborative canvas application with an AI-powered assistant that
 
 ## Collaboration Context
 
-- **Active Users**: 1
-- **Locked Shapes**: 0
-- **Shared Project**: No
+- **Real-Time Sync**: ✅ ENABLED (Firestore)
+- **Active Users**: Updates in real-time
+- **Locked Shapes**: Tracked per-user
+- **Shared Project**: Fully collaborative
+- **Auto-Save**: Manual + lifecycle events (no periodic saves)
+- **Change Detection**: Only saves when changes detected
 
 ## Known Issues
 
@@ -50,4 +53,3 @@ HØRIZON is a collaborative canvas application with an AI-powered assistant that
 ---
 
 _Last Updated: Auto-generated on first run_
-

@@ -16,12 +16,14 @@ import {
 } from "firebase/firestore";
 import { firestore } from "./firebase";
 import { Shape, CreateShapeData } from "../types/shape";
+// removed unused docRef/updateDocRef/Ts
 
 // No longer using a hardcoded CANVAS_ID - each project has its own shapes collection
 
 // Convert Firestore document to Shape
 const firestoreToShape = (docData: DocumentData): Shape => ({
   id: docData.id,
+  pageId: docData.pageId,
   type: docData.type,
   x: docData.x,
   y: docData.y,
@@ -49,6 +51,7 @@ const firestoreToShape = (docData: DocumentData): Shape => ({
 // Convert Shape to Firestore document
 const shapeToFirestore = (shape: Omit<Shape, "id">): DocumentData => {
   const data: DocumentData = {
+    pageId: shape.pageId,
     type: shape.type,
     x: shape.x,
     y: shape.y,
@@ -98,10 +101,10 @@ export const createShape = async (
   };
 
   try {
-    const docRef = await addDoc(
-      shapesCollection,
-      shapeToFirestore(shapeWithTimestamps)
+    const shapeForFirestore = shapeToFirestore(
+      shapeWithTimestamps as Omit<Shape, "id">
     );
+    const docRef = await addDoc(shapesCollection, shapeForFirestore);
     return docRef.id;
   } catch (error: any) {
     // Silently fail if parent project doesn't exist yet (new unsaved project)
@@ -303,7 +306,19 @@ export const subscribeToShapes = (
 
       callback(shapes);
     },
-    (error) => {
+    (error: any) => {
+      // Don't log permission errors for new projects - they're expected
+      if (error.code === "permission-denied") {
+        if (import.meta.env.DEV) {
+          console.log("⏳ Shapes subscription waiting for project creation...");
+        }
+        if (onError) {
+          onError(error);
+        }
+        return;
+      }
+
+      // Log other errors normally
       console.error("🔥 SHAPES ERROR - Error listening to shapes:", error);
       console.error("🔥 SHAPES ERROR - Error code:", error.code);
       console.error("🔥 SHAPES ERROR - Error message:", error.message);
@@ -314,6 +329,58 @@ export const subscribeToShapes = (
   );
 
   return unsubscribe;
+};
+
+// Page-scoped subscription
+export const subscribeToShapesByPage = (
+  projectId: string,
+  pageId: string,
+  callback: (shapes: Shape[]) => void,
+  onError?: (error: Error) => void
+): (() => void) => {
+  const shapesCollection = getShapesCollection(projectId);
+  const qy = query(
+    shapesCollection,
+    where("pageId", "==", pageId),
+    orderBy("createdAt", "asc")
+  );
+  const unsubscribe = onSnapshot(
+    qy,
+    (snapshot) => {
+      const shapes: Shape[] = [];
+      snapshot.forEach((doc) => {
+        const shape = firestoreToShape({ id: doc.id, ...doc.data() });
+        shapes.push(shape);
+      });
+      callback(shapes);
+    },
+    (error: any) => {
+      if (error.code === "permission-denied") {
+        if (import.meta.env.DEV) {
+          console.log("⏳ Shapes subscription waiting for project creation...");
+        }
+        if (onError) onError(error);
+        return;
+      }
+      console.error("🔥 SHAPES ERROR - Error listening to shapes:", error);
+      if (onError) onError(error);
+    }
+  );
+  return unsubscribe;
+};
+
+// Persist clear by updating project page shapes to []
+export const clearShapesForPage = async (
+  projectId: string,
+  pageId: string
+): Promise<void> => {
+  const shapesRef = collection(firestore, `projects/${projectId}/shapes`);
+  const qy = query(shapesRef, where("pageId", "==", pageId));
+  const snap = await getDocs(qy);
+  if (snap.empty) return;
+  const batch = writeBatch(firestore);
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
 };
 
 // Batch operations for performance

@@ -1,17 +1,20 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { PresenceData } from "../types/canvas";
 import * as presenceService from "../services/presence";
 import { PresenceUser } from "../services/presence";
 import { useAuth } from "../components/Auth/AuthProvider";
+import { PRESENCE_UPDATE_INTERVAL_MS } from "../utils/constants";
 
 // Ensure we don't toggle online/offline when multiple components use this hook
 // Track subscribers per (projectId:userId)
 const subscribersPerKey: Record<string, number> = {};
 const onlineSetPerKey: Record<string, boolean> = {};
+const pendingOfflineTimers: Record<string, number> = {};
 
 export const usePresence = (projectId: string) => {
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<PresenceData[]>([]);
+  const [isPrimed, setIsPrimed] = useState(false);
 
   // Set user as online and subscribe to presence
   useEffect(() => {
@@ -26,6 +29,14 @@ export const usePresence = (projectId: string) => {
 
     // Increment subscriber count for this key
     subscribersPerKey[key] = (subscribersPerKey[key] || 0) + 1;
+
+    // Clear any pending offline timer if returning quickly (refresh/navigation)
+    try {
+      if (pendingOfflineTimers[key]) {
+        clearTimeout(pendingOfflineTimers[key]);
+        delete pendingOfflineTimers[key];
+      }
+    } catch {}
 
     // Only set user online once per key (first subscriber wins)
     if (!onlineSetPerKey[key]) {
@@ -58,7 +69,14 @@ export const usePresence = (projectId: string) => {
       (users: PresenceUser[]) => {
         if (!isActive) return;
 
-        // Filter out current user from the online users list since we show them separately
+        // Debug log in development
+        if (import.meta.env.DEV) {
+          console.log(
+            `[Presence] Received ${users.length} online users for project ${projectId}`
+          );
+        }
+
+        // Filter out current user; preserve previous list until first payload to avoid flicker
         const otherUsers = users
           .filter((u) => u.userId !== currentUserId)
           .map((u) => ({
@@ -69,11 +87,17 @@ export const usePresence = (projectId: string) => {
             isOnline: true,
             lastSeen: u.joinedAt,
           }));
-
-        setOnlineUsers(otherUsers);
+        setOnlineUsers((prev) =>
+          isPrimed ? otherUsers : otherUsers.length ? otherUsers : prev
+        );
+        if (!isPrimed) setIsPrimed(true);
       },
-      (_error) => {
-        // Silently handle presence subscription errors - keep existing data
+      (error) => {
+        // Log errors in development, keep existing data in production
+        if (import.meta.env.DEV) {
+          console.error("[Presence] Subscription error:", error);
+        }
+        // Keep existing data instead of clearing it
       }
     );
 
@@ -84,7 +108,7 @@ export const usePresence = (projectId: string) => {
       } catch (_error) {
         // Silently handle activity update errors
       }
-    }, 30000); // Update every 30 seconds
+    }, PRESENCE_UPDATE_INTERVAL_MS);
 
     return () => {
       isActive = false;
@@ -99,30 +123,45 @@ export const usePresence = (projectId: string) => {
         if (subscribersPerKey[key] === 0) {
           delete subscribersPerKey[key];
           onlineSetPerKey[key] = false;
-          presenceService.setUserOffline(projectId, currentUserId).catch(() => {
-            // ignore
-          });
+          // Grace delay before marking offline to avoid flicker on refresh
+          try {
+            // Instant offline: no grace window
+            presenceService
+              .setUserOffline(projectId, currentUserId)
+              .catch(() => {})
+              .finally(() => {
+                if (pendingOfflineTimers[key]) {
+                  clearTimeout(pendingOfflineTimers[key]);
+                  delete pendingOfflineTimers[key];
+                }
+              });
+          } catch {}
         }
       } catch (_err) {}
     };
   }, [user, projectId]);
 
   // Update presence when user profile changes (e.g., profile picture)
+  // Debounced to prevent excessive Firebase writes
   useEffect(() => {
     if (!user) return;
 
-    // Update presence data when user profile changes
-    presenceService
-      .setUserOnline(
-        projectId,
-        user.id,
-        user.displayName,
-        user.color,
-        user.photoURL
-      )
-      .catch((_error) => {
-        // Silently handle presence update errors
-      });
+    // Debounce profile updates to prevent excessive writes
+    const timeoutId = setTimeout(() => {
+      presenceService
+        .setUserOnline(
+          projectId,
+          user.id,
+          user.displayName,
+          user.color,
+          user.photoURL
+        )
+        .catch((_error) => {
+          // Silently handle presence update errors
+        });
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
   }, [user?.photoURL, user?.displayName, projectId]); // Only trigger when these specific properties change
 
   const getUserCount = useCallback(() => {
@@ -130,9 +169,21 @@ export const usePresence = (projectId: string) => {
     return onlineUsers.length + (user ? 1 : 0);
   }, [onlineUsers.length, user]);
 
+  // Memoize currentUser to prevent unnecessary re-renders
+  // Only update when actual values change, not just object reference
+  const memoizedCurrentUser = useMemo(() => {
+    if (!user) return null;
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      color: user.color,
+      photoURL: user.photoURL,
+    };
+  }, [user?.id, user?.displayName, user?.color, user?.photoURL]);
+
   return {
     onlineUsers,
-    currentUser: user,
+    currentUser: memoizedCurrentUser,
     getUserCount,
   };
 };

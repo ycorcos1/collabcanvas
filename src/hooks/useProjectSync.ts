@@ -17,6 +17,8 @@ interface ProjectSyncData {
   objectNames: Record<string, string>;
   canvasBackground?: string;
   updatedAt: any;
+  ownerId?: string;
+  collaborators?: string[];
 }
 
 interface UseProjectSyncReturn {
@@ -63,6 +65,8 @@ export const useProjectSync = (
             objectNames: data.objectNames || {},
             canvasBackground: data.canvasBackground,
             updatedAt: data.updatedAt,
+            ownerId: data.ownerId,
+            collaborators: data.collaborators || [],
           };
 
           // Prevent updating too frequently (debounce)
@@ -94,4 +98,3 @@ export const useProjectSync = (
 
   return { projectData, isLoading, error };
 };
-

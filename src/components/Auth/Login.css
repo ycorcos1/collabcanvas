@@ -12,8 +12,9 @@
   border-radius: 12px;
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
+  width: 420px;
+  max-width: 420px;
+  min-height: 560px;
 }
 
 .login-title {
@@ -74,6 +75,12 @@
   border-radius: 8px;
   font-size: 0.9rem;
   border-left: 4px solid #c33;
+}
+
+.auth-message-slot {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
 }
 
 .auth-button {

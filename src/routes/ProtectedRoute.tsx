@@ -36,6 +36,25 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
+  // Block unverified accounts from protected routes
+  if (user && (user as any).emailVerified === false) {
+    // Store that verification is needed in sessionStorage
+    try {
+      sessionStorage.setItem("auth:needsVerification", "true");
+    } catch {}
+    
+    return (
+      <Navigate 
+        to="/signin" 
+        state={{ 
+          from: location.pathname,
+          needsVerification: true 
+        }} 
+        replace 
+      />
+    );
+  }
+
   // Additional safety check for incomplete user data
   if (user && (!user.id || !user.email)) {
     console.warn("Incomplete user data detected in ProtectedRoute");

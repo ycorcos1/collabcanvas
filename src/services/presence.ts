@@ -40,10 +40,13 @@ export async function setUserOnline(
 
   try {
     const presenceRef = ref(database, `presence/${projectId}/${userId}`);
-    await set(presenceRef, userData);
 
-    // Set up automatic removal on disconnect
-    onDisconnect(presenceRef).remove();
+    // Set up automatic removal on disconnect BEFORE setting presence
+    // This prevents race conditions if connection drops immediately
+    await onDisconnect(presenceRef).remove();
+
+    // Now set user as online
+    await set(presenceRef, userData);
   } catch (error: any) {
     console.error("Error setting user online:", error);
     console.error("User data that failed:", userData);

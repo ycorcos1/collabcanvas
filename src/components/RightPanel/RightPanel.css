@@ -90,6 +90,44 @@
   padding: 0 20px 16px;
 }
 
+/* Multi-select action bar */
+.multi-select-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pill-button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pill-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-focus);
+}
+
+.danger-button {
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: #fda4af; /* soft red */
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.danger-button:hover {
+  background: rgba(220, 38, 38, 0.25);
+  border-color: rgba(220, 38, 38, 0.55);
+}
+
 /* Online Panel Specific Styling */
 .online-panel .section-content {
   padding: 0 16px 16px;
@@ -441,6 +479,19 @@
 
 .export-button:hover svg {
   opacity: 1;
+}
+
+/* Layers Panel Container */
+.layers-panel-container {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.layers-panel-container .layers-panel {
+  flex: 1;
+  height: 100%;
 }
 
 /* Reduced Motion */

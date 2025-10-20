@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useRef } from "react";
-import { processCommand } from "../services/aiAgent";
+import { processUnifiedCommand } from "../services/unifiedAIAgent";
 import { isOpenAIConfigured } from "../services/openai";
 import {
   AICommand,
@@ -153,8 +153,8 @@ export const useAIAgent = (
           },
         };
 
-        // Process the command
-        const response = await processCommand(command, context);
+        // Process the command using unified agent
+        const response = await processUnifiedCommand(command, context as any);
 
         // Track command timestamp for rate limiting
         commandTimestamps.current.push(Date.now());

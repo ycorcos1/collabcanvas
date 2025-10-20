@@ -38,6 +38,8 @@ export interface AIResponse {
   executionTime?: number;
   /** Actions that were taken */
   actions?: AIAction[];
+  /** Optional data returned (e.g., project ID, trigger flags) */
+  data?: any;
 }
 
 /**
@@ -165,4 +167,3 @@ export interface AIAgentState {
   /** Error state */
   error?: string;
 }
-

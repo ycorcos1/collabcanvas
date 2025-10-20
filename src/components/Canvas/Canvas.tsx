@@ -1,5 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { Stage, Layer, Rect, Circle } from "react-konva";
+import {
+  Stage,
+  Layer,
+  Rect,
+  Circle,
+  Line as KonvaLine,
+  Arrow as KonvaArrow,
+} from "react-konva";
 import Konva from "konva";
 import { KonvaEventObject } from "konva/lib/Node";
 import { useCanvas } from "../../hooks/useCanvas";
@@ -11,6 +18,8 @@ import { TextBox } from "./TextBox";
 import { DrawingPath } from "./DrawingPath";
 import { MultipleCursors } from "../Cursors/MultipleCursors";
 import { ContextMenu } from "../ContextMenu/ContextMenu";
+import { AlignmentGuides, calculateAlignmentGuides } from "./AlignmentGuides";
+import { Grid, snapShapeToGrid } from "./Grid";
 import { Shape as ShapeType } from "../../types/shape";
 import { getRelativePointerPosition } from "../../utils/canvasHelpers";
 import "./Canvas.css";
@@ -27,10 +36,11 @@ interface CanvasProps {
   createShape: (shapeData: any) => Promise<ShapeType | null>;
   updateShape: (id: string, updates: any) => Promise<void>;
   deleteSelectedShapes: () => Promise<void>;
-  selectShape: (id: string | null) => Promise<void>;
+  selectShape: (id: string | null, event?: MouseEvent) => Promise<void> | void;
   isShapeLockedByOther: (shapeId: string) => boolean;
   getShapeSelector: (shapeId: string) => { name: string; color: string } | null;
   cursorMode?: string;
+  currentColor?: string;
   onCut?: () => void;
   onCopy?: () => void;
   onPaste?: () => void;
@@ -43,6 +53,15 @@ interface CanvasProps {
     y?: number;
     scale?: number;
   }) => void;
+  // Grid and alignment guides
+  showGrid?: boolean;
+  gridSize?: 10 | 20 | 50;
+  snapToGridEnabled?: boolean;
+  onToggleGrid?: () => void;
+  onToggleSnap?: () => void;
+  onGridSizeChange?: (size: 10 | 20 | 50) => void;
+  // Notify parent after a shape is created successfully
+  onShapeCreated?: () => void;
 }
 
 /**
@@ -72,6 +91,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   isShapeLockedByOther,
   getShapeSelector,
   cursorMode = "move",
+  currentColor,
   onCut,
   onCopy,
   onPaste,
@@ -80,6 +100,10 @@ export const Canvas: React.FC<CanvasProps> = ({
   onStageRef,
   canvasState: propCanvasState,
   updateCanvasState: propUpdateCanvasState,
+  showGrid: showGridProp = false,
+  gridSize: gridSizeProp = 20,
+  snapToGridEnabled: snapToGridEnabledProp = false,
+  onShapeCreated,
 }) => {
   const { user } = useAuth();
 
@@ -95,6 +119,8 @@ export const Canvas: React.FC<CanvasProps> = ({
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [hasInitialized, setHasInitialized] = useState(false);
+  // Guard to prevent background deselect immediately after marquee complete
+  const justSelectedRef = useRef(false);
 
   // Expose stage reference to parent component for thumbnail generation
   useEffect(() => {
@@ -140,21 +166,26 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Text editing state
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [textDragBox, setTextDragBox] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Drawing state
-  const [isDrawingMode, setIsDrawingMode] = useState(false);
-  const [currentDrawing, setCurrentDrawing] = useState<number[]>([]);
+  const [isDrawingMode] = useState(false);
+  const [currentDrawing] = useState<number[]>([]);
+
+  // Alignment guides and grid state
+  const [alignmentGuides, setAlignmentGuides] = useState<any[]>([]);
+  // Use props for grid settings (allow parent to control)
+  const showGrid = showGridProp;
+  const gridSize = gridSizeProp;
+  const snapToGridEnabled = snapToGridEnabledProp;
   const [drawingColor] = useState("#FF0000");
   const [drawingStrokeWidth] = useState(3);
-
-  // Debug state changes
-  useEffect(() => {
-    // Drawing state changed
-  }, [isDrawing, drawStartPos, previewShape]);
-
-  // Zoom update optimization removed - now handled by CSS transform in parent
-
-  // Removed shift key tracking functionality
+  // Drawing opacity unused after drawing removal
 
   // Handle canvas state based on user authentication
   useEffect(() => {
@@ -262,7 +293,7 @@ export const Canvas: React.FC<CanvasProps> = ({
           return;
         }
 
-        // Handle text tool - create text immediately on click
+        // Handle text tool - start drag box to size textbox
         if (
           cursorMode === "text" &&
           pos.x >= 0 &&
@@ -270,40 +301,12 @@ export const Canvas: React.FC<CanvasProps> = ({
           pos.y >= 0 &&
           pos.y <= (canvasDimensions?.height || 2000)
         ) {
-          const textShape = {
-            type: "text" as const,
-            x: pos.x,
-            y: pos.y,
-            width: 100,
-            height: 30,
-            color: "#FF0000", // Red default color
-            text: "Text",
-            fontSize: 16,
-            fontFamily: "Arial",
-            createdBy: user.id,
-          };
-
-          createShape(textShape).then((newShape) => {
-            if (newShape) {
-              setEditingTextId(newShape.id);
-              selectShape(newShape.id);
-            }
-          });
+          setDrawStartPos(pos);
+          setTextDragBox({ x: pos.x, y: pos.y, width: 0, height: 0 });
           return;
         }
 
-        // Handle brush tool - start drawing
-        if (
-          cursorMode === "brush" &&
-          pos.x >= 0 &&
-          pos.x <= (canvasDimensions?.width || 2000) &&
-          pos.y >= 0 &&
-          pos.y <= (canvasDimensions?.height || 2000)
-        ) {
-          setIsDrawingMode(true);
-          setCurrentDrawing([pos.x, pos.y]);
-          return;
-        }
+        // Drawing tool disabled
 
         // Only start shape creation if a tool is selected and within canvas bounds
         if (
@@ -319,7 +322,7 @@ export const Canvas: React.FC<CanvasProps> = ({
             width: 0,
             height: 0,
             type: selectedTool,
-            color: "#FF0000", // Red default color for all shapes
+            color: currentColor || "#FF0000", // Toolbar-selected color for new shapes
           };
 
           // Start creating shape
@@ -331,7 +334,15 @@ export const Canvas: React.FC<CanvasProps> = ({
         // Clicked on a shape or other element
       }
     },
-    [user, selectedTool, selectShape, cursorMode, canvasDimensions, createShape]
+    [
+      user,
+      selectedTool,
+      selectShape,
+      cursorMode,
+      canvasDimensions,
+      createShape,
+      currentColor,
+    ]
   );
 
   // Handle mouse move - update preview shape or cursor
@@ -346,7 +357,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       // Update cursor position for multiplayer
       updateCursorPosition(pos.x, pos.y);
 
-      // Handle multi-select box
+      // Handle multi-select box (live-update selection while dragging)
       if (isSelecting && drawStartPos) {
         const startX = drawStartPos.x;
         const startY = drawStartPos.y;
@@ -363,13 +374,59 @@ export const Canvas: React.FC<CanvasProps> = ({
           width,
           height,
         });
+
+        // Live multi-select: detect intersecting shapes and select them during drag
+        try {
+          const boxRight = x + width;
+          const boxBottom = y + height;
+          const selectedIds = shapes
+            .filter((shape) => {
+              const shapeRight = (shape.x || 0) + (shape.width || 0);
+              const shapeBottom = (shape.y || 0) + (shape.height || 0);
+              return !(
+                (shape.x || 0) > boxRight ||
+                shapeRight < x ||
+                (shape.y || 0) > boxBottom ||
+                shapeBottom < y
+              );
+            })
+            .map((s) => s.id);
+
+          if (selectedIds.length > 0) {
+            window.dispatchEvent(
+              new CustomEvent("canvas:selectShapes", {
+                detail: { ids: selectedIds },
+              })
+            );
+          }
+        } catch {}
         return;
       }
 
-      // Handle drawing mode
-      if (isDrawingMode && currentDrawing.length > 0) {
-        const newPoints = [...currentDrawing, pos.x, pos.y];
-        setCurrentDrawing(newPoints);
+      // Drawing tool disabled
+
+      // Handle text drag box sizing
+      if (textDragBox && drawStartPos) {
+        const startX = drawStartPos.x;
+        const startY = drawStartPos.y;
+        const endX = Math.max(
+          0,
+          Math.min(canvasDimensions?.width || 2000, pos.x)
+        );
+        const endY = Math.max(
+          0,
+          Math.min(canvasDimensions?.height || 2000, pos.y)
+        );
+        const width = Math.abs(endX - startX);
+        const height = Math.abs(endY - startY);
+        const x = Math.min(startX, endX);
+        const y = Math.min(startY, endY);
+        setTextDragBox({
+          x,
+          y,
+          width: Math.max(50, width),
+          height: Math.max(24, height),
+        });
         return;
       }
 
@@ -444,60 +501,82 @@ export const Canvas: React.FC<CanvasProps> = ({
 
         // Select all shapes that intersect
         if (selectedIds.length > 0) {
-          // For now, we'll just select the first shape to match the current architecture
-          // In the future, we could update the useShapes hook to support multi-select
-          selectShape(selectedIds[0]);
-          // TODO: Implement true multi-select in useShapes hook
+          try {
+            // Prefer new multi-select API if available
+            // @ts-ignore - hook now exports selectShapes
+            if (
+              typeof (selectShape as any) === "function" &&
+              (selectShape as any).length !== 1
+            ) {
+              // no-op fallback
+            }
+          } catch {}
+          // Use global window event to call multi-select via page (avoids import changes)
+          try {
+            window.dispatchEvent(
+              new CustomEvent("canvas:selectShapes", {
+                detail: { ids: selectedIds },
+              })
+            );
+          } catch {}
         }
 
         setIsSelecting(false);
         setSelectionBox(null);
         setDrawStartPos(null);
+        // Prevent background click from clearing selection this frame
+        justSelectedRef.current = true;
+        setTimeout(() => {
+          justSelectedRef.current = false;
+        }, 0);
         return;
       }
 
-      // Handle drawing completion
-      if (isDrawingMode) {
-        // Always stop drawing mode on mouse up
-        setIsDrawingMode(false);
+      // Drawing tool disabled
 
-        // Only create shape if we have enough points
-        if (currentDrawing.length > 2) {
-          // Calculate bounding box for the drawing
-          const minX = Math.min(
-            ...currentDrawing.filter((_, i) => i % 2 === 0)
-          );
-          const maxX = Math.max(
-            ...currentDrawing.filter((_, i) => i % 2 === 0)
-          );
-          const minY = Math.min(
-            ...currentDrawing.filter((_, i) => i % 2 === 1)
-          );
-          const maxY = Math.max(
-            ...currentDrawing.filter((_, i) => i % 2 === 1)
-          );
-
-          const drawingShape = {
-            type: "drawing" as const,
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY,
-            color: drawingColor,
-            points: currentDrawing,
-            strokeWidth: drawingStrokeWidth,
-            createdBy: user!.id,
-          };
-
-          try {
-            await createShape(drawingShape);
-          } catch (error) {
-            console.error("Failed to create drawing:", error);
-          }
+      // Finish text drag box -> create textbox and enter edit
+      if (textDragBox && drawStartPos) {
+        const w = Math.max(50, textDragBox.width);
+        const h = Math.max(24, textDragBox.height);
+        // Use distance threshold to prevent click-only creation
+        const dx = Math.abs(textDragBox.x - drawStartPos.x);
+        const dy = Math.abs(textDragBox.y - drawStartPos.y);
+        const dragDistance = Math.hypot(dx, dy);
+        if (dragDistance < 8) {
+          setTextDragBox(null);
+          setDrawStartPos(null);
+          return;
         }
-
-        // Clear drawing state
-        setCurrentDrawing([]);
+        // Prevent click-only text creation (require minimal drag)
+        if (Math.abs(w) < 8 || Math.abs(h) < 8) {
+          setTextDragBox(null);
+          setDrawStartPos(null);
+          return;
+        }
+        const textShape = {
+          type: "text" as const,
+          x: textDragBox.x,
+          y: textDragBox.y,
+          width: w,
+          height: h,
+          color: currentColor || "#FF0000",
+          text: "",
+          fontSize: 18,
+          fontFamily: "Times New Roman",
+          createdBy: user!.id,
+        };
+        try {
+          const created = await createShape(textShape);
+          if (created) {
+            setEditingTextId(created.id);
+            selectShape(created.id);
+            if (onShapeCreated) onShapeCreated();
+          }
+        } catch (err) {
+          console.error("Failed to create text box:", err);
+        }
+        setTextDragBox(null);
+        setDrawStartPos(null);
         return;
       }
 
@@ -517,6 +596,7 @@ export const Canvas: React.FC<CanvasProps> = ({
               color: previewShape.color,
               createdBy: user!.id,
             });
+            if (onShapeCreated) onShapeCreated();
           } catch (error) {
             console.error("Failed to create shape:", error);
           }
@@ -541,40 +621,79 @@ export const Canvas: React.FC<CanvasProps> = ({
       selectionBox,
       shapes,
       selectShape,
+      currentColor,
+      textDragBox,
+      setEditingTextId,
     ]
   );
 
-  // Handle shape selection without shift key functionality
-  const handleShapeSelect = useCallback(
-    (shapeId: string) => {
-      selectShape(shapeId);
-    },
-    [selectShape]
-  );
+  // Pass-through selection (parent handles shift-click)
+
+  // TODO: Handle shape drag move (for real-time alignment guides while dragging)
+  // This would require modifying the Shape component to support onDragMove callback
+  // For now, alignment guides only appear on snap (drag end)
 
   // Handle shape drag end
   const handleShapeDragEnd = useCallback(
     (shapeId: string, x: number, y: number) => {
+      // Clear alignment guides
+      setAlignmentGuides([]);
+
       // Get the shape to know its dimensions
       const shape = shapes.find((s) => s.id === shapeId);
       if (!shape) return;
+
+      // Apply snap-to-grid if enabled
+      let finalX = x;
+      let finalY = y;
+
+      if (snapToGridEnabled) {
+        const snapped = snapShapeToGrid(
+          { x, y, width: shape.width, height: shape.height },
+          gridSize,
+          true
+        );
+        finalX = snapped.x;
+        finalY = snapped.y;
+      } else {
+        // Apply snap-to-shape alignment
+        const otherShapes = shapes
+          .filter((s) => s.id !== shapeId)
+          .map((s) => ({
+            id: s.id,
+            x: s.x,
+            y: s.y,
+            width: s.width,
+            height: s.height,
+          }));
+
+        const { snapX, snapY } = calculateAlignmentGuides(
+          { x, y, width: shape.width, height: shape.height },
+          otherShapes,
+          5,
+          canvasDimensions || { width: 2000, height: 2000 }
+        );
+
+        if (snapX !== null) finalX = snapX;
+        if (snapY !== null) finalY = snapY;
+      }
 
       // Define minimum visible area (at least 20px should remain visible)
       const minVisible = 20;
 
       // Calculate constrained position
-      const maxX = (canvasDimensions?.width || 2000) - minVisible; // Allow shape to go mostly off-canvas to the right
-      const maxY = (canvasDimensions?.height || 2000) - minVisible; // Allow shape to go mostly off-canvas to the bottom
-      const minX = minVisible - shape.width; // Allow shape to go mostly off-canvas to the left
-      const minY = minVisible - shape.height; // Allow shape to go mostly off-canvas to the top
+      const maxX = (canvasDimensions?.width || 2000) - minVisible;
+      const maxY = (canvasDimensions?.height || 2000) - minVisible;
+      const minX = minVisible - shape.width;
+      const minY = minVisible - shape.height;
 
       // Constrain the position
-      const constrainedX = Math.max(minX, Math.min(maxX, x));
-      const constrainedY = Math.max(minY, Math.min(maxY, y));
+      const constrainedX = Math.max(minX, Math.min(maxX, finalX));
+      const constrainedY = Math.max(minY, Math.min(maxY, finalY));
 
       updateShape(shapeId, { x: constrainedX, y: constrainedY });
     },
-    [updateShape, shapes]
+    [updateShape, shapes, canvasDimensions, snapToGridEnabled, gridSize]
   );
 
   // Handle shape resize
@@ -741,8 +860,14 @@ export const Canvas: React.FC<CanvasProps> = ({
                 shadowOffset={{ x: 0, y: 2 }}
                 shadowBlur={4}
                 listening={true}
-                onClick={() => selectShape(null)}
-                onTap={() => selectShape(null)}
+                onClick={() => {
+                  if (isSelecting || justSelectedRef.current) return;
+                  selectShape(null);
+                }}
+                onTap={() => {
+                  if (isSelecting || justSelectedRef.current) return;
+                  selectShape(null);
+                }}
               />
 
               {/* Invisible overlay to prevent browser default empty canvas behavior */}
@@ -765,72 +890,108 @@ export const Canvas: React.FC<CanvasProps> = ({
                 listening={false}
               />
 
-              {/* Render all shapes */}
-              {shapes.map((shape) => {
-                const isLockedByOther = isShapeLockedByOther(shape.id);
-                const selectedByOther = getShapeSelector(shape.id);
-                const isSelected = selectedShapeIds.includes(shape.id);
+              {/* Grid overlay */}
+              <Grid
+                width={canvasDimensions?.width || 2000}
+                height={canvasDimensions?.height || 2000}
+                gridSize={gridSize}
+                visible={showGrid}
+                opacity={0.15}
+              />
 
-                // Render text shapes differently
-                if (shape.type === "text") {
+              {/* Alignment guides */}
+              <AlignmentGuides
+                guides={alignmentGuides}
+                canvasDimensions={
+                  canvasDimensions || { width: 2000, height: 2000 }
+                }
+              />
+
+              {/* Render all shapes (sorted by zIndex) */}
+              {[...shapes]
+                .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+                .map((shape) => {
+                  const isLockedByOther = isShapeLockedByOther(shape.id);
+                  const selectedByOther = getShapeSelector(shape.id);
+                  const isSelected = selectedShapeIds.includes(shape.id);
+                  const canInteract = cursorMode === "move"; // Only move cursor allows interactions
+
+                  // Render text shapes differently
+                  if (shape.type === "text") {
+                    return (
+                      <TextBox
+                        key={shape.id}
+                        x={shape.x}
+                        y={shape.y}
+                        text={shape.text || "Text"}
+                        fontSize={shape.fontSize || 16}
+                        fontFamily={shape.fontFamily || "Arial"}
+                        fill={shape.color}
+                        isSelected={isSelected}
+                        isEditing={editingTextId === shape.id}
+                        visible={shape.visible !== false}
+                        onTextChange={(newText) =>
+                          handleTextChange(shape.id, newText)
+                        }
+                        onEditingChange={(isEditing) =>
+                          handleTextEditingChange(shape.id, isEditing)
+                        }
+                        onSelect={(evt?: any) =>
+                          selectShape(shape.id, evt?.evt as MouseEvent)
+                        }
+                        onDragEnd={(x, y) => handleTextDragEnd(shape.id, x, y)}
+                        onResize={(x, y, width, height) =>
+                          handleTextResize(shape.id, x, y, width, height)
+                        }
+                      />
+                    );
+                  }
+
+                  // Render drawing shapes
+                  if (shape.type === "drawing" && shape.points) {
+                    return (
+                      <DrawingPath
+                        key={shape.id}
+                        id={shape.id}
+                        x={shape.x || 0}
+                        y={shape.y || 0}
+                        points={shape.points}
+                        stroke={shape.color}
+                        strokeWidth={shape.strokeWidth || 3}
+                        opacity={(shape as any).opacity || 1}
+                        visible={shape.visible !== false}
+                        isSelected={isSelected}
+                        onSelect={() => selectShape(shape.id)}
+                        onDragEnd={(id, x, y) => handleShapeDragEnd(id, x, y)}
+                        onResize={(id, x, y, width, height) =>
+                          handleShapeResize(id, x, y, width, height)
+                        }
+                      />
+                    );
+                  }
+
+                  // Render regular shapes
                   return (
-                    <TextBox
+                    <Shape
                       key={shape.id}
-                      x={shape.x}
-                      y={shape.y}
-                      text={shape.text || "Text"}
-                      fontSize={shape.fontSize || 16}
-                      fontFamily={shape.fontFamily || "Arial"}
-                      fill={shape.color}
+                      shape={shape}
                       isSelected={isSelected}
-                      isEditing={editingTextId === shape.id}
-                      onTextChange={(newText) =>
-                        handleTextChange(shape.id, newText)
-                      }
-                      onEditingChange={(isEditing) =>
-                        handleTextEditingChange(shape.id, isEditing)
-                      }
-                      onSelect={() => handleShapeSelect(shape.id)}
-                      onDragEnd={(x, y) => handleTextDragEnd(shape.id, x, y)}
-                      onResize={(x, y, width, height) =>
-                        handleTextResize(shape.id, x, y, width, height)
-                      }
+                      selectedTool={selectedTool}
+                      onSelect={selectShape}
+                      onDragEnd={handleShapeDragEnd}
+                      onResize={handleShapeResize}
+                      isLockedByOther={isLockedByOther}
+                      selectedByOther={selectedByOther}
+                      canvasScale={canvasState.scale}
+                      canInteract={canInteract}
                     />
                   );
-                }
-
-                // Render drawing shapes
-                if (shape.type === "drawing" && shape.points) {
-                  return (
-                    <DrawingPath
-                      key={shape.id}
-                      points={shape.points}
-                      stroke={shape.color}
-                      strokeWidth={shape.strokeWidth || 3}
-                    />
-                  );
-                }
-
-                // Render regular shapes
-                return (
-                  <Shape
-                    key={shape.id}
-                    shape={shape}
-                    isSelected={isSelected}
-                    selectedTool={selectedTool}
-                    onSelect={handleShapeSelect}
-                    onDragEnd={handleShapeDragEnd}
-                    onResize={handleShapeResize}
-                    isLockedByOther={isLockedByOther}
-                    selectedByOther={selectedByOther}
-                    canvasScale={canvasState.scale}
-                  />
-                );
-              })}
+                })}
 
               {/* Preview shape while drawing */}
               {previewShape &&
-                (previewShape.type === "circle" ? (
+                (previewShape.type === "circle" ||
+                previewShape.type === "ellipse" ? (
                   <Circle
                     x={previewShape.x + previewShape.width / 2}
                     y={previewShape.y + previewShape.height / 2}
@@ -839,6 +1000,50 @@ export const Canvas: React.FC<CanvasProps> = ({
                     }
                     fill="rgba(33, 150, 243, 0.3)"
                     stroke="#2196f3"
+                    strokeWidth={2}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                ) : previewShape.type === "triangle" ? (
+                  <KonvaLine
+                    points={[
+                      previewShape.x + previewShape.width / 2,
+                      previewShape.y,
+                      previewShape.x + previewShape.width,
+                      previewShape.y + previewShape.height,
+                      previewShape.x,
+                      previewShape.y + previewShape.height,
+                    ]}
+                    fill="rgba(33, 150, 243, 0.3)"
+                    stroke="#2196f3"
+                    strokeWidth={2}
+                    dash={[5, 5]}
+                    closed
+                    listening={false}
+                  />
+                ) : previewShape.type === "line" ? (
+                  <KonvaLine
+                    points={[
+                      previewShape.x,
+                      previewShape.y,
+                      previewShape.x + previewShape.width,
+                      previewShape.y + previewShape.height,
+                    ]}
+                    stroke="#2196f3"
+                    strokeWidth={2}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                ) : previewShape.type === "arrow" ? (
+                  <KonvaArrow
+                    points={[
+                      previewShape.x,
+                      previewShape.y,
+                      previewShape.x + previewShape.width,
+                      previewShape.y + previewShape.height,
+                    ]}
+                    stroke="#2196f3"
+                    fill="#2196f3"
                     strokeWidth={2}
                     dash={[5, 5]}
                     listening={false}
@@ -872,14 +1077,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 />
               )}
 
-              {/* Current drawing preview */}
-              {isDrawingMode && currentDrawing.length > 2 && (
-                <DrawingPath
-                  points={currentDrawing}
-                  stroke={drawingColor}
-                  strokeWidth={drawingStrokeWidth}
-                />
-              )}
+              {/* Drawing tool disabled */}
             </Layer>
           </Stage>
 

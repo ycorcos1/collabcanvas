@@ -4,6 +4,7 @@ export interface User {
   displayName: string;
   color: string;
   photoURL?: string; // Optional profile photo URL
+  emailVerified?: boolean; // Email verification status from Firebase Auth
 }
 
 export interface AuthState {

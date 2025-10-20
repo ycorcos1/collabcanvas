@@ -32,30 +32,44 @@ service cloud.firestore {
     // Projects collection
     match /projects/{projectId} {
       // Read: allow if authenticated (application layer enforces access control)
-      // This is necessary for collaboration invitations to work
       allow read: if isAuthenticated();
-      
+
       // Create: authenticated users can create projects (they become owner)
-      allow create: if isAuthenticated() && 
-        request.resource.data.ownerId == request.auth.uid;
-      
-      // Update: owner, existing collaborator, or user being added as collaborator
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+
+      // Update:
+      // - Owners: full updates
+      // - Collaborators: can only update canvas-related fields (not name/slug/owner/collaborators/deletedAt)
       allow update: if isAuthenticated() && (
-        // Owner can update
+        // Owner can update anything
         resource.data.ownerId == request.auth.uid ||
-        // Existing collaborator can update
-        request.auth.uid in resource.data.collaborators ||
-        // User being added as collaborator (for accepting invitations)
-        // Only allow adding self to collaborators, ensure owner isn't being changed
-        (request.auth.uid in request.resource.data.collaborators && 
-         !(request.auth.uid in resource.data.collaborators) &&
-         (!('ownerId' in request.resource.data.keys()) || 
-          resource.data.ownerId == request.resource.data.ownerId))
+        // Collaborators limited to canvas content/state fields
+        (
+          request.auth.uid in resource.data.collaborators &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'pages', 'canvasBackground', 'currentPageId', 'objectNames', 'pageMetadata',
+            'thumbnailUrl', 'updatedAt', 'lastAccessedAt'
+          ])
+        )
       );
-      
+
       // Delete: only owner can delete
-      allow delete: if isAuthenticated() && 
-        resource.data.ownerId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      
+      // Shapes subcollection - critical for real-time collaboration
+      match /shapes/{shapeId} {
+        // Read: allow if user has access to parent project
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid ||
+          request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.collaborators
+        );
+        
+        // Write: allow if user has access to parent project
+        allow write: if isAuthenticated() && (
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid ||
+          request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.collaborators
+        );
+      }
     }
     
     // Collaboration requests collection
@@ -90,6 +104,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Transfer invitations collection
+    match /invitations_transfer/{inviteId} {
+      // Ownership transfer disabled
+      allow read, create, update, delete: if false;
     }
     
     // Canvas dimensions collection

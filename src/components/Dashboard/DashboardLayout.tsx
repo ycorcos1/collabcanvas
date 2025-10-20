@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { NotificationCenter } from "../Notifications/NotificationCenter";
 import { ThemeInitializer } from "../ThemeInitializer";
+import { DashboardAIWidget } from "../AIWidget/DashboardAIWidget";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAIOpen, setIsAIOpen] = useState(() => {
+    const saved = localStorage.getItem("dashboard-ai-open");
+    return saved === "true";
+  });
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -30,11 +35,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setIsMobileMenuOpen(false);
   };
 
+  const handleAIToggle = (open: boolean) => {
+    setIsAIOpen(open);
+    localStorage.setItem("dashboard-ai-open", String(open));
+  };
+
   return (
     <div className="dashboard-layout">
       {/* Initialize theme for authenticated users */}
       <ThemeInitializer />
-      
+
       {/* Mobile Menu Button */}
       <button
         className="mobile-menu-button"
@@ -62,12 +72,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <NotificationCenter />
           </div>
         </div>
-        
+
         {/* Dashboard Content */}
         <div className="dashboard-content-wrapper">
           {children || <Outlet />}
         </div>
       </main>
+
+      {/* Dashboard AI Widget - Always available */}
+      <DashboardAIWidget isOpen={isAIOpen} onToggle={handleAIToggle} />
     </div>
   );
 };

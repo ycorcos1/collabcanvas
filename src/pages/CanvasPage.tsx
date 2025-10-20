@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/Auth/AuthProvider";
 import { Canvas } from "../components/Canvas/Canvas";
@@ -14,11 +20,22 @@ import { useProjectManagement } from "../hooks/useProjectManagement";
 import { useProjectSync } from "../hooks/useProjectSync";
 import { useAIAgent } from "../hooks/useAIAgent";
 import { exportCanvas } from "../utils/exportUtils";
+import {
+  searchProjectsByName,
+  getTrashedProjects,
+  batchDeleteProjects,
+} from "../services/projects";
+import { sendCollaborationInvitation } from "../services/collaboration";
+import { LifecycleSave } from "../services/lifecycleSave";
+import { updateProjectSlug } from "../services/slugs";
 // Alignment utils removed - will be added back when needed in right panel
 import { LeftSidebar } from "../components/LeftSidebar/LeftSidebar";
 import { ModernToolbar } from "../components/ModernToolbar/ModernToolbar";
 import { RightPanel } from "../components/RightPanel/RightPanel";
+import { CanvasAIWidget } from "../components/AIWidget/CanvasAIWidget";
 import { AddCollaboratorsModal } from "../components/Modals/AddCollaboratorsModal";
+import { ConfirmationModal } from "../components/Modals/ConfirmationModal";
+// import { createTransferInvite } from "../services/invitations"; // ownership transfer disabled
 import { Button } from "../components/shared";
 import { Shape } from "../types/shape";
 import { generateProjectSlug } from "../utils/projectUtils";
@@ -26,6 +43,8 @@ import { generateKonvaThumbnail } from "../utils/thumbnailGenerator";
 import "./CanvasPage.css";
 import { memorySync } from "../services/memorySync";
 import { memoryBank } from "../services/memoryBank";
+import { ToastContainer } from "../components/shared/Toast";
+import { useToast } from "../hooks/useToast";
 
 /**
  * Canvas Page - Individual project canvas view
@@ -44,6 +63,7 @@ const CanvasPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const { toasts, showError, closeToast } = useToast();
 
   // Project name is now completely separate from URL
   // The actual name will be loaded from Firestore or set by user
@@ -54,7 +74,6 @@ const CanvasPage: React.FC = () => {
   // Save system state
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedState, setLastSavedState] = useState<string>("");
-  const [showExitPrompt, setShowExitPrompt] = useState(false);
   const [isProjectSaved, setIsProjectSaved] = useState(false); // Track if project has been saved at least once
   const [actualProjectId, setActualProjectId] = useState<string | null>(null); // Store the real project ID after first save
   const [savingStatus, setSavingStatus] = useState<"idle" | "saving" | "saved">(
@@ -65,24 +84,32 @@ const CanvasPage: React.FC = () => {
   const [stageRef, setStageRef] = useState<any>(null); // Store Konva stage reference for thumbnail generation
   const [isInitializing, setIsInitializing] = useState(true); // Track if we're still initializing the project
   const workspaceRef = useRef<HTMLDivElement | null>(null); // Reference to canvas workspace for panning
+  const lifecycleSaveRef = useRef<LifecycleSave | null>(null); // Reference to lifecycle save (manual + refresh/close/navigate)
 
   // Canvas state management
+  // Page management (declare early so hooks can depend on it)
+  const [currentPageId, setCurrentPageId] = useState("page1");
+
+  // Shapes hook scoped to current page
   const {
     shapes,
     setShapes,
     selectedShapeIds,
     createShape,
     updateShape,
+    deleteShape,
     deleteSelectedShapes,
     selectShape,
+    selectShapes,
     clearAllShapes,
     isShapeLockedByOther,
     getShapeSelector,
-  } = useShapes(actualProjectId || projectSlug); // Use actual project ID for shapes, fallback to slug
+  } = useShapes(actualProjectId || projectSlug, currentPageId);
 
   // Selected tool state with session persistence
   const [selectedTool, setSelectedTool] = useState<Shape["type"] | null>(() => {
     const saved = sessionStorage.getItem("horizon-selected-tool");
+    // Default to cursor select (no shape tool) when nothing saved
     return saved ? (saved as Shape["type"]) : null;
   });
 
@@ -91,33 +118,56 @@ const CanvasPage: React.FC = () => {
     return sessionStorage.getItem("horizon-selected-color") || "#FF0000";
   });
 
-  // Handle color change
+  // Handle color change - applies to new shapes AND selected shapes
   const handleColorChange = useCallback((color: string) => {
     setSelectedColor(color);
     sessionStorage.setItem("horizon-selected-color", color);
+    // Selected shapes color update is handled after shapes hook is initialized
   }, []);
 
-  // History management for undo/redo
-  const { undo, redo, pushState, canUndo, canRedo } = useHistory(shapes);
+  // History management for undo/redo (init with empty, wire later)
+  const { undo, redo, pushState, canUndo, canRedo } = useHistory([]);
+
+  // Delete single shape uses hook's deleteShape
+
+  // Handle reordering layers (for layers panel)
+  const handleReorderLayers = useCallback(
+    (reorderedShapes: Shape[]) => {
+      // Update all shapes with new z-index
+      reorderedShapes.forEach((shape) => {
+        updateShape(shape.id, { zIndex: shape.zIndex });
+      });
+      // Update local state to reflect new order immediately
+      setShapes(reorderedShapes);
+    },
+    [updateShape, setShapes]
+  );
 
   // Collaboration modal state
   const [isCollaborationModalOpen, setIsCollaborationModalOpen] =
     useState(false);
+  // Transfer ownership removed
+  const [isLeaveProjectOpen, setIsLeaveProjectOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [isOwnerLeaveBlockedOpen, setIsOwnerLeaveBlockedOpen] = useState(false);
+
+  // Shift key state for multi-select visual feedback
+  const [isShiftHeld, setIsShiftHeld] = useState(false);
 
   // AI Agent integration
-  const {
-    executeCommand: executeAICommand,
-    isEnabled: isAIEnabled,
-    isProcessing: isAIProcessing,
-  } = useAIAgent({
+  const { executeCommand: executeAICommand } = useAIAgent({
     scopeId: (actualProjectId || projectSlug || "").toString(),
     onSuccess: (response) => {
       // Command executed successfully
-      console.log("AI command success:", response);
+      if (import.meta.env.DEV) {
+        console.log("AI command success:", response);
+      }
     },
     onError: (error) => {
       // Command failed
-      console.error("AI command error:", error);
+      if (import.meta.env.DEV) {
+        console.error("AI command error:", error);
+      }
     },
   });
 
@@ -133,10 +183,32 @@ const CanvasPage: React.FC = () => {
   >([]);
 
   // Project management
-  const { saveProject, loadProject } = useProjectManagement();
+  const { saveProject, loadProject, createProject, deleteProject } =
+    useProjectManagement();
 
   // Real-time project synchronization
   const { projectData: syncedProjectData } = useProjectSync(actualProjectId);
+
+  // Watch for real-time project name updates (for collaborators)
+  useEffect(() => {
+    // Redirect if project was deleted (owner trashed or permanently deleted)
+    if (syncedProjectData && (syncedProjectData as any).deletedAt) {
+      navigate("/dashboard/recent", { replace: true });
+      return;
+    }
+    if (
+      syncedProjectData &&
+      syncedProjectData.name &&
+      syncedProjectData.name !== projectName
+    ) {
+      console.log(
+        "📡 Real-time update: Project name changed to",
+        syncedProjectData.name
+      );
+      setProjectName(syncedProjectData.name);
+      setTempProjectName(syncedProjectData.name);
+    }
+  }, [syncedProjectData?.name]);
 
   // Canvas state management
   const { canvasState, zoomIn, zoomOut, zoomReset } = useCanvas();
@@ -144,11 +216,14 @@ const CanvasPage: React.FC = () => {
   // Canvas dimensions management
   const { dimensions: canvasDimensions } = useCanvasDimensions();
 
+  // Memoize selected shapes for performance
+  const selectedShapes = useMemo(
+    () => shapes.filter((shape) => selectedShapeIds.includes(shape.id)),
+    [shapes, selectedShapeIds]
+  );
+
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<Shape[]>([]);
-
-  // Page management state - always start on first page
-  const [currentPageId, setCurrentPageId] = useState("page1");
   const [pageCanvasData, setPageCanvasData] = useState<
     Record<string, { shapes: Shape[]; canvasBackground: string }>
   >(() => {
@@ -174,14 +249,79 @@ const CanvasPage: React.FC = () => {
   });
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
 
-  // Cursor mode state with persistence
-  const [cursorMode, setCursorMode] = useState(() => {
-    return sessionStorage.getItem("canvas-cursor-mode") || "move";
+  // Grid and snap state with localStorage persistence
+  const [showGrid, setShowGrid] = useState(() => {
+    const saved = localStorage.getItem("canvas-show-grid");
+    return saved === "true";
   });
+  const [gridSize, setGridSize] = useState<10 | 20 | 50>(() => {
+    const saved = localStorage.getItem("canvas-grid-size");
+    return saved === "10" || saved === "20" || saved === "50"
+      ? (parseInt(saved) as 10 | 20 | 50)
+      : 20;
+  });
+  const [snapToGridEnabled, setSnapToGridEnabled] = useState(() => {
+    const saved = localStorage.getItem("canvas-snap-to-grid");
+    return saved === "true";
+  });
+
+  // Cursor mode state; per-project persistence handled below
+  const [cursorMode, setCursorMode] = useState(() => "move");
 
   // Project naming state
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [tempProjectName, setTempProjectName] = useState(projectName);
+
+  // Bridge: listen for Canvas multi-select event and call hook's selectShapes
+  useEffect(() => {
+    const onCanvasSelectShapes = (e: any) => {
+      const ids: string[] | undefined = e?.detail?.ids;
+      if (!ids || ids.length === 0) return;
+      selectShapes(ids);
+    };
+    window.addEventListener("canvas:selectShapes", onCanvasSelectShapes as any);
+    return () =>
+      window.removeEventListener(
+        "canvas:selectShapes",
+        onCanvasSelectShapes as any
+      );
+  }, [selectShapes]);
+
+  // Force default Move on project open/create and restore per-project cursor mode
+  useEffect(() => {
+    const pid = actualProjectId || projectSlug;
+    if (!pid) return;
+
+    const key = `canvas-cursor-mode:${pid}`;
+    const saved = sessionStorage.getItem(key);
+    const mode = saved || "move";
+    setCursorMode(mode);
+
+    // Persist both project-scoped and global toolbar state for visual sync
+    sessionStorage.setItem(key, mode);
+    try {
+      localStorage.setItem("toolbar-cursor-mode", mode);
+      localStorage.setItem(`toolbar-cursor-mode:${pid}`, mode);
+    } catch {}
+
+    // Ensure no shape tool is active by default on load
+    setSelectedTool(null);
+    try {
+      sessionStorage.removeItem("horizon-selected-tool");
+    } catch {}
+  }, [actualProjectId, projectSlug]);
+
+  // Persist cursor mode changes per-project and sync toolbar state
+  useEffect(() => {
+    const pid = actualProjectId || projectSlug;
+    if (!pid) return;
+    const key = `canvas-cursor-mode:${pid}`;
+    sessionStorage.setItem(key, cursorMode);
+    try {
+      localStorage.setItem("toolbar-cursor-mode", cursorMode);
+      localStorage.setItem(`toolbar-cursor-mode:${pid}`, cursorMode);
+    } catch {}
+  }, [cursorMode, actualProjectId, projectSlug]);
 
   // Sync tempProjectName with projectName when projectName changes (but only after loading)
   useEffect(() => {
@@ -189,6 +329,18 @@ const CanvasPage: React.FC = () => {
       setTempProjectName(projectName);
     }
   }, [projectName, isEditingProjectName, isProjectLoaded]);
+
+  // Image upload removed: ignore any legacy toolbar events gracefully
+  useEffect(() => {
+    const onImageSelected = () => showError("Image upload is disabled.");
+    window.addEventListener("toolbar:imageSelected", onImageSelected as any);
+    return () => {
+      window.removeEventListener(
+        "toolbar:imageSelected",
+        onImageSelected as any
+      );
+    };
+  }, [showError]);
 
   // Persist selected tool in session storage
   useEffect(() => {
@@ -398,49 +550,8 @@ const CanvasPage: React.FC = () => {
     isInitializing, // Add to dependencies
   ]);
 
-  // Handle browser beforeunload event (now only for critical situations)
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only warn if there are very recent changes that might not be auto-saved yet
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue =
-          "You have unsaved changes. Are you sure you want to leave?";
-        return "You have unsaved changes. Are you sure you want to leave?";
-      }
-    };
-
-    // Block browser back/forward navigation
-    const handlePopState = (e: PopStateEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        const confirmLeave = window.confirm(
-          "You have unsaved changes. Are you sure you want to leave? All progress will be lost."
-        );
-        if (!confirmLeave) {
-          // Push the current state back to prevent navigation
-          window.history.pushState(null, "", window.location.href);
-        } else {
-          // Allow navigation and reset unsaved changes
-          setHasUnsavedChanges(false);
-          window.history.back();
-        }
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("popstate", handlePopState);
-
-    // Push initial state to enable popstate detection
-    if (hasUnsavedChanges) {
-      window.history.pushState(null, "", window.location.href);
-    }
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [hasUnsavedChanges]);
+  // No beforeunload/popstate prompts needed - LifecycleSave handles automatic saving
+  // The LifecycleSave service already has its own beforeunload handler for saving
 
   // Validate slug parameter
   if (!slug) {
@@ -474,10 +585,25 @@ const CanvasPage: React.FC = () => {
     setIsEditingProjectName(true);
   };
 
-  const handleNameSave = () => {
-    if (tempProjectName.trim()) {
-      setProjectName(tempProjectName.trim());
-      // Note: URL will update on next page refresh as per requirements
+  const handleNameSave = async () => {
+    if (tempProjectName.trim() && tempProjectName.trim() !== projectName) {
+      const newName = tempProjectName.trim();
+      setProjectName(newName);
+
+      // Update slug if project has been saved (this updates Firestore)
+      if (actualProjectId) {
+        try {
+          await updateProjectSlug(actualProjectId, newName);
+          console.log("✅ Project renamed:", newName);
+        } catch (error) {
+          console.error("❌ Failed to update project slug:", error);
+        }
+      }
+
+      // Trigger lifecycle save to ensure canvas state is synced with new name
+      if (lifecycleSaveRef.current) {
+        await lifecycleSaveRef.current.saveNow();
+      }
     }
     setIsEditingProjectName(false);
   };
@@ -496,12 +622,17 @@ const CanvasPage: React.FC = () => {
   };
 
   // Handle back navigation
-  const handleBack = () => {
-    if (hasUnsavedChanges) {
-      setShowExitPrompt(true);
-    } else {
-      navigate("/dashboard/recent");
+  // Trigger save before navigating to dashboard
+  const handleBack = async () => {
+    // Trigger final save before leaving
+    if (lifecycleSaveRef.current) {
+      await lifecycleSaveRef.current.saveNow();
     }
+
+    // Small delay to ensure save completes
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    navigate("/dashboard/recent");
   };
 
   // Handle tool selection with validation
@@ -513,6 +644,33 @@ const CanvasPage: React.FC = () => {
   const handleCursorModeChange = (mode: string) => {
     setCursorMode(mode);
   };
+
+  // Handle shape selection with Shift+Click support
+  const handleShapeSelect = useCallback(
+    (shapeId: string | null, nativeEvent?: MouseEvent) => {
+      if (!shapeId) {
+        // Null means deselect all
+        selectShape(null);
+        return;
+      }
+
+      const isShift = nativeEvent?.shiftKey || isShiftHeld;
+      if (isShift) {
+        // Shift+Click: Add/remove from selection
+        if (selectedShapeIds.includes(shapeId)) {
+          // Already selected: remove from selection
+          selectShapes(selectedShapeIds.filter((id) => id !== shapeId));
+        } else {
+          // Not selected: add to selection
+          selectShapes([...selectedShapeIds, shapeId]);
+        }
+      } else {
+        // Regular click: replace selection
+        selectShape(shapeId);
+      }
+    },
+    [selectedShapeIds, selectShape, selectShapes, isShiftHeld]
+  );
 
   // Handle shape renaming from sidebar
   const handleRenameShape = (_id: string, _newName: string) => {
@@ -734,8 +892,48 @@ const CanvasPage: React.FC = () => {
           }, 100);
         } else {
           // Project doesn't exist - this is a new project
+          // CRITICAL FIX: Create the project immediately so it appears in dashboard
           setProjectName("Untitled Project");
           setTempProjectName("Untitled Project");
+          setActualProjectId(projectSlug); // Use slug as project ID for new projects
+
+          // Create initial project document immediately in Firestore
+          const initialProjectData = {
+            name: "Untitled Project",
+            pages: {
+              page1: { shapes: [], canvasBackground: "#ffffff" },
+            },
+            currentPageId: "page1",
+            canvasBackground: "#ffffff",
+            objectNames: {},
+            pageMetadata: [{ id: "page1", name: "Page 1" }],
+          };
+
+          try {
+            const saved = await saveProject(projectSlug, initialProjectData);
+
+            if (saved) {
+              setIsProjectSaved(true);
+
+              // Store initial state for change detection
+              const initialState = JSON.stringify({
+                pages: initialProjectData.pages,
+                currentPageId: initialProjectData.currentPageId,
+                projectName: "Untitled Project",
+                pageMetadata: initialProjectData.pageMetadata,
+                objectNames: initialProjectData.objectNames,
+              });
+              setLastSavedState(initialState);
+              setHasUnsavedChanges(false);
+
+              if (import.meta.env.DEV) {
+                console.log("✓ New project created immediately:", projectSlug);
+              }
+            }
+          } catch (saveError) {
+            console.error("Failed to create initial project:", saveError);
+          }
+
           setIsProjectLoaded(true); // Mark as loaded even for new projects
 
           // End initialization for new projects
@@ -747,7 +945,7 @@ const CanvasPage: React.FC = () => {
         // Check if this is an access denied error
         if (error?.name === "AccessDeniedError") {
           // Redirect to dashboard with error message
-          alert(
+          showError(
             error.message || "You don't have permission to access this project"
           );
           navigate("/dashboard");
@@ -767,7 +965,7 @@ const CanvasPage: React.FC = () => {
     };
 
     loadExistingProject();
-  }, [slug, user, projectSlug, loadProject]);
+  }, [slug, user, projectSlug, loadProject, saveProject, navigate]);
 
   // Real-time sync: Update local state when other users make changes
   useEffect(() => {
@@ -926,42 +1124,25 @@ const CanvasPage: React.FC = () => {
   ]);
 
   // Handle new project
+  // No prompt needed - lifecycle save handles automatic saving
   const handleNewProject = useCallback(async () => {
-    if (hasUnsavedChanges) {
-      setShowExitPrompt(true);
-      return;
-    }
-
     // Generate a unique project ID/slug for new project
     const newProjectSlug = generateProjectSlug();
     navigate(`/canvas/${newProjectSlug}`);
-  }, [hasUnsavedChanges, navigate]);
-
-  // Handle exit with unsaved changes
-  const handleExitWithoutSaving = useCallback(() => {
-    setHasUnsavedChanges(false);
-    setShowExitPrompt(false);
-    navigate("/dashboard/recent");
   }, [navigate]);
-
-  // Handle save and exit
-  const handleSaveAndExit = useCallback(() => {
-    handleSaveProject();
-    setShowExitPrompt(false);
-    navigate("/dashboard/recent");
-  }, [handleSaveProject, navigate]);
 
   // Handle add collaborators
   const handleAddCollaborators = useCallback(async () => {
-    // If project hasn't been saved yet, save it first
+    // Auto-save project before sharing (no popup/alert)
     if (!isProjectSaved || hasUnsavedChanges) {
-      const confirmSave = window.confirm(
-        "This project needs to be saved before you can share it. Would you like to save now?"
-      );
-
-      if (confirmSave) {
+      try {
         await handleSaveProject();
         // Open modal after save completes
+        setIsCollaborationModalOpen(true);
+      } catch (error) {
+        console.error("Failed to save project before sharing:", error);
+        // Still open modal - user can try sending invitation
+        // (Firestore validation will catch unsaved projects)
         setIsCollaborationModalOpen(true);
       }
     } else {
@@ -969,9 +1150,12 @@ const CanvasPage: React.FC = () => {
     }
   }, [isProjectSaved, hasUnsavedChanges, handleSaveProject]);
 
-  // Handle AI chat message submission
-  const handleAIChatMessage = useCallback(
-    async (message: string) => {
+  // Note: handleAIChatMessage functionality moved to unified AI widget (removed to clean up unused code)
+
+  // @ts-ignore - Legacy code kept for reference, will be removed in future cleanup
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _legacyHandleAIChatMessage = useCallback(
+    async (_message: string) => {
       if (!user) return;
 
       // Add user message to chat
@@ -979,7 +1163,7 @@ const CanvasPage: React.FC = () => {
       const userMessage = {
         id: userMessageId,
         role: "user" as const,
-        content: message,
+        content: _message,
         timestamp: Date.now(),
       };
       setAiChatMessages((prev) => [...prev, userMessage]);
@@ -1056,11 +1240,8 @@ const CanvasPage: React.FC = () => {
             });
           },
           deleteShape: (id: string) => {
-            // Delete shape by updating it (since we don't have a direct delete)
-            const shape = shapes.find((s) => s.id === id);
-            if (shape) {
-              setShapes((prev) => prev.filter((s) => s.id !== id));
-            }
+            // Wrap the async deleteShape function (Firestore-enabled)
+            void deleteShape(id);
           },
           selectShape: (id: string | null) => {
             // Wrap the async selectShape function
@@ -1075,10 +1256,57 @@ const CanvasPage: React.FC = () => {
           name: user.displayName || user.email || "Unknown",
           color: user.color || "#000000",
         },
+        // Dashboard actions for project management
+        dashboardActions: {
+          createProject,
+          deleteProject,
+          searchProjects: async (query: string) => {
+            return await searchProjectsByName(user.id, query);
+          },
+          getTrashedProjects: async () => {
+            return await getTrashedProjects(user.id);
+          },
+          batchDeleteProjects: async (projectIds: string[]) => {
+            await batchDeleteProjects(projectIds);
+          },
+          sendCollaborationRequest: async (
+            projectId: string,
+            projectName: string,
+            recipientEmail: string,
+            message?: string
+          ) => {
+            await sendCollaborationInvitation(
+              projectId,
+              projectName,
+              user.id,
+              user.displayName || user.email || "User",
+              recipientEmail,
+              message
+            );
+          },
+        },
+        navigate: (path: string) => {
+          navigate(path);
+        },
+        currentProject: actualProjectId
+          ? {
+              id: actualProjectId,
+              name: projectName,
+              ownerId: (syncedProjectData as any)?.ownerId || user.id,
+            }
+          : undefined,
       };
 
       // Execute the AI command
-      const response = await executeAICommand(message, context);
+      const response = await executeAICommand(_message, context);
+
+      // Handle refresh trigger (for project management commands)
+      if (response?.success && response.data?._triggerRefresh) {
+        setTimeout(() => {
+          console.log("Canvas AI: Refreshing after project command");
+          window.location.reload();
+        }, 2000); // 2 seconds - enough time to see the success message
+      }
 
       // Add AI response to chat
       const aiMessageId = `msg-${Date.now()}-ai`;
@@ -1102,6 +1330,12 @@ const CanvasPage: React.FC = () => {
       deleteSelectedShapes,
       setShapes,
       executeAICommand,
+      createProject,
+      deleteProject,
+      navigate,
+      actualProjectId,
+      projectName,
+      syncedProjectData,
     ]
   );
 
@@ -1155,52 +1389,95 @@ const CanvasPage: React.FC = () => {
   const handleUndo = useCallback(() => {
     const previousShapes = undo();
     if (previousShapes) {
-      // Apply the previous state to Firebase
-      // Note: This would need to be implemented in useShapes hook
-      console.log("Undo to state:", previousShapes);
+      applySnapshot(previousShapes);
     }
   }, [undo]);
 
   const handleRedo = useCallback(() => {
     const nextShapes = redo();
     if (nextShapes) {
-      // Apply the next state to Firebase
-      // Note: This would need to be implemented in useShapes hook
-      console.log("Redo to state:", nextShapes);
+      applySnapshot(nextShapes);
     }
   }, [redo]);
 
+  // Apply snapshot to Firestore by diffing
+  const applySnapshot = useCallback(
+    async (snapshot: Shape[]) => {
+      const byId = new Map(shapes.map((s) => [s.id, s]));
+      const snapById = new Map(snapshot.map((s) => [s.id, s]));
+
+      const toDelete = shapes
+        .filter((s) => !snapById.has(s.id))
+        .map((s) => s.id);
+      const toAdd = snapshot.filter((s) => !byId.has(s.id));
+      const toUpdate = snapshot.filter((s) => {
+        const cur = byId.get(s.id);
+        if (!cur) return false;
+        const clean = (o: any) => {
+          const {
+            selectedBy,
+            selectedByName,
+            selectedByColor,
+            selectedAt,
+            ...rest
+          } = o || {};
+          return rest;
+        };
+        return JSON.stringify(clean(cur)) !== JSON.stringify(clean(s));
+      });
+
+      await Promise.all([
+        ...toDelete.map((id) => deleteShape(id)),
+        ...toAdd.map((ns) =>
+          createShape({ ...(ns as any), pageId: currentPageId } as any)
+        ),
+        ...toUpdate.map((ns) => updateShape(ns.id, ns)),
+      ]);
+    },
+    [shapes, deleteShape, createShape, updateShape, currentPageId]
+  );
+
   // Copy selected shapes
   const handleCopy = useCallback(() => {
-    const selectedShapes = shapes.filter((shape) =>
-      selectedShapeIds.includes(shape.id)
-    );
     if (selectedShapes.length > 0) {
       setClipboard(selectedShapes);
     }
-  }, [shapes, selectedShapeIds]);
+  }, [selectedShapes]);
 
   // Paste shapes from clipboard
+  const pasteOffsetRef = useRef(0);
   const handlePaste = useCallback(async () => {
     if (clipboard.length === 0) return;
 
-    const offset = 20; // Offset for pasted shapes
+    const baseOffset = 20;
+    pasteOffsetRef.current += baseOffset;
+    const maxZ = shapes.length
+      ? Math.max(...shapes.map((s) => s.zIndex || 0))
+      : 0;
+    let nextZ = maxZ;
+
     for (const shape of clipboard) {
-      const newShape = {
-        ...shape,
-        x: shape.x + offset,
-        y: shape.y + offset,
-        color: selectedColor, // Use current selected color
-      };
-      await createShape(newShape);
+      const {
+        id: _oldId,
+        selectedBy,
+        selectedByName,
+        selectedByColor,
+        selectedAt,
+        ...rest
+      } = shape as any;
+      await createShape({
+        ...(rest as any),
+        pageId: currentPageId,
+        x: shape.x + pasteOffsetRef.current,
+        y: shape.y + pasteOffsetRef.current,
+        color: selectedColor,
+        zIndex: ++nextZ,
+      } as any);
     }
-  }, [clipboard, selectedColor, createShape]);
+  }, [clipboard, selectedColor, createShape, shapes, currentPageId]);
 
   // Duplicate selected shapes
   const handleDuplicate = useCallback(async () => {
-    const selectedShapes = shapes.filter((shape) =>
-      selectedShapeIds.includes(shape.id)
-    );
     if (selectedShapes.length === 0) return;
 
     const offset = 20;
@@ -1212,7 +1489,7 @@ const CanvasPage: React.FC = () => {
       };
       await createShape(newShape);
     }
-  }, [shapes, selectedShapeIds, createShape]);
+  }, [selectedShapes, createShape]);
 
   // Cut selected shapes (copy + delete)
   const handleCut = useCallback(async () => {
@@ -1228,9 +1505,6 @@ const CanvasPage: React.FC = () => {
   // Move selected shapes
   const handleMoveShapes = useCallback(
     async (dx: number, dy: number) => {
-      const selectedShapes = shapes.filter((shape) =>
-        selectedShapeIds.includes(shape.id)
-      );
       if (selectedShapes.length === 0) return;
 
       for (const shape of selectedShapes) {
@@ -1240,7 +1514,7 @@ const CanvasPage: React.FC = () => {
         });
       }
     },
-    [shapes, selectedShapeIds, updateShape]
+    [selectedShapes, updateShape]
   );
 
   // Clear selection
@@ -1287,6 +1561,98 @@ const CanvasPage: React.FC = () => {
       console.error("Export PDF failed:", error);
     }
   }, [shapes, projectName, canvasBackground]);
+
+  // Grid and snap handlers
+  const handleToggleGrid = useCallback(() => {
+    setShowGrid((prev) => {
+      const newValue = !prev;
+      localStorage.setItem("canvas-show-grid", String(newValue));
+      return newValue;
+    });
+  }, []);
+
+  const handleToggleSnap = useCallback(() => {
+    setSnapToGridEnabled((prev) => {
+      const newValue = !prev;
+      localStorage.setItem("canvas-snap-to-grid", String(newValue));
+      return newValue;
+    });
+  }, []);
+
+  const handleGridSizeChange = useCallback((size: 10 | 20 | 50) => {
+    setGridSize(size);
+    localStorage.setItem("canvas-grid-size", String(size));
+  }, []);
+
+  // Manual save handler
+  const handleManualSave = useCallback(async (): Promise<boolean> => {
+    if (!lifecycleSaveRef.current) {
+      console.error("❌ Lifecycle save not initialized");
+      return false;
+    }
+
+    try {
+      const success = await lifecycleSaveRef.current.saveNow();
+      return success;
+    } catch (error) {
+      console.error("❌ Manual save failed:", error);
+      return false;
+    }
+  }, []);
+
+  // Lifecycle save - manual + refresh/close/navigate only (no periodic auto-save)
+  useEffect(() => {
+    if (!actualProjectId) return;
+
+    const lifecycleSave = new LifecycleSave(actualProjectId);
+
+    lifecycleSave.start(() => ({
+      shapes,
+      canvasBackground,
+      canvasDimensions,
+      projectName, // Include project name for auto-save on rename
+    }));
+
+    lifecycleSaveRef.current = lifecycleSave;
+
+    console.log("✅ Lifecycle save enabled for project:", actualProjectId);
+    console.log("📋 Save triggers: Manual, Refresh, Close, Navigate, Rename");
+
+    return () => {
+      console.log("🛑 Stopping lifecycle save for project:", actualProjectId);
+      lifecycleSave.stop(); // This will save before unmounting
+    };
+  }, [actualProjectId]); // Only reinitialize when project changes
+
+  // Shift key tracking for multi-select visual feedback
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setIsShiftHeld(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setIsShiftHeld(false);
+      }
+    };
+
+    // Also reset on window blur (user switches tabs)
+    const handleBlur = () => {
+      setIsShiftHeld(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
 
   // Hand tool panning implementation
   useEffect(() => {
@@ -1459,6 +1825,7 @@ const CanvasPage: React.FC = () => {
     onMoveLeft: () => handleMoveShapes(-10, 0),
     onMoveRight: () => handleMoveShapes(10, 0),
     onEscape: handleEscape,
+    onSave: handleSaveProject,
   });
 
   return (
@@ -1525,15 +1892,27 @@ const CanvasPage: React.FC = () => {
           shapes={shapes}
           selectedShapeIds={selectedShapeIds}
           onSelectShape={selectShape}
+          onUpdateShape={(id, updates) => updateShape(id, updates)}
           onUndo={handleUndo}
           onRedo={handleRedo}
           onCopy={handleCopy}
           onPaste={handlePaste}
           onDeleteSelected={deleteSelectedShapes}
           onRenameShape={handleRenameShape}
-          onSave={handleSaveProject}
+          onSave={handleManualSave}
           onNewProject={handleNewProject}
           onAddCollaborators={handleAddCollaborators}
+          // Transfer ownership removed
+          onLeaveProject={() => {
+            const isOwner = (syncedProjectData as any)?.ownerId
+              ? (syncedProjectData as any).ownerId === (user?.id || "")
+              : false;
+            if (isOwner) {
+              setIsOwnerLeaveBlockedOpen(true);
+            } else {
+              setIsLeaveProjectOpen(true);
+            }
+          }}
           onExportPNG={handleExportPNG}
           onExportPDF={handleExportPDF}
           canUndo={canUndo}
@@ -1546,15 +1925,16 @@ const CanvasPage: React.FC = () => {
           onPageDataChange={handlePageDataChange}
           pages={inMemoryPages}
           objectNames={inMemoryObjectNames}
-          aiMessages={aiChatMessages}
-          isAIProcessing={isAIProcessing}
-          onAISendMessage={handleAIChatMessage}
-          isAIEnabled={isAIEnabled}
+          onDeleteShape={deleteShape}
+          onReorderLayers={handleReorderLayers}
         />
 
         {/* Canvas Area */}
         <main className="modern-canvas-main">
-          <div className="canvas-workspace" ref={workspaceRef}>
+          <div
+            className={`canvas-workspace ${isShiftHeld ? "shift-held" : ""}`}
+            ref={workspaceRef}
+          >
             <div
               className="canvas-container-wrapper"
               style={{
@@ -1582,16 +1962,25 @@ const CanvasPage: React.FC = () => {
                   createShape={createShape}
                   updateShape={updateShape}
                   deleteSelectedShapes={deleteSelectedShapes}
-                  selectShape={selectShape}
+                  selectShape={handleShapeSelect}
                   isShapeLockedByOther={isShapeLockedByOther}
                   getShapeSelector={getShapeSelector}
                   cursorMode={cursorMode}
+                  currentColor={selectedColor}
                   onCut={handleCut}
                   onCopy={handleCopy}
                   onPaste={handlePaste}
                   hasClipboardContent={clipboard.length > 0}
                   projectId={actualProjectId || projectSlug}
                   onStageRef={setStageRef}
+                  showGrid={showGrid}
+                  gridSize={gridSize}
+                  snapToGridEnabled={snapToGridEnabled}
+                  onShapeCreated={() => {
+                    // Reset tool to move after creating a shape for immediate interaction
+                    setSelectedTool(null);
+                    setCursorMode("move");
+                  }}
                 />
               </div>
             </div>
@@ -1639,40 +2028,16 @@ const CanvasPage: React.FC = () => {
         onZoomOut={zoomOut}
         onZoomReset={zoomReset}
         onCursorModeChange={handleCursorModeChange}
+        showGrid={showGrid}
+        gridSize={gridSize}
+        snapToGridEnabled={snapToGridEnabled}
+        onToggleGrid={handleToggleGrid}
+        onToggleSnap={handleToggleSnap}
+        onGridSizeChange={handleGridSizeChange}
       />
 
       {/* Connection Status */}
       <ConnectionStatus />
-
-      {/* Exit Prompt Modal */}
-      {showExitPrompt && (
-        <div className="exit-prompt-overlay">
-          <div className="exit-prompt-modal">
-            <h3>Unsaved Changes</h3>
-            <p>You have unsaved changes. What would you like to do?</p>
-            <div className="exit-prompt-buttons">
-              <button
-                className="exit-prompt-button secondary"
-                onClick={() => setShowExitPrompt(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="exit-prompt-button danger"
-                onClick={handleExitWithoutSaving}
-              >
-                Continue without saving
-              </button>
-              <button
-                className="exit-prompt-button primary"
-                onClick={handleSaveAndExit}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add Collaborators Modal */}
       <AddCollaboratorsModal
@@ -1681,6 +2046,94 @@ const CanvasPage: React.FC = () => {
         projectId={actualProjectId || projectSlug || slug || ""}
         projectName={projectName}
       />
+
+      {/* Transfer ownership removed */}
+
+      {/* Owner cannot leave modal */}
+      {/* Owner cannot leave modal - simplified (no transfer ownership) */}
+      <ConfirmationModal
+        isOpen={isOwnerLeaveBlockedOpen}
+        onClose={() => setIsOwnerLeaveBlockedOpen(false)}
+        onConfirm={() => setIsOwnerLeaveBlockedOpen(false)}
+        title="Owner Action Restricted"
+        message="Owners cannot leave their own project. You may delete the project to remove access for everyone."
+        confirmText="Close"
+        cancelText=""
+      />
+
+      {/* Leave Project Confirmation */}
+      <ConfirmationModal
+        isOpen={isLeaveProjectOpen}
+        onClose={() => setIsLeaveProjectOpen(false)}
+        onConfirm={async () => {
+          try {
+            setIsLeaving(true);
+            const pid = actualProjectId || projectSlug;
+            if (!pid || !user?.id) return;
+
+            // Prevent owners from leaving
+            const ownerId = (syncedProjectData as any)?.ownerId;
+            if (ownerId && ownerId === user.id) {
+              throw new Error(
+                "Owners cannot leave their own project. Transfer ownership first."
+              );
+            }
+
+            // Mark offline before leaving to avoid ghost presence
+            try {
+              const presence = await import("../services/presence");
+              await presence.setUserOffline(pid, user.id);
+            } catch {}
+
+            const { leaveProject } = await import("../services/projects");
+            await leaveProject(pid, user.id);
+            setIsLeaveProjectOpen(false);
+            navigate("/dashboard/recent", { replace: true });
+          } catch (e: any) {
+            console.error("Leave project failed:", e);
+            showError(e?.message || "Failed to leave project.");
+          } finally {
+            setIsLeaving(false);
+          }
+        }}
+        title="Leave this project?"
+        message="You will lose access until invited again."
+        confirmText={isLeaving ? "Leaving..." : "Leave Project"}
+        cancelText="Cancel"
+        isDestructive
+        isLoading={isLeaving}
+      />
+
+      {/* Canvas AI Widget */}
+      <CanvasAIWidget
+        projectId={actualProjectId || projectSlug || ""}
+        shapes={shapes}
+        selectedShapeIds={selectedShapeIds}
+        canvasDimensions={canvasDimensions || { width: 2000, height: 2000 }}
+        shapeActions={{
+          createShape: async (data) => {
+            await createShape(data as any);
+          },
+          updateShape: async (id, updates) => {
+            await updateShape(id, updates as any);
+          },
+          deleteShape: async (id) => {
+            await deleteShape(id);
+          },
+          selectShape: async (id) => {
+            await selectShape(id);
+          },
+          selectShapes: async (ids) => {
+            await selectShapes(ids);
+          },
+          clearAllShapes: async () => {
+            await clearAllShapes();
+          },
+        }}
+      />
+
+      {/* Toasts */}
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </div>
   );
 };

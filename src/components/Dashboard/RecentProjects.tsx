@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useProjects } from "../../hooks/useProjects";
+import { useRecentProjects, useProjects } from "../../hooks/useProjects";
 import { useAuth } from "../Auth/AuthProvider";
 import { ProjectGrid } from "./ProjectGrid";
 import { Button } from "../shared";
@@ -21,18 +21,8 @@ export const RecentProjects: React.FC = () => {
   const { user } = useAuth();
 
   // Use the main useProjects hook with recent projects configuration
-  const {
-    projects: recentProjects,
-    isLoading,
-    error,
-    openProject,
-    renameProject,
-    deleteProject,
-  } = useProjects({
-    orderBy: "updatedAt",
-    orderDirection: "desc",
-    limit: 10, // Show 10 most recent projects
-  });
+  const { projects: recentProjects, isLoading, error } = useRecentProjects();
+  const { renameProject, deleteProject } = useProjects();
 
   const handleCreateProject = () => {
     // Generate a unique project ID/slug for new project
@@ -41,16 +31,23 @@ export const RecentProjects: React.FC = () => {
   };
 
   const handleOpenProject = (projectId: string) => {
-    openProject(projectId);
+    navigate(`/canvas/${projectId}`);
   };
 
   const handleRenameProject = async (projectId: string, newName: string) => {
-    await renameProject(projectId, newName);
+    try {
+      await renameProject(projectId, newName);
+    } catch (e: any) {
+      alert(e?.message || "Failed to rename project");
+    }
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    await deleteProject(projectId);
-    // Project will be automatically removed from the list by useProjects hook
+    try {
+      await deleteProject(projectId);
+    } catch (e: any) {
+      alert(e?.message || "Failed to delete project");
+    }
   };
 
   // Empty state component for users with no projects

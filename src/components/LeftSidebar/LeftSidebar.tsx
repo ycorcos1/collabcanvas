@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Shape } from "../../types/shape";
-import { AIChat, ChatMessage } from "../AIChat/AIChat";
+import { LayersPanel } from "../LayersPanel/LayersPanel";
 import "./LeftSidebar.css";
 
 /**
@@ -27,6 +27,8 @@ interface LeftSidebarProps {
   onSave?: () => void;
   onNewProject?: () => void;
   onAddCollaborators?: () => void;
+  // onTransferOwnership removed
+  onLeaveProject?: () => void;
   onExportPNG?: () => void;
   onExportPDF?: () => void;
   canUndo?: boolean;
@@ -51,26 +53,26 @@ interface LeftSidebarProps {
   pages?: { id: string; name: string }[];
   objectNames?: Record<string, string>;
 
-  // AI Chat integration
-  aiMessages?: ChatMessage[];
-  isAIProcessing?: boolean;
-  onAISendMessage?: (message: string) => void;
-  isAIEnabled?: boolean;
+  // Layers Panel props
+  onDeleteShape?: (id: string) => void;
+  onReorderLayers?: (shapes: Shape[]) => void;
+  onUpdateShape?: (id: string, updates: Partial<Shape>) => void;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
-  shapes: _shapes,
+  shapes,
   selectedShapeIds,
-  onSelectShape: _onSelectShape,
+  onSelectShape,
   onUndo,
   onRedo,
   onCopy,
   onPaste,
   onDeleteSelected,
-  onRenameShape: _onRenameShape,
+  onRenameShape: _onRenameShape, // Reserved for future objects list feature
   onSave,
   onNewProject,
   onAddCollaborators,
+  onLeaveProject,
   onExportPNG,
   onExportPDF,
   canUndo = false,
@@ -83,13 +85,12 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onPageDataChange,
   pages: propPages,
   objectNames: propObjectNames,
-  aiMessages = [],
-  isAIProcessing = false,
-  onAISendMessage,
-  isAIEnabled = true,
+  onDeleteShape,
+  onReorderLayers,
+  onUpdateShape,
 }) => {
-  // Tab management: pages or ai
-  const [activeTab, setActiveTab] = useState<"pages" | "ai">("pages");
+  // Tab management: pages or layers
+  const [activeTab, setActiveTab] = useState<"pages" | "layers">("pages");
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -238,6 +239,22 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Allow native behavior in inputs (e.g., AI chat input)
+      const target = event.target as HTMLElement;
+      const isInputElement =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.contentEditable === "true" ||
+        target.isContentEditable;
+
+      if (isInputElement) {
+        return;
+      }
+
+      // If user has a text selection anywhere, let the browser handle copy/cut
+      const selection = window.getSelection?.();
+      const hasTextSelection = !!selection && selection.toString().length > 0;
+
       if (event.metaKey || event.ctrlKey) {
         switch (event.key) {
           case "s":
@@ -249,8 +266,18 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             if (onNewProject) onNewProject();
             break;
           case "c":
+            if (hasTextSelection) return; // let native copy for selected text
             event.preventDefault();
             if (onCopy) onCopy();
+            break;
+          case "x":
+            if (hasTextSelection) return; // let native cut for selected text
+            // Implement cut as copy + delete when shapes selected
+            if (selectedShapeIds.length > 0) {
+              event.preventDefault();
+              if (onCopy) onCopy();
+              if (onDeleteSelected) onDeleteSelected();
+            }
             break;
           case "v":
             event.preventDefault();
@@ -281,6 +308,15 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     onSave,
     onNewProject,
   ]);
+
+  // Handle save - manual save only
+  const handleSave = () => {
+    setShowFileMenu(false); // Close menu
+
+    if (onSave) {
+      onSave();
+    }
+  };
 
   const handleAddPage = () => {
     // Find the highest existing page number to determine the next number
@@ -379,10 +415,22 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   };
 
   const handleSidebarRightClick = (event: React.MouseEvent) => {
-    event.preventDefault();
+    // Never override native context menu inside inputs/textarea/contentEditable (e.g., AI chat input)
+    const target = event.target as HTMLElement;
+    const isInputElement =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target.isContentEditable ||
+      target.getAttribute("contenteditable") === "true";
 
-    // Check if we have something to paste
+    if (isInputElement) {
+      return; // allow native paste menu
+    }
+
+    // Only show custom paste menu when a paste action is possible;
+    // otherwise let the browser's native context menu appear.
     if (copiedPage || hasClipboardContent) {
+      event.preventDefault();
       const rect = sidebarRef.current?.getBoundingClientRect();
       if (rect) {
         setContextMenu({
@@ -449,10 +497,9 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           {showFileMenu && (
             <div className="file-dropdown">
               <button
-                onClick={() => {
-                  if (onSave) onSave();
-                  setShowFileMenu(false);
-                }}
+                onClick={handleSave}
+                disabled={!onSave}
+                title="Save project"
               >
                 <svg
                   width="16"
@@ -598,6 +645,26 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 </svg>
                 Add Collaborators
               </button>
+              {/* Transfer Ownership removed */}
+              <button
+                onClick={() => {
+                  if (onLeaveProject) onLeaveProject();
+                  setShowFileMenu(false);
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M10 17l5-5-5-5" />
+                  <path d="M4 18V6" />
+                </svg>
+                Leave Project
+              </button>
               <div className="menu-divider" />
               <button
                 onClick={() => {
@@ -646,7 +713,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs - Pages and AI */}
+      {/* Navigation Tabs - Pages and Layers */}
       <div className="sidebar-tabs">
         <button
           className={`tab-button ${activeTab === "pages" ? "active" : ""}`}
@@ -666,10 +733,22 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           Pages
         </button>
         <button
-          className={`tab-button ${activeTab === "ai" ? "active" : ""}`}
-          onClick={() => setActiveTab("ai")}
+          className={`tab-button ${activeTab === "layers" ? "active" : ""}`}
+          onClick={() => setActiveTab("layers")}
         >
-          AI
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <rect x="7" y="7" width="10" height="10" />
+            <rect x="11" y="11" width="2" height="2" />
+          </svg>
+          Layers
         </button>
         {activeTab === "pages" && (
           <button
@@ -821,12 +900,16 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             ))}
           </div>
         ) : (
-          <AIChat
-            messages={aiMessages}
-            isProcessing={isAIProcessing}
-            onSendMessage={onAISendMessage || (() => {})}
-            isEnabled={isAIEnabled}
-          />
+          <div className="layers-panel-container">
+            <LayersPanel
+              shapes={shapes}
+              selectedShapeIds={selectedShapeIds}
+              onSelectShape={onSelectShape}
+              onUpdateShape={onUpdateShape || (() => {})}
+              onDeleteShape={onDeleteShape || (() => {})}
+              onReorderLayers={onReorderLayers || (() => {})}
+            />
+          </div>
         )}
       </div>
 

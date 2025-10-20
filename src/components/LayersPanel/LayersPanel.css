@@ -1,0 +1,256 @@
+/**
+ * LayersPanel Styles
+ * Figma-inspired layers panel with drag-and-drop reordering
+ */
+
+.layers-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.layers-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.layers-panel-header h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.layers-count {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.layers-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.layers-panel-empty p {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.layers-panel-empty span {
+  font-size: var(--text-xs);
+}
+
+/* Layers list */
+.layers-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+/* Individual layer item */
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.layer-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-hover);
+}
+
+.layer-item.selected {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-bg);
+}
+
+.layer-item.hidden {
+  opacity: 0.5;
+}
+
+.layer-item.hidden .layer-name {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+/* Drag handle */
+.layer-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-tertiary);
+  cursor: grab;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.layer-drag-handle:hover {
+  color: var(--text-secondary);
+}
+
+.layer-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Shape icon */
+.layer-icon {
+  font-size: 16px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Color indicator */
+.layer-color-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.layer-item.selected .layer-color-indicator {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-bg);
+}
+
+.layer-item.hidden .layer-color-indicator {
+  opacity: 0.4;
+}
+
+/* Layer name */
+.layer-name {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; /* Allow text to shrink */
+}
+
+.layer-item.selected .layer-name {
+  font-weight: 500;
+  color: var(--primary);
+}
+
+/* Action buttons */
+.layer-visibility-btn,
+.layer-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  opacity: 0.6;
+}
+
+.layer-visibility-btn:hover,
+.layer-delete-btn:hover {
+  opacity: 1;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.layer-delete-btn:hover {
+  color: var(--danger);
+}
+
+.layer-item:hover .layer-visibility-btn,
+.layer-item:hover .layer-delete-btn {
+  opacity: 1;
+}
+
+/* Dragging state */
+.layer-item[data-is-dragging="true"] {
+  cursor: grabbing;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollbar styles */
+.layers-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.layers-list::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+.layers-list::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 4px;
+}
+
+.layers-list::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* Dark mode adjustments */
+.dark .layer-item {
+  background: var(--bg-secondary);
+}
+
+.dark .layer-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.dark .layer-item.selected {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: var(--primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .layers-panel-header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .layer-item {
+    padding: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .layer-name {
+    font-size: var(--text-xs);
+  }
+}

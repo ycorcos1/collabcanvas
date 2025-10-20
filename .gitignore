@@ -33,3 +33,34 @@ dist-ssr
 # Firebase
 .firebase/
 firebase-debug.log
+
+# Testing & Development Documentation
+/testing/
+TEST_*.md
+PHASE*.md
+*_COMPLETE.md
+*_FIXES*.md
+*_DEBUG*.md
+*_STATUS.md
+*_INTEGRATION*.md
+*_PROGRESS*.md
+*_PLAN.md
+*_SUMMARY.md
+IMPLEMENTATION_*.md
+UNIFIED_*.md
+CANVAS_*.md
+RESIZE_*.md
+SHAPE_*.md
+ZOOM_*.md
+IDLE_*.md
+LAYERS_*.md
+EXIT_*.md
+LIFECYCLE_*.md
+AI_UNIVERSAL_*.md
+AI_WIDGET_*.md
+DEPLOY_*.md
+TOOL_*.md
+STAR_*.md
+SAVE_*.md
+VERSION_*.md
+QUICK_START*.md

@@ -112,8 +112,20 @@ export const SharedProjects: React.FC = () => {
         isLoading={isLoading}
         emptyState={<EmptyState />}
         onOpenProject={handleOpenSharedProject}
-        onRenameProject={renameProject}
-        onDeleteProject={deleteProject}
+        onRenameProject={async (id, name) => {
+          try {
+            await renameProject(id, name);
+          } catch (e: any) {
+            alert(e?.message || "Failed to rename project");
+          }
+        }}
+        onDeleteProject={async (id) => {
+          try {
+            await deleteProject(id);
+          } catch (e: any) {
+            alert(e?.message || "Failed to delete project");
+          }
+        }}
         showCollaborationIndicators={true}
         showHostIndicators={true}
         currentUserId={user?.id}

@@ -8,6 +8,7 @@ import {
   EmailAuthProvider,
 } from "firebase/auth";
 import { auth } from "../../services/firebase";
+import { deleteAccountCascade } from "../../services/account";
 
 /**
  * Settings Page - User preferences and account management
@@ -31,6 +32,8 @@ export const Settings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage] = useState(""); // Removed setter - profile upload disabled
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Password change state
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -64,19 +67,27 @@ export const Settings: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    if (window.confirm("Are you sure you want to sign out?")) {
-      await signOut();
-    }
+    await signOut();
+    window.location.href = "/signin";
   };
 
   const handleDeleteAccount = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your projects."
-      )
-    ) {
-      // TODO: Implement account deletion
-      console.log("Delete account requested");
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      if (!user?.id) throw new Error("No authenticated user");
+      await deleteAccountCascade(user.id);
+      setShowDeleteModal(false);
+      // Redirect after deletion
+      window.location.href = "/signin";
+    } catch (e) {
+      console.error("Delete account failed", e);
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -452,6 +463,44 @@ export const Settings: React.FC = () => {
           <p>{errorMessage}</p>
           <div style={{ marginTop: "var(--space-4)", textAlign: "right" }}>
             <Button onClick={() => setShowErrorModal(false)}>OK</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Account"
+      >
+        <div style={{ padding: "var(--space-4)" }}>
+          <p>
+            Are you sure you want to delete your account? This action cannot be
+            undone and will permanently delete all your projects.
+          </p>
+          <div
+            style={{
+              marginTop: "var(--space-5)",
+              display: "flex",
+              gap: 12,
+              justifyContent: "flex-end",
+            }}
+          >
+            <Button
+              variant="ghost"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={confirmDeleteAccount}
+              loading={isDeleting}
+              disabled={isDeleting}
+            >
+              Delete
+            </Button>
           </div>
         </div>
       </Modal>

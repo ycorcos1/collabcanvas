@@ -14,9 +14,10 @@ import { getUserColor } from "../../utils/canvasHelpers";
 const getAuthErrorMessage = (errorCode: string): string => {
   switch (errorCode) {
     case "auth/invalid-credential":
+    case "auth/invalid-login-credentials": // New Firebase error code
       return "Invalid email or password. Please check your credentials and try again.";
     case "auth/user-not-found":
-      return "No account found with this email address.";
+      return "No account found with this email address. Would you like to sign up?";
     case "auth/wrong-password":
       return "Incorrect password. Please try again.";
     case "auth/invalid-email":
@@ -24,7 +25,7 @@ const getAuthErrorMessage = (errorCode: string): string => {
     case "auth/user-disabled":
       return "This account has been disabled. Please contact support.";
     case "auth/too-many-requests":
-      return "Too many failed attempts. Please try again later.";
+      return "Too many failed attempts. Please try again in a few minutes.";
     case "auth/email-already-in-use":
       return "An account with this email already exists. Try signing in instead.";
     case "auth/weak-password":
@@ -33,6 +34,10 @@ const getAuthErrorMessage = (errorCode: string): string => {
       return "Email/password sign-in is not enabled. Please contact support.";
     case "auth/network-request-failed":
       return "Network error. Please check your connection and try again.";
+    case "auth/popup-closed-by-user":
+      return "Sign-in cancelled.";
+    case "auth/cancelled-popup-request":
+      return "Sign-in cancelled.";
     default:
       return "Authentication failed. Please try again.";
   }
@@ -46,6 +51,7 @@ interface AuthContextType extends AuthState {
     displayName: string
   ) => Promise<void>;
   signOut: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,6 +82,9 @@ export const useAuth = () => {
         );
       },
       signOut: async () => {
+        // no-op
+      },
+      resendVerificationEmail: async () => {
         // no-op
       },
     } as AuthContextType;
@@ -119,7 +128,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       displayName: firebaseUser.displayName || emailFallback,
       color: getUserColor(firebaseUser.uid),
       photoURL: firebaseUser.photoURL || undefined,
-    };
+      emailVerified: firebaseUser.emailVerified,
+    } as User;
   };
 
   // Activity tracking for session management (for future use)
@@ -193,6 +203,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 await firebaseUser.getIdToken(true);
               } catch {}
             }
+            // Refresh user to ensure emailVerified is up-to-date
+            try {
+              await firebaseUser.reload();
+            } catch {}
             const user = firebaseUserToUser(firebaseUser);
             if (user) {
               setAuthState({
@@ -228,7 +242,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setRecoveryAttempts(0); // Reset recovery attempts when signed out
           }
         } catch (error: any) {
-          console.error("Auth state change error:", error);
+          // Only log in development - don't expose errors in production
+          if (import.meta.env.DEV) {
+            console.error("Auth state change error:", error);
+          }
 
           // Check if this is a recoverable error
           if (
@@ -267,13 +284,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { signInUser } = await import("../../services/auth");
       await signInUser(email, password);
     } catch (error: any) {
+      // Surface a friendly message if email not verified
+      if (error?.code === "auth/email-not-verified") {
+        setAuthState((prev: AuthState) => ({
+          ...prev,
+          isLoading: false,
+          error:
+            "You must verify your email before signing in. We've re-sent the verification email. Please check your inbox and spam folder.",
+        }));
+        return; // Don't throw - error is handled
+      }
       const errorMessage = getAuthErrorMessage(error.code || error.message);
       setAuthState((prev: AuthState) => ({
         ...prev,
         isLoading: false,
         error: errorMessage,
       }));
-      throw error;
+      // Don't throw or log - error is already handled and displayed to user
     }
   };
 
@@ -290,6 +317,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }));
       const { createUser } = await import("../../services/auth");
       await createUser(email, password, displayName);
+      setAuthState((prev: AuthState) => ({
+        ...prev,
+        isLoading: false,
+        error: null,
+      }));
+      try {
+        sessionStorage.setItem("auth:verificationSent", "true");
+      } catch {}
     } catch (error: any) {
       const errorMessage = getAuthErrorMessage(error.code || error.message);
       setAuthState((prev: AuthState) => ({
@@ -337,11 +372,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const resendVerificationEmail = async () => {
+    try {
+      const { resendVerification } = await import("../../services/auth");
+      await resendVerification();
+    } catch (error) {
+      // surface silently; UI can show toast based on promise rejection
+      throw error as Error;
+    }
+  };
+
   const value: AuthContextType = {
     ...authState,
     signIn,
     signUp,
     signOut,
+    resendVerificationEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

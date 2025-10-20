@@ -1,16 +1,16 @@
-import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../components/Auth/AuthProvider';
-import { ProtectedRoute } from './ProtectedRoute';
-import { PublicRoute } from './PublicRoute';
+import React, { Suspense } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../components/Auth/AuthProvider";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { PublicRoute } from "./PublicRoute";
 
 // Lazy load pages for better performance
-const HomePage = React.lazy(() => import('../pages/HomePage'));
-const SignInPage = React.lazy(() => import('../pages/SignInPage'));
-const SignUpPage = React.lazy(() => import('../pages/SignUpPage'));
-const DashboardPage = React.lazy(() => import('../pages/DashboardPage'));
-const CanvasPage = React.lazy(() => import('../pages/CanvasPage'));
-const NotFound = React.lazy(() => import('../pages/NotFound'));
+const HomePage = React.lazy(() => import("../pages/HomePage"));
+const SignInPage = React.lazy(() => import("../pages/SignInPage"));
+const SignUpPage = React.lazy(() => import("../pages/SignUpPage"));
+const DashboardPage = React.lazy(() => import("../pages/DashboardPage"));
+const CanvasPage = React.lazy(() => import("../pages/CanvasPage"));
+const NotFound = React.lazy(() => import("../pages/NotFound"));
 
 /**
  * Root redirect component - handles initial navigation based on auth state
@@ -27,8 +27,9 @@ const RootRedirect: React.FC = () => {
     );
   }
 
-  // Redirect to dashboard if logged in, otherwise to homepage
-  return <Navigate to={user ? "/dashboard/recent" : "/"} replace />;
+  // Redirect to dashboard only if verified; otherwise to Sign In
+  const isVerified = !!(user as any)?.emailVerified;
+  return <Navigate to={isVerified ? "/dashboard/recent" : "/signin"} replace />;
 };
 
 /**
@@ -43,7 +44,7 @@ const LoadingFallback: React.FC = () => (
 
 /**
  * Main application router with lazy loading and protected routes
- * 
+ *
  * Route Structure:
  * - / → Homepage (public) or redirect to dashboard if authenticated
  * - /signin → Sign in page (public only)
@@ -58,7 +59,7 @@ export const AppRouter: React.FC = () => {
       <Routes>
         {/* Root redirect */}
         <Route path="/app" element={<RootRedirect />} />
-        
+
         {/* Public routes */}
         <Route
           path="/"
@@ -68,7 +69,7 @@ export const AppRouter: React.FC = () => {
             </PublicRoute>
           }
         />
-        
+
         <Route
           path="/signin"
           element={
@@ -77,7 +78,7 @@ export const AppRouter: React.FC = () => {
             </PublicRoute>
           }
         />
-        
+
         <Route
           path="/signup"
           element={
@@ -86,7 +87,7 @@ export const AppRouter: React.FC = () => {
             </PublicRoute>
           }
         />
-        
+
         {/* Protected routes */}
         <Route
           path="/dashboard/*"
@@ -96,7 +97,7 @@ export const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/canvas/:slug"
           element={
@@ -105,7 +106,7 @@ export const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        
+
         {/* 404 fallback */}
         <Route path="*" element={<NotFound />} />
       </Routes>

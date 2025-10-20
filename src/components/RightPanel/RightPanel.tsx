@@ -272,11 +272,9 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                 selectionType === "circle" ||
                 selectionType === "rect" ||
                 selectionType === "ellipse" ||
-                selectionType === "polygon" ||
                 selectionType === "triangle" ||
                 selectionType === "line" ||
                 selectionType === "arrow" ||
-                selectionType === "star" ||
                 selectionType === "mixed") && (
                 <div className="panel-section">
                   <div className="section-header">
@@ -290,6 +288,22 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                     </span>
                   </div>
                   <div className="section-content">
+                    {selectedShapes.length > 1 && (
+                      <div className="multi-select-actions">
+                        <button className="pill-button" onClick={onCopy}>
+                          Copy
+                        </button>
+                        <button className="pill-button" onClick={onPaste}>
+                          Paste
+                        </button>
+                        <button
+                          className="danger-button"
+                          onClick={onDeleteSelected}
+                        >
+                          Delete Selected
+                        </button>
+                      </div>
+                    )}
                     {selectedShapes.length === 1 ? (
                       <>
                         {/* Single shape - show all properties */}
@@ -412,17 +426,29 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                   <div className="property-row">
                     <label>Font Family</label>
                     <select
-                      value={selectedShapes[0]?.fontFamily || "Arial"}
+                      value={selectedShapes[0]?.fontFamily || "Times New Roman"}
                       onChange={(e) =>
                         handleShapeUpdate("fontFamily", e.target.value)
                       }
                       className="font-select"
                     >
-                      <option value="Arial">Arial</option>
-                      <option value="Helvetica">Helvetica</option>
                       <option value="Times New Roman">Times New Roman</option>
                       <option value="Georgia">Georgia</option>
-                      <option value="Verdana">Verdana</option>
+                      <option value="Garamond">Garamond</option>
+                      <option value="Helvetica Neue">Helvetica Neue</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Inter">Inter</option>
+                      <option value="Roboto">Roboto</option>
+                      <option value="Open Sans">Open Sans</option>
+                      <option value="Lato">Lato</option>
+                      <option value="Poppins">Poppins</option>
+                      <option value="DM Sans">DM Sans</option>
+                      <option value="Source Sans 3">Source Sans 3</option>
+                      <option value="Montserrat">Montserrat</option>
+                      <option value="Merriweather">Merriweather</option>
+                      <option value="Playfair Display">Playfair Display</option>
+                      <option value="Inconsolata">Inconsolata</option>
+                      <option value="Fira Code">Fira Code</option>
                       <option value="Courier New">Courier New</option>
                     </select>
                   </div>

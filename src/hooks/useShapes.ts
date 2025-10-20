@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Shape, CreateShapeData } from "../types/shape";
 import * as shapesService from "../services/shapes";
+// import { canAutoWriteToFirestore } from "../config/firebaseConfig";
 import { useAuth } from "../components/Auth/AuthProvider";
 
 /**
@@ -16,7 +17,7 @@ import { useAuth } from "../components/Auth/AuthProvider";
  * - Shape validation and cleanup
  */
 
-export const useShapes = (projectId: string) => {
+export const useShapes = (projectId: string, pageId: string) => {
   // Firestore sync disabled - using local state only
   // const [pendingAutoSelect, setPendingAutoSelect] = useState<{
   //   tempId: string;
@@ -54,18 +55,62 @@ export const useShapes = (projectId: string) => {
     }
   }, [selectedShapeIds]);
 
-  // FIRESTORE SYNC DISABLED - Shapes are now local-only until manual save
-  // This prevents quota exceeded errors
+  // FIRESTORE SYNC ENABLED - Real-time collaboration via Firestore
   useEffect(() => {
-    if (!user) return;
+    if (!user || !projectId || !pageId) return;
 
-    // Immediately set loading to false since we're not loading from Firestore
-    setIsLoading(false);
+    setIsLoading(true);
     setError(null);
 
-    // No Firestore subscription - shapes are managed locally
-    // They will be saved to Firestore only when user manually saves the project
-  }, [user, projectId]);
+    // Subscribe to real-time shape updates from Firestore (by page)
+    const unsubscribe = shapesService.subscribeToShapesByPage(
+      projectId,
+      pageId,
+      (updatedShapes) => {
+        // Check if canvas was just cleared to prevent flicker on refresh
+        const wasCleared =
+          sessionStorage.getItem(`canvas-cleared-${projectId}`) === "true";
+
+        if (wasCleared && updatedShapes.length === 0) {
+          // Canvas was cleared and Firestore confirms no shapes - clear the flag
+          sessionStorage.removeItem(`canvas-cleared-${projectId}`);
+        }
+
+        if (wasCleared && updatedShapes.length > 0) {
+          // Canvas was cleared but Firestore still has shapes (race condition)
+          // Ignore the shapes and keep canvas empty
+          console.log(
+            `⏭️ Ignoring ${updatedShapes.length} shapes - canvas was just cleared`
+          );
+          setShapes([]);
+          setIsLoading(false);
+          return;
+        }
+
+        setShapes(updatedShapes);
+        setIsLoading(false);
+      },
+      (error: any) => {
+        // Silently handle permission-denied errors for new projects
+        // The project might not exist yet in Firestore
+        if (
+          error.code === "permission-denied" ||
+          error.message?.includes("Missing or insufficient permissions")
+        ) {
+          console.log("⏳ Waiting for project to be created in Firestore...");
+          setIsLoading(false);
+          return;
+        }
+        console.error("Failed to sync shapes:", error);
+        setError(error.message);
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user, projectId, pageId]);
 
   // Track previous shape IDs to prevent unnecessary validation
   const prevShapeIdsRef = useRef<string>("[]");
@@ -123,7 +168,9 @@ export const useShapes = (projectId: string) => {
         // Optimistically add the shape to local state
         const newShape: Shape = {
           id: tempId,
+          pageId,
           ...shapeData,
+          createdBy: user.id,
           zIndex: shapeData.zIndex ?? maxZIndex + 1, // Use provided zIndex or next highest
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -132,8 +179,12 @@ export const useShapes = (projectId: string) => {
         setShapes((prev) => [...prev, newShape]);
         // Don't auto-select the shape during creation - let user explicitly select it
 
-        // FIRESTORE WRITE DISABLED - Shape only exists locally until manual save
-        // await shapesService.createShape(projectId, shapeData);
+        // Sync to Firestore for real-time collaboration
+        await shapesService.createShape(projectId, {
+          ...shapeData,
+          pageId,
+          createdBy: user.id,
+        } as any);
 
         return newShape;
       } catch (err: any) {
@@ -146,7 +197,7 @@ export const useShapes = (projectId: string) => {
         return null;
       }
     },
-    [user, projectId]
+    [user, projectId, pageId]
   );
 
   const updateShape = useCallback(
@@ -180,8 +231,8 @@ export const useShapes = (projectId: string) => {
           )
         );
 
-        // FIRESTORE WRITE DISABLED - Update only exists locally until manual save
-        // await shapesService.updateShape(projectId, id, updates);
+        // Sync to Firestore for real-time collaboration
+        await shapesService.updateShape(projectId, id, updates);
       } catch (err: any) {
         setError(err.message || "Failed to update shape");
         // The subscription will revert the optimistic update
@@ -214,8 +265,8 @@ export const useShapes = (projectId: string) => {
           );
         }
 
-        // FIRESTORE WRITE DISABLED - Delete only exists locally until manual save
-        // await shapesService.deleteShape(projectId, id);
+        // Sync to Firestore for real-time collaboration
+        await shapesService.deleteShape(projectId, id);
       } catch (err: any) {
         setError(err.message || "Failed to delete shape");
         // The subscription will restore the shape on error
@@ -307,6 +358,50 @@ export const useShapes = (projectId: string) => {
     [user, selectedShapeIds, setShapes] // Removed shapes from dependencies to use real-time state
   );
 
+  // Multi-select: select a set of shapes at once
+  const selectShapes = useCallback(
+    async (ids: string[]) => {
+      if (!user) return;
+
+      try {
+        setError(null);
+
+        setShapes((prev) => {
+          const idSet = new Set(ids);
+          const prevSet = new Set(selectedShapeIds);
+          return prev.map((s) => {
+            const shouldSelect = idSet.has(s.id);
+            const wasSelected = prevSet.has(s.id);
+            if (shouldSelect && !wasSelected) {
+              return {
+                ...s,
+                selectedBy: user.id,
+                selectedByName: user.displayName || user.email || "Unknown",
+                selectedByColor: user.color || "#000000",
+                selectedAt: Date.now(),
+              };
+            }
+            if (!shouldSelect && wasSelected) {
+              return {
+                ...s,
+                selectedBy: undefined,
+                selectedByName: undefined,
+                selectedByColor: undefined,
+                selectedAt: undefined,
+              };
+            }
+            return s;
+          });
+        });
+
+        setSelectedShapeIds(ids);
+      } catch (error) {
+        console.error("Error selecting shapes:", error);
+      }
+    },
+    [user, selectedShapeIds, setShapes]
+  );
+
   // Delete all selected shapes
   /**
    * Deletes all currently selected shapes
@@ -338,12 +433,12 @@ export const useShapes = (projectId: string) => {
         prev.filter((shape) => !shapesToDelete.includes(shape.id))
       );
 
-      // FIRESTORE WRITE DISABLED - Shapes are local-only until manual save
-      // await Promise.all(
-      //   shapesToDelete.map((shapeId) =>
-      //     shapesService.deleteShape(projectId, shapeId)
-      //   )
-      // );
+      // Sync to Firestore for real-time collaboration
+      await Promise.all(
+        shapesToDelete.map((shapeId) =>
+          shapesService.deleteShape(projectId, shapeId)
+        )
+      );
     } catch (err: any) {
       setError(err.message || "Failed to delete shapes");
     }
@@ -406,19 +501,16 @@ export const useShapes = (projectId: string) => {
     try {
       setError(null);
 
-      // Optimistically clear all shapes
+      // Local-first clear for instant UX
       setShapes([]);
       setSelectedShapeIds([]);
 
-      // Delete all shapes from Firebase
-      await Promise.all(
-        shapes.map((shape) => shapesService.deleteShape(projectId, shape.id))
-      );
+      // Persist clear by deleting all shapes for this page
+      await shapesService.clearShapesForPage(projectId, pageId);
     } catch (err: any) {
       setError(err.message || "Failed to clear all shapes");
-      // The subscription will restore the shapes on error
     }
-  }, [user, shapes]);
+  }, [user, projectId, pageId]);
 
   const getShapeById = useCallback(
     (id: string): Shape | undefined => {
@@ -438,6 +530,7 @@ export const useShapes = (projectId: string) => {
     deleteShape,
     deleteSelectedShapes, // New function for deleting all selected shapes
     selectShape,
+    selectShapes,
     clearShapes,
     clearAllShapes,
     getShapeById,

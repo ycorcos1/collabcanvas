@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Shape } from "../../types/shape";
+import { DEBOUNCE_DELAY_MS } from "../../utils/constants";
 import "./ModernToolbar.css";
 
 /**
@@ -7,7 +8,7 @@ import "./ModernToolbar.css";
  *
  * Features:
  * - Cursor tools (grab, pointer, select)
- * - Shape tools (rectangle, circle, polygon, triangle, line, arrow, star, image)
+ * - Shape tools (rectangle, circle, triangle, line, arrow, image)
  * - Text tool
  * - Drawing tools (pen, eraser)
  * - Dropdown menus for each tool category
@@ -29,29 +30,48 @@ interface ModernToolbarProps {
   onZoomOut?: () => void;
   onZoomReset?: () => void;
   onCursorModeChange?: (mode: string) => void;
+  // Grid and snap controls
+  showGrid?: boolean;
+  gridSize?: 10 | 20 | 50;
+  snapToGridEnabled?: boolean;
+  onToggleGrid?: () => void;
+  onToggleSnap?: () => void;
+  onGridSizeChange?: (size: 10 | 20 | 50) => void;
 }
 
-type CursorMode = "grab" | "pointer" | "select";
-type ShapeType =
-  | "rectangle"
-  | "circle"
-  | "polygon"
-  | "triangle"
-  | "line"
-  | "arrow"
-  | "star"
-  | "image";
-type DrawingMode = "brush" | "eraser";
+type CursorMode = "move" | "hand" | "text";
+type ShapeType = "rectangle" | "circle" | "triangle" | "line" | "arrow";
+// Drawing removed
+
+// Quick color palette for the enhanced color picker
+const QUICK_COLORS = [
+  "#FF0000",
+  "#FF7F00",
+  "#FFFF00",
+  "#00FF00",
+  "#0000FF",
+  "#4B0082",
+  "#9400D3",
+  "#FFFFFF",
+  "#000000",
+  "#808080",
+  "#C0C0C0",
+  "#800000",
+  "#808000",
+  "#008000",
+  "#008080",
+  "#000080",
+];
 
 export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   selectedTool,
   onToolSelect,
   hasSelectedShapes,
   onDeleteSelected,
-  onDuplicate: _onDuplicate, // unused in this component now
-  onCopy: _onCopy, // unused here
-  onPaste: _onPaste, // unused here
-  hasClipboardContent: _hasClipboardContent = false,
+  onDuplicate: _onDuplicate, // Reserved for future toolbar duplicate button
+  onCopy: _onCopy, // Reserved for future toolbar copy button
+  onPaste: _onPaste, // Reserved for future toolbar paste button
+  hasClipboardContent: _hasClipboardContent = false, // Reserved for future paste button state
   selectedColor = "#FF0000",
   onColorChange,
   zoom = 100,
@@ -59,6 +79,11 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
   onZoomOut,
   onZoomReset,
   onCursorModeChange,
+  showGrid = false,
+  snapToGridEnabled = false,
+  onToggleGrid,
+  onToggleSnap,
+  onGridSizeChange: _onGridSizeChange, // Reserved for future grid size picker
 }) => {
   // Initialize state from localStorage or defaults
   const [cursorMode, setCursorMode] = useState<CursorMode>(() => {
@@ -73,10 +98,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     const saved = localStorage.getItem("toolbar-last-non-image-shape");
     return (saved as ShapeType) || "rectangle";
   });
-  const [drawingMode, setDrawingMode] = useState<DrawingMode>(() => {
-    const saved = localStorage.getItem("toolbar-drawing-mode");
-    return (saved as DrawingMode) || "brush";
-  });
+  // Drawing removed
   const [isTextMode, setIsTextMode] = useState(() => {
     const saved = localStorage.getItem("toolbar-text-mode");
     return saved === "true";
@@ -84,55 +106,48 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
 
   const [showCursorDropdown, setShowCursorDropdown] = useState(false);
   const [showShapeDropdown, setShowShapeDropdown] = useState(false);
-  const [showDrawingDropdown, setShowDrawingDropdown] = useState(false);
-  const [showDrawingToolbar, setShowDrawingToolbar] = useState(false);
+  // Drawing removed
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  const [brushSize, setBrushSize] = useState(4);
-  const [brushColor] = useState("#000000");
+  // Drawing controls removed
 
   // File input ref for image upload
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Image upload removed
 
   const cursorButtonRef = useRef<HTMLButtonElement>(null);
   const shapeButtonRef = useRef<HTMLButtonElement>(null);
-  const drawingButtonRef = useRef<HTMLButtonElement>(null);
+  // Drawing button removed
 
-  // Notify parent of initial cursor mode and tool selection on mount
+  // Notify parent of initial cursor mode on mount (default to move).
   useEffect(() => {
     if (onCursorModeChange) {
-      onCursorModeChange(cursorMode);
+      onCursorModeChange("move");
     }
-    // Set initial tool to null (move tool, no shape creation)
-    if (onToolSelect) {
-      onToolSelect(null);
-    }
+    setCursorMode("move");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // Persist state changes to localStorage
+  // Consolidated persistence effect with debounce
   useEffect(() => {
-    localStorage.setItem("toolbar-cursor-mode", cursorMode);
-  }, [cursorMode]);
+    const state = {
+      cursorMode,
+      shapeMode,
+      lastNonImageShape,
+      isTextMode: isTextMode.toString(),
+    };
 
-  useEffect(() => {
-    localStorage.setItem("toolbar-shape-mode", shapeMode);
-  }, [shapeMode]);
+    const debounceTimer = setTimeout(() => {
+      Object.entries(state).forEach(([key, value]) => {
+        localStorage.setItem(`toolbar-${key}`, value);
+      });
+    }, DEBOUNCE_DELAY_MS);
 
-  useEffect(() => {
-    localStorage.setItem("toolbar-last-non-image-shape", lastNonImageShape);
-  }, [lastNonImageShape]);
-
-  useEffect(() => {
-    localStorage.setItem("toolbar-drawing-mode", drawingMode);
-  }, [drawingMode]);
-
-  useEffect(() => {
-    localStorage.setItem("toolbar-text-mode", isTextMode.toString());
-  }, [isTextMode]);
+    return () => clearTimeout(debounceTimer);
+  }, [cursorMode, shapeMode, lastNonImageShape, isTextMode]);
 
   const cursorTools = [
     {
-      id: "select" as const,
+      id: "move" as const,
       name: "Move",
       icon: (
         <svg
@@ -149,7 +164,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
       ),
     },
     {
-      id: "grab" as const,
+      id: "hand" as const,
       name: "Hand",
       icon: (
         <svg
@@ -205,23 +220,6 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
       shortcut: "O",
     },
     {
-      id: "polygon" as const,
-      name: "Polygon",
-      icon: (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5" />
-        </svg>
-      ),
-      shortcut: "P",
-    },
-    {
       id: "triangle" as const,
       name: "Triangle",
       icon: (
@@ -273,129 +271,38 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
       ),
       shortcut: "A",
     },
-    {
-      id: "star" as const,
-      name: "Star",
-      icon: (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-        </svg>
-      ),
-      shortcut: "S",
-    },
-    {
-      id: "image" as const,
-      name: "Image",
-      icon: (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="9" cy="9" r="2" />
-          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-        </svg>
-      ),
-      shortcut: "I",
-    },
   ];
 
-  const drawingTools = [
-    {
-      id: "brush" as const,
-      name: "Brush",
-      icon: (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M15 5l4 4L8 20l-4-1 1-4L16 4z" />
-          <path d="M13 7l4 4" />
-          <path d="M8 13l-2 8 8-2" />
-        </svg>
-      ),
-    },
-    {
-      id: "eraser" as const,
-      name: "Eraser",
-      icon: (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.5l9.6-9.6c1-1 2.5-1 3.5 0l5.2 5.2c1 1 1 2.5 0 3.5L13 21" />
-          <path d="M22 21H7" />
-          <path d="m5 11 9 9" />
-        </svg>
-      ),
-      shortcut: "E",
-    },
-  ];
+  // Drawing removed
 
   // Close all dropdowns when one is opened
   const closeAllDropdowns = () => {
     setShowCursorDropdown(false);
     setShowShapeDropdown(false);
-    setShowDrawingDropdown(false);
   };
 
   const handleCursorSelect = (mode: CursorMode) => {
     setCursorMode(mode);
     setShowCursorDropdown(false);
     setIsTextMode(false);
-    setShowDrawingToolbar(false);
 
     // Notify parent about cursor mode change
     if (onCursorModeChange) {
-      if (mode === "select") {
-        onCursorModeChange("move");
-      } else if (mode === "grab") {
-        onCursorModeChange("hand");
-      }
+      onCursorModeChange(mode);
     }
 
-    if (mode === "select") {
-      onToolSelect(null); // Move tool - allows selection and manipulation
-    } else if (mode === "grab") {
-      onToolSelect(null); // Hand tool - allows panning
+    // When switching to cursor tools, clear any shape tool
+    if (mode === "move" || mode === "hand") {
+      onToolSelect(null); // Move/Hand tools - no active shape creation
     }
   };
 
   const handleShapeSelect = (shape: ShapeType) => {
     setShowShapeDropdown(false);
     setIsTextMode(false);
-    setShowDrawingToolbar(false);
+    // Do NOT change cursor mode here; keep last chosen (move/hand) active
 
-    // Notify parent about cursor mode change
-    if (onCursorModeChange) {
-      onCursorModeChange("shape");
-    }
-
-    // Handle image upload
-    if (shape === "image") {
-      handleImageUpload();
-      // Don't update shapeMode for image - keep the last non-image shape as the displayed tool
-      return;
-    }
+    // Image upload removed
 
     // Update shape mode and track as last non-image shape
     setShapeMode(shape);
@@ -405,11 +312,9 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     const shapeTypeMap: Record<string, string> = {
       rectangle: "rect",
       circle: "ellipse",
-      polygon: "polygon",
       triangle: "triangle",
       line: "line",
       arrow: "arrow",
-      star: "star",
     };
 
     // Pass the mapped shape type to canvas
@@ -422,43 +327,13 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     }
   };
 
-  const handleImageUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
+  // Image upload removed
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      // For now, just show an alert that image upload is not fully implemented
-      alert(
-        "Image upload functionality is not yet fully implemented. This feature will be added in a future update."
-      );
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleDrawingSelect = (mode: DrawingMode) => {
-    setDrawingMode(mode);
-    setShowDrawingDropdown(false);
-    setShowDrawingToolbar(true);
-    setIsTextMode(false);
-    onToolSelect(null); // Clear shape tool when drawing
-
-    // Notify parent about cursor mode change
-    if (onCursorModeChange) {
-      onCursorModeChange("brush");
-    }
-  };
+  // Drawing removed
 
   const handleTextSelect = () => {
     const newTextMode = !isTextMode;
     setIsTextMode(newTextMode);
-    setShowDrawingToolbar(false);
     onToolSelect(null); // Clear shape tool when text mode
 
     // Notify parent about cursor mode change
@@ -492,67 +367,13 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
     cursorTools.find((tool) => tool.id === cursorMode);
   const getCurrentShapeTool = () =>
     shapeTools.find((tool) => tool.id === lastNonImageShape); // Always show last non-image shape
-  const getCurrentDrawingTool = () =>
-    drawingTools.find((tool) => tool.id === drawingMode);
+  // Drawing removed
 
   return (
     <>
-      {/* Hidden file input for image upload */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        style={{ display: "none" }}
-      />
+      {/* Image upload removed */}
 
-      {/* Drawing Toolbar (appears above main toolbar when in drawing mode) */}
-      {showDrawingToolbar && (
-        <div className="drawing-toolbar">
-          <div className="drawing-controls">
-            <div className="brush-size-control">
-              <label>Size</label>
-              <input
-                type="range"
-                min="1"
-                max="20"
-                value={brushSize}
-                onChange={(e) => setBrushSize(Number(e.target.value))}
-                className="brush-size-slider"
-              />
-              <span className="brush-size-value">{brushSize}</span>
-            </div>
-
-            <div className="brush-color-control">
-              <label>Color</label>
-              <button
-                className="brush-color-button"
-                style={{ backgroundColor: brushColor }}
-                onClick={() => {
-                  /* Open color picker */
-                }}
-              />
-            </div>
-
-            <button
-              className="close-drawing-toolbar"
-              onClick={() => setShowDrawingToolbar(false)}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Drawing Toolbar removed */}
 
       {/* Main Modern Toolbar */}
       <div className="modern-toolbar">
@@ -563,9 +384,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
               <button
                 ref={cursorButtonRef}
                 className={`main-tool-button ${
-                  selectedTool === null && !isTextMode && !showDrawingToolbar
-                    ? "active"
-                    : ""
+                  selectedTool === null && !isTextMode ? "active" : ""
                 }`}
                 onClick={() => {
                   closeAllDropdowns();
@@ -625,13 +444,10 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
                     selectedTool === "circle" ||
                     selectedTool === "rect" ||
                     selectedTool === "ellipse" ||
-                    selectedTool === "polygon" ||
                     selectedTool === "triangle" ||
                     selectedTool === "line" ||
-                    selectedTool === "arrow" ||
-                    selectedTool === "star") &&
-                  !isTextMode &&
-                  !showDrawingToolbar
+                    selectedTool === "arrow") &&
+                  !isTextMode
                     ? "active"
                     : ""
                 }`}
@@ -687,9 +503,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
           <div className="tool-group">
             <div className="split-button">
               <button
-                className={`main-tool-button ${
-                  isTextMode && !showDrawingToolbar ? "active" : ""
-                }`}
+                className={`main-tool-button ${isTextMode ? "active" : ""}`}
                 onClick={handleTextSelect}
                 title="Text"
               >
@@ -709,61 +523,7 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
             </div>
           </div>
 
-          {/* Drawing Tool */}
-          <div className="tool-group">
-            <div className="split-button">
-              <button
-                ref={drawingButtonRef}
-                className={`main-tool-button ${
-                  showDrawingToolbar ? "active" : ""
-                }`}
-                onClick={() => {
-                  closeAllDropdowns();
-                  handleDrawingSelect(drawingMode);
-                }}
-                title={getCurrentDrawingTool()?.name}
-              >
-                {getCurrentDrawingTool()?.icon}
-              </button>
-              <button
-                className="dropdown-button"
-                onClick={() => {
-                  closeAllDropdowns();
-                  setShowDrawingDropdown(!showDrawingDropdown);
-                }}
-                title="More drawing tools"
-              >
-                <svg
-                  className="dropdown-arrow"
-                  width="8"
-                  height="8"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polyline points="6,9 12,15 18,9" />
-                </svg>
-              </button>
-            </div>
-
-            {showDrawingDropdown && (
-              <div className="tool-dropdown">
-                {drawingTools.map((tool) => (
-                  <button
-                    key={tool.id}
-                    className={`dropdown-item ${
-                      drawingMode === tool.id ? "active" : ""
-                    }`}
-                    onClick={() => handleDrawingSelect(tool.id)}
-                  >
-                    {tool.icon}
-                    <span>{tool.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Drawing tool removed */}
         </div>
 
         <div className="toolbar-center">
@@ -813,19 +573,144 @@ export const ModernToolbar: React.FC<ModernToolbarProps> = ({
               </svg>
             </button>
           </div>
+
+          {/* Grid and Snap Controls */}
+          <div className="grid-snap-controls">
+            <button
+              className={`grid-button ${showGrid ? "active" : ""}`}
+              onClick={onToggleGrid}
+              title="Toggle Grid"
+              disabled={!onToggleGrid}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+              </svg>
+            </button>
+
+            <button
+              className={`snap-button ${snapToGridEnabled ? "active" : ""}`}
+              onClick={onToggleSnap}
+              title="Snap to Grid"
+              disabled={!onToggleSnap}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="toolbar-right">
-          {/* Color Picker - Show when shape tool is selected or shapes are selected */}
+          {/* Enhanced Color Picker - Show when shape tool is selected or shapes are selected */}
           {(selectedTool || hasSelectedShapes) && onColorChange && (
             <div className="color-picker-group">
-              <input
-                type="color"
-                value={selectedColor}
-                onChange={(e) => onColorChange(e.target.value)}
-                className="color-picker-input"
-                title="Shape Color"
-              />
+              <button
+                className="color-picker-button"
+                onClick={() => setShowColorPicker(!showColorPicker)}
+                title={hasSelectedShapes ? "Change Shape Color" : "Shape Color"}
+              >
+                <div
+                  className="color-preview"
+                  style={{ backgroundColor: selectedColor }}
+                />
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="m19 9-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showColorPicker && (
+                <div className="color-picker-dropdown">
+                  <div className="color-picker-header">
+                    <span>
+                      {hasSelectedShapes ? "Change Color" : "Shape Color"}
+                    </span>
+                    <button
+                      className="close-picker"
+                      onClick={() => setShowColorPicker(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {/* Quick Colors Grid */}
+                  <div className="quick-colors">
+                    {QUICK_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        className={`color-swatch ${
+                          selectedColor === color ? "active" : ""
+                        }`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => {
+                          onColorChange(color);
+                          if (!hasSelectedShapes) {
+                            setShowColorPicker(false);
+                          }
+                        }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Custom Color Input */}
+                  <div className="custom-color-section">
+                    <label>Custom Color</label>
+                    <div className="custom-color-input">
+                      <input
+                        type="color"
+                        value={selectedColor}
+                        onChange={(e) => onColorChange(e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        value={selectedColor}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                            onColorChange(value);
+                          }
+                        }}
+                        placeholder="#000000"
+                        className="hex-input"
+                      />
+                    </div>
+                  </div>
+
+                  {hasSelectedShapes && (
+                    <button
+                      className="apply-color-button"
+                      onClick={() => setShowColorPicker(false)}
+                    >
+                      Apply to Selected
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

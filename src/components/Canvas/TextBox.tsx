@@ -11,9 +11,10 @@ interface TextBoxProps {
   fill: string;
   isSelected: boolean;
   isEditing: boolean;
+  visible?: boolean; // Add visibility support
   onTextChange: (text: string) => void;
   onEditingChange: (editing: boolean) => void;
-  onSelect: () => void;
+  onSelect: (event?: any) => void;
   onDragEnd: (x: number, y: number) => void;
   onResize?: (x: number, y: number, width: number, height: number) => void;
 }
@@ -27,6 +28,7 @@ export const TextBox: React.FC<TextBoxProps> = ({
   fill,
   isSelected,
   isEditing,
+  visible = true,
   onTextChange,
   onEditingChange,
   onSelect,
@@ -133,8 +135,8 @@ export const TextBox: React.FC<TextBoxProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing]);
 
-  const handleClick = () => {
-    onSelect();
+  const handleClick = (e: any) => {
+    onSelect(e);
   };
 
   const handleDoubleClick = () => {
@@ -143,29 +145,38 @@ export const TextBox: React.FC<TextBoxProps> = ({
 
   const handleDragEnd = (e: any) => {
     const node = e.target;
+    // Text uses corner-based positioning, so just report x, y directly
     onDragEnd(node.x(), node.y());
   };
 
   const handleTransform = () => {
     const textNode = textRef.current;
-    if (textNode && onResize) {
-      const scaleX = textNode.scaleX();
-      const scaleY = textNode.scaleY();
+    if (!textNode || !onResize) return;
 
-      // Calculate new font size based on scale
-      const newFontSize = Math.max(8, fontSize * Math.max(scaleX, scaleY));
+    const scaleX = textNode.scaleX();
+    const scaleY = textNode.scaleY();
 
-      // Reset scale and apply new font size
-      textNode.scaleX(1);
-      textNode.scaleY(1);
-      textNode.fontSize(newFontSize);
+    // Calculate new dimensions based on scale
+    const newWidth = Math.max(20, textNode.width() * scaleX);
+    const newHeight = Math.max(10, textNode.height() * scaleY);
 
-      onResize(textNode.x(), textNode.y(), textNode.width(), textNode.height());
-    }
+    // Calculate new font size - use the average of scaleX and scaleY
+    const scaleFactor = Math.max(scaleX, scaleY);
+    const newFontSize = Math.max(8, fontSize * scaleFactor);
+
+    // Reset scale and apply new dimensions
+    textNode.scaleX(1);
+    textNode.scaleY(1);
+    textNode.width(newWidth);
+    textNode.height(newHeight);
+    textNode.fontSize(newFontSize);
+
+    // Report the new position and dimensions
+    onResize(textNode.x(), textNode.y(), newWidth, newHeight);
   };
 
   return (
-    <Group>
+    <Group visible={visible}>
       <Text
         ref={textRef}
         x={x}
@@ -174,6 +185,9 @@ export const TextBox: React.FC<TextBoxProps> = ({
         fontSize={fontSize}
         fontFamily={fontFamily}
         fill={fill}
+        width={200} // Default width for text wrapping
+        wrap="word" // Enable word wrapping
+        align="left" // Left align text
         draggable={!isEditing}
         onClick={handleClick}
         onTap={handleClick}

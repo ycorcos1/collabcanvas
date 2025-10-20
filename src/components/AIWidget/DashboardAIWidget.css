@@ -1,0 +1,300 @@
+/**
+ * Dashboard AI Widget Styles
+ */
+
+/* Floating Action Button (when closed) */
+.dashboard-ai-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-normal) var(--ease-out);
+  z-index: 9998;
+}
+
+.dashboard-ai-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-ai-fab:active {
+  transform: scale(0.95);
+}
+
+.dashboard-ai-fab svg {
+  color: white;
+}
+
+/* Widget Container */
+.dashboard-ai-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 420px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 100px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideInUp 0.3s var(--ease-out);
+  z-index: 9999;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-ai-widget.minimized {
+  height: auto;
+  width: 280px; /* Smaller width when minimized */
+}
+
+.dashboard-ai-widget.minimized .dashboard-ai-header {
+  padding: var(--space-3);
+}
+
+.dashboard-ai-widget.minimized .dashboard-ai-header-title {
+  font-size: var(--text-sm);
+}
+
+.dashboard-ai-widget.minimized .dashboard-ai-header-icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Widget Header */
+.dashboard-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-primary);
+  cursor: move; /* Visual hint that it could be draggable in future */
+}
+
+.dashboard-ai-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-ai-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-ai-header-icon svg {
+  color: white;
+}
+
+.dashboard-ai-header-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-ai-header-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+.dashboard-ai-header-badge.disabled {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.dashboard-ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.dashboard-ai-header-button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.dashboard-ai-header-button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.dashboard-ai-header-button:active {
+  transform: scale(0.95);
+}
+
+/* Widget Body */
+.dashboard-ai-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 400px;
+  max-height: calc(100vh - 200px);
+  margin: 0; /* Ensure no margin */
+}
+
+/* Minimized Hint */
+.dashboard-ai-minimized-hint {
+  padding: var(--space-2) var(--space-3);
+  text-align: center;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+}
+
+.dashboard-ai-minimized-hint p {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* Override AIChat styles for widget context */
+.dashboard-ai-widget .ai-chat-container {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-ai-widget .ai-chat-empty {
+  padding: var(--space-6) var(--space-4);
+}
+
+.dashboard-ai-widget .ai-chat-empty-title {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-2);
+}
+
+.dashboard-ai-widget .ai-chat-empty-text {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+}
+
+.dashboard-ai-widget .ai-chat-examples {
+  margin-top: var(--space-4);
+}
+
+.dashboard-ai-widget .ai-chat-example {
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Fix input form padding/margin issues */
+.dashboard-ai-widget .ai-chat-input-form {
+  margin: 0;
+  padding: 12px;
+  border-top: 1px solid var(--border-primary);
+}
+
+.dashboard-ai-widget .ai-chat-messages {
+  padding: 16px;
+  margin: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .dashboard-ai-fab {
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .dashboard-ai-widget {
+    bottom: 16px;
+    right: 16px;
+    width: calc(100vw - 32px);
+    max-height: calc(100vh - 80px);
+  }
+
+  .dashboard-ai-body {
+    min-height: 300px;
+    max-height: calc(100vh - 140px);
+  }
+
+  .dashboard-ai-header {
+    padding: var(--space-3);
+  }
+
+  .dashboard-ai-header-title {
+    font-size: var(--text-sm);
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .dashboard-ai-fab {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  }
+
+  .dashboard-ai-widget {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Accessibility */
+.dashboard-ai-fab:focus-visible,
+.dashboard-ai-header-button:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* Animation for badge */
+.dashboard-ai-header-badge {
+  animation: fadeIn 0.3s var(--ease-out);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

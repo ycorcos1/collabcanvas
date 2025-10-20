@@ -7,8 +7,9 @@ import {
   CreateProjectData,
 } from "../types/project";
 import {
+  getAllProjects,
   getProjects,
-  getRecentProjects,
+  // getRecentProjects, // replaced by realtime subscription
   createProject,
   moveProjectToTrash,
   recoverProject,
@@ -18,6 +19,14 @@ import {
   batchDeleteProjects,
 } from "../services/projects";
 import { updateProjectSlug } from "../services/slugs";
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  limit as qlimit,
+} from "firebase/firestore";
+import { firestore } from "../services/firebase";
 
 interface UseProjectsReturn {
   /** Array of projects */
@@ -88,7 +97,9 @@ export const useProjects = (
           startAfter: reset ? undefined : nextCursor,
         };
 
-        const result = await getProjects(user.id, queryOptions);
+        const result = options.includeDeleted
+          ? await getProjects(user.id, queryOptions)
+          : await getAllProjects(user.id, queryOptions as any);
 
         if (reset) {
           setProjects(result.projects);
@@ -137,6 +148,127 @@ export const useProjects = (
       loadProjects(true);
     }
   }, [user, loadProjects]);
+
+  // Realtime subscription for projects (owned + shared)
+  useEffect(() => {
+    if (!user) return;
+
+    try {
+      const projectsRef = collection(firestore, "projects");
+
+      // Owned projects query
+      const ownedBase = [where("ownerId", "==", user.id)];
+      const ownedActive = options.includeDeleted
+        ? [where("deletedAt", "!=", null)]
+        : [where("deletedAt", "==", null)];
+
+      const ownedQuery = query(
+        projectsRef,
+        ...(ownedBase as any),
+        ...(ownedActive as any),
+        qlimit((options.limit || 20) + 1)
+      );
+
+      // Shared projects query (only active shown in dashboard views)
+      const sharedQuery = options.includeDeleted
+        ? null
+        : query(
+            projectsRef,
+            where("collaborators", "array-contains", user.id),
+            where("deletedAt", "==", null),
+            qlimit((options.limit || 20) + 1)
+          );
+
+      let ownedUnsub: any = null;
+
+      const applyState = (ownedDocs: any[], sharedDocs: any[]) => {
+        // Merge and dedupe by id
+        const map = new Map<string, Project>();
+        [...ownedDocs, ...sharedDocs].forEach((d: any) => {
+          const proj = { id: d.id, ...(d.data() as any) } as Project;
+          map.set(proj.id, proj);
+        });
+
+        let combined = Array.from(map.values());
+
+        // Client search
+        const sq = options.searchQuery?.toLowerCase();
+        if (sq) {
+          combined = combined.filter(
+            (p) =>
+              p.name?.toLowerCase()?.includes(sq) ||
+              p.description?.toLowerCase()?.includes(sq)
+          );
+        }
+
+        // Client sort
+        const toTs = (v: any) =>
+          typeof v === "object" && v?.seconds
+            ? v.seconds
+            : typeof v === "number"
+            ? v
+            : 0;
+        const orderField = (options.orderBy as any) || "updatedAt";
+        const dir = options.orderDirection || "desc";
+        combined.sort((a: any, b: any) => {
+          const diff = toTs(b[orderField]) - toTs(a[orderField]);
+          return dir === "desc" ? diff : -diff;
+        });
+
+        setProjects(combined.slice(0, options.limit || 20));
+        setHasMore(combined.length > (options.limit || 20));
+        setHasInitialized(true);
+      };
+
+      ownedUnsub = onSnapshot(ownedQuery, (snap) => {
+        const ownedDocs = snap.docs;
+        if (!sharedQuery) {
+          applyState(ownedDocs, []);
+        }
+      });
+
+      // We'll attach shared listener below with state tracking
+
+      // Maintain latest snapshots
+      let lastOwned: any[] = [];
+      let lastShared: any[] = [];
+
+      if (ownedUnsub) {
+        ownedUnsub(); // reattach to capture and store lastOwned
+      }
+
+      // Re-attach with state tracking
+      const ownedUnsub2 = onSnapshot(ownedQuery, (snap) => {
+        lastOwned = snap.docs;
+        applyState(lastOwned, lastShared);
+      });
+
+      let sharedUnsub2: any = null;
+      if (sharedQuery) {
+        sharedUnsub2 = onSnapshot(sharedQuery, (snap) => {
+          lastShared = snap.docs;
+          applyState(lastOwned, lastShared);
+        });
+      }
+
+      return () => {
+        ownedUnsub2 && ownedUnsub2();
+        sharedUnsub2 && sharedUnsub2();
+      };
+    } catch (e) {
+      // Fallback to non-realtime if snapshot fails
+      // No-op; loadProjects already runs
+      return;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    user?.id,
+    options.searchQuery,
+    options.orderBy,
+    options.orderDirection,
+    options.limit,
+    options.includeDeleted,
+  ]);
 
   // Create new project
   const createNewProject = useCallback(
@@ -312,23 +444,62 @@ export const useRecentProjects = () => {
   useEffect(() => {
     if (!user) return;
 
-    const loadRecentProjects = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        const recentProjects = await getRecentProjects(user.id);
-        setProjects(recentProjects);
-      } catch (err) {
-        // Silently handle error
-        setError("Failed to load recent projects");
-      } finally {
+      const projectsRef = collection(firestore, "projects");
+      const ownedQuery = query(
+        projectsRef,
+        where("ownerId", "==", user.id),
+        where("deletedAt", "==", null),
+        qlimit(25)
+      );
+      const sharedQuery = query(
+        projectsRef,
+        where("collaborators", "array-contains", user.id),
+        where("deletedAt", "==", null),
+        qlimit(25)
+      );
+
+      let lastOwned: any[] = [];
+      let lastShared: any[] = [];
+
+      const apply = () => {
+        const map = new Map<string, Project>();
+        [...lastOwned, ...lastShared].forEach((d: any) => {
+          const data = d.data() as any;
+          map.set(d.id, { id: d.id, ...data } as Project);
+        });
+        const all = Array.from(map.values());
+        const toTs = (v: any) =>
+          typeof v === "object" && v?.seconds
+            ? v.seconds
+            : typeof v === "number"
+            ? v
+            : 0;
+        all.sort((a: any, b: any) => toTs(b.updatedAt) - toTs(a.updatedAt));
+        setProjects(all.slice(0, 10));
         setIsLoading(false);
-      }
-    };
+      };
 
-    loadRecentProjects();
-  }, [user]);
+      const unsubOwned = onSnapshot(ownedQuery, (snap) => {
+        lastOwned = snap.docs;
+        apply();
+      });
+      const unsubShared = onSnapshot(sharedQuery, (snap) => {
+        lastShared = snap.docs;
+        apply();
+      });
+
+      return () => {
+        unsubOwned();
+        unsubShared();
+      };
+    } catch {
+      setIsLoading(false);
+    }
+  }, [user?.id]);
 
   return { projects, isLoading, error };
 };

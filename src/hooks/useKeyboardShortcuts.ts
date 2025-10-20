@@ -25,6 +25,7 @@ interface KeyboardShortcutsHandlers {
   onMoveLeft?: () => void;
   onMoveRight?: () => void;
   onEscape?: () => void;
+  onSave?: () => void;
 }
 
 export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
@@ -38,13 +39,31 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
         target.contentEditable === "true" ||
         target.isContentEditable;
 
-      if (isInputElement) {
-        // Allow all default behavior in input fields
+      // Also skip when the focused element is our AI chat input explicitly
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isAIChatInput =
+        !!activeEl && activeEl.classList?.contains("ai-chat-input");
+
+      if (isInputElement || isAIChatInput) {
+        // Allow all default behavior in input fields (incl. AI chat)
         return;
       }
 
+      // If user has a text selection, allow native copy/cut/paste
+      const selection = window.getSelection?.();
+      const hasSelection = !!selection && selection.toString().length > 0;
+
       const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
       const cmdKey = isMac ? event.metaKey : event.ctrlKey;
+
+      // Save
+      if (cmdKey && event.key === "s") {
+        if (handlers.onSave) {
+          event.preventDefault();
+          handlers.onSave();
+          return;
+        }
+      }
 
       // Undo/Redo
       if (cmdKey && event.key === "z") {
@@ -96,17 +115,33 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutsHandlers) => {
       }
 
       // Copy
-      if (cmdKey && event.key === "c" && handlers.onCopy) {
-        event.preventDefault();
-        handlers.onCopy();
-        return;
+      if (cmdKey && event.key === "c") {
+        if (hasSelection) return; // let browser copy selected text
+        if (handlers.onCopy) {
+          event.preventDefault();
+          handlers.onCopy();
+          return;
+        }
+      }
+
+      // Cut (optional if consumer chooses to map delete)
+      if (cmdKey && event.key === "x") {
+        if (hasSelection) return; // let browser cut selected text
+        if (handlers.onDelete) {
+          event.preventDefault();
+          handlers.onDelete();
+          return;
+        }
       }
 
       // Paste
-      if (cmdKey && event.key === "v" && handlers.onPaste) {
-        event.preventDefault();
-        handlers.onPaste();
-        return;
+      if (cmdKey && event.key === "v") {
+        if (hasSelection) return; // let browser paste over selected text if in editable
+        if (handlers.onPaste) {
+          event.preventDefault();
+          handlers.onPaste();
+          return;
+        }
       }
 
       // Arrow keys for movement (only when shapes are selected)

@@ -13,6 +13,8 @@ import {
   startAfter,
   Timestamp,
   writeBatch,
+  runTransaction,
+  arrayRemove,
 } from "firebase/firestore";
 import { firestore } from "./firebase";
 import { canAutoWriteToFirestore } from "../config/firebaseConfig";
@@ -45,25 +47,6 @@ export async function createProject(
   data: CreateProjectData,
   ownerId: string
 ): Promise<Project> {
-  if (!canAutoWriteToFirestore()) {
-    // Auto-writes disabled - return mock project
-    const now = Timestamp.now();
-    return {
-      id: crypto.randomUUID(),
-      name: data.name,
-      slug: data.name.toLowerCase().replace(/\s+/g, "-"),
-      slugHistory: [],
-      ownerId,
-      collaborators: [],
-      description: data.description || "",
-      isPublic: data.isPublic || false,
-      createdAt: now,
-      updatedAt: now,
-      lastAccessedAt: now,
-      deletedAt: null,
-    };
-  }
-
   try {
     // Generate unique slug
     const slug = await generateUniqueSlug(data.name);
@@ -299,17 +282,178 @@ export async function getProjects(
 }
 
 /**
- * Get recent projects (last 10)
+ * Get ALL projects for a user with filter support (owned/shared/all)
+ */
+export async function getAllProjects(
+  userId: string,
+  options: ProjectQueryOptions & { filter?: "all" | "owned" | "shared" } = {}
+): Promise<ProjectListResponse> {
+  try {
+    const {
+      limit: queryLimit = 20,
+      startAfter: _cursor,
+      orderBy: orderField = "updatedAt",
+      orderDirection = "desc",
+      includeDeleted = false,
+      searchQuery,
+      filter = "all",
+    } = options;
+
+    const projectsRef = collection(firestore, PROJECTS_COLLECTION);
+
+    const runOwned = async () => {
+      let q = query(projectsRef, where("ownerId", "==", userId));
+      if (!includeDeleted) q = query(q, where("deletedAt", "==", null));
+      // Avoid server-side orderBy to remove composite index requirement; sort client-side
+      q = query(q, limit(queryLimit + 1));
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as any),
+      })) as Project[];
+    };
+
+    const runShared = async () => {
+      let q = query(
+        projectsRef,
+        where("collaborators", "array-contains", userId)
+      );
+      if (!includeDeleted) q = query(q, where("deletedAt", "==", null));
+      // Avoid server-side orderBy to remove composite index requirement; sort client-side
+      q = query(q, limit(queryLimit + 1));
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as any),
+      })) as Project[];
+    };
+
+    let combined: Project[] = [];
+    if (filter === "owned") combined = await runOwned();
+    else if (filter === "shared") combined = await runShared();
+    else {
+      const [owned, shared] = await Promise.all([runOwned(), runShared()]);
+      const map = new Map<string, Project>();
+      [...owned, ...shared].forEach((p) => map.set(p.id, p));
+      combined = Array.from(map.values());
+    }
+
+    // Client-side search filter
+    if (searchQuery) {
+      const ql = searchQuery.toLowerCase();
+      combined = combined.filter(
+        (p) =>
+          p.name?.toLowerCase()?.includes(ql) ||
+          p.description?.toLowerCase()?.includes(ql)
+      );
+    }
+
+    // Client-side sort fallback (by updatedAt default)
+    const toTs = (v: any) =>
+      typeof v === "object" && v?.seconds
+        ? v.seconds
+        : typeof v === "number"
+        ? v
+        : 0;
+    combined.sort((a: any, b: any) => {
+      const diff = toTs(b[orderField]) - toTs(a[orderField]);
+      return orderDirection === "desc" ? diff : -diff;
+    });
+
+    return {
+      projects: combined.slice(0, queryLimit),
+      hasMore: combined.length > queryLimit,
+      nextCursor: undefined,
+    };
+  } catch (error) {
+    console.error("Error in getAllProjects:", error);
+    return { projects: [], hasMore: false, nextCursor: undefined };
+  }
+}
+/**
+ * Get recent projects (last 10) - includes both owned and shared projects
  */
 export async function getRecentProjects(userId: string): Promise<Project[]> {
   try {
-    const result = await getProjects(userId, {
-      limit: 10,
-      orderBy: "updatedAt", // Use updatedAt instead of lastAccessedAt for auto-save compatibility
-      orderDirection: "desc",
+    const projectsRef = collection(firestore, PROJECTS_COLLECTION);
+
+    // Query 1: Get owned projects
+    const ownedQuery = query(
+      projectsRef,
+      where("ownerId", "==", userId),
+      where("deletedAt", "==", null),
+      orderBy("updatedAt", "desc"),
+      limit(20) // Get more than needed to ensure we have 10 after merge
+    );
+
+    // Query 2: Get projects where user is a collaborator
+    const collaboratorQuery = query(
+      projectsRef,
+      where("collaborators", "array-contains", userId),
+      where("deletedAt", "==", null),
+      orderBy("updatedAt", "desc"),
+      limit(20) // Get more than needed
+    );
+
+    // Execute both queries in parallel
+    const [ownedSnapshot, collaboratorSnapshot] = await Promise.all([
+      getDocs(ownedQuery),
+      getDocs(collaboratorQuery),
+    ]);
+
+    // Combine results using a Map to avoid duplicates
+    const projectsMap = new Map<string, Project>();
+
+    // Add owned projects
+    ownedSnapshot.docs.forEach((doc) => {
+      const projectData = doc.data() as Omit<Project, "id">;
+      projectsMap.set(doc.id, {
+        id: doc.id,
+        ...projectData,
+      });
     });
 
-    return result.projects;
+    // Add collaborator projects (will not overwrite if already in map)
+    collaboratorSnapshot.docs.forEach((doc) => {
+      if (!projectsMap.has(doc.id)) {
+        const projectData = doc.data() as Omit<Project, "id">;
+        projectsMap.set(doc.id, {
+          id: doc.id,
+          ...projectData,
+        });
+      }
+    });
+
+    // Convert map to array and sort by updatedAt DESC
+    const allProjects = Array.from(projectsMap.values());
+
+    // Sort by updatedAt (most recently edited first)
+    allProjects.sort((a, b) => {
+      // Extract timestamp values (handle both Timestamp objects and numbers)
+      let aTime = 0;
+      let bTime = 0;
+
+      if (a.updatedAt) {
+        if (typeof a.updatedAt === "object" && "seconds" in a.updatedAt) {
+          aTime = (a.updatedAt as any).seconds;
+        } else if (typeof a.updatedAt === "number") {
+          aTime = a.updatedAt;
+        }
+      }
+
+      if (b.updatedAt) {
+        if (typeof b.updatedAt === "object" && "seconds" in b.updatedAt) {
+          bTime = (b.updatedAt as any).seconds;
+        } else if (typeof b.updatedAt === "number") {
+          bTime = b.updatedAt;
+        }
+      }
+
+      return bTime - aTime; // DESC order (newest first)
+    });
+
+    // Return top 10
+    return allProjects.slice(0, 10);
   } catch (error) {
     console.error("Error getting recent projects:", error);
     // Return empty array for new users instead of throwing error
@@ -390,5 +534,77 @@ export async function generateProjectThumbnail(
   } catch (error) {
     console.error("Error generating project thumbnail:", error);
     // Don't throw - thumbnails are not critical
+  }
+}
+
+/**
+ * Leave a project as a collaborator
+ * - Owners cannot leave; they must transfer ownership first
+ * - Idempotent: succeeds even if the user is already not a collaborator
+ */
+export async function leaveProject(
+  projectId: string,
+  userId: string
+): Promise<void> {
+  const projectRef = doc(firestore, PROJECTS_COLLECTION, projectId);
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(projectRef);
+    if (!snap.exists()) throw new Error("Project not found");
+    const data = snap.data() as any;
+
+    if (data.ownerId === userId) {
+      const err: any = new Error(
+        "Owners cannot leave their own project. Transfer ownership first."
+      );
+      err.code = "owner_cannot_leave";
+      throw err;
+    }
+
+    const collaborators: string[] = data.collaborators || [];
+    if (!collaborators.includes(userId)) {
+      // Already not a collaborator - nothing to do
+      return;
+    }
+
+    tx.update(projectRef, {
+      collaborators: arrayRemove(userId),
+      updatedAt: Timestamp.now(),
+    });
+  });
+}
+
+/**
+ * Search projects by name (fuzzy match)
+ */
+export async function searchProjectsByName(
+  userId: string,
+  searchTerm: string
+): Promise<Project[]> {
+  try {
+    const result = await getProjects(userId, {
+      searchQuery: searchTerm,
+      limit: 10,
+      includeDeleted: false,
+    });
+    return result.projects;
+  } catch (error) {
+    console.error("Error searching projects:", error);
+    return [];
+  }
+}
+
+/**
+ * Get all trashed projects for a user
+ */
+export async function getTrashedProjects(userId: string): Promise<Project[]> {
+  try {
+    const result = await getProjects(userId, {
+      includeDeleted: true,
+      limit: 100,
+    });
+    return result.projects.filter((p) => p.deletedAt !== null);
+  } catch (error) {
+    console.error("Error getting trashed projects:", error);
+    return [];
   }
 }

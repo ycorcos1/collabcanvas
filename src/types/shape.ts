@@ -12,6 +12,7 @@
  */
 export interface Shape {
   id: string; // Unique identifier (Firebase document ID)
+  pageId: string; // Page identifier the shape belongs to
   type:
     | "rectangle" // Rectangle shape
     | "circle" // Circle/Ellipse shape
@@ -19,17 +20,18 @@ export interface Shape {
     | "drawing" // Freehand drawing
     | "rect" // Alternative name for rectangle (Konva compatibility)
     | "ellipse" // Alternative name for circle (Konva compatibility)
-    | "polygon" // Polygon shape
     | "triangle" // Triangle shape
     | "line" // Line shape
     | "arrow" // Arrow shape
-    | "star"; // Star shape
+    | "image"; // Image shape
   x: number; // X coordinate (top-left for rectangles, center for circles)
   y: number; // Y coordinate (top-left for rectangles, center for circles)
   width: number; // Width in pixels
   height: number; // Height in pixels
   color: string; // Fill color (hex format)
   zIndex: number; // Layer order (higher values appear on top)
+  visible?: boolean; // Visibility toggle (default: true)
+  name?: string; // Custom layer name (optional)
   createdBy: string; // User ID who created the shape
   createdAt: number; // Creation timestamp (Unix time)
   updatedAt: number; // Last modification timestamp
@@ -42,6 +44,11 @@ export interface Shape {
   // Drawing-specific properties
   points?: number[]; // Drawing path points (for drawing shapes)
   strokeWidth?: number; // Stroke width (for drawing shapes)
+
+  // Image-specific properties
+  src?: string; // Public URL for the image
+  naturalWidth?: number; // Image natural width for initial placement
+  naturalHeight?: number; // Image natural height for initial placement
 
   // Rotation
   rotation?: number; // Rotation angle in degrees (for all shapes)
@@ -65,6 +72,8 @@ export interface ShapeUpdate {
   height?: number;
   color?: string;
   zIndex?: number;
+  visible?: boolean; // New visibility state
+  name?: string; // New custom layer name
   text?: string; // New text content (for text shapes)
   fontSize?: number; // New font size (for text shapes)
   fontFamily?: string; // New font family (for text shapes)
@@ -79,4 +88,7 @@ export interface ShapeUpdate {
  * Omits auto-generated fields (id, timestamps) that Firebase handles
  */
 
-export type CreateShapeData = Omit<Shape, "id" | "createdAt" | "updatedAt">;
+export type CreateShapeData = Omit<
+  Shape,
+  "id" | "createdAt" | "updatedAt" | "pageId"
+>;

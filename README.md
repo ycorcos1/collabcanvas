@@ -59,12 +59,22 @@ All core features have been implemented according to the PRD specifications:
 ✅ **AI Agent Feature** 🤖
 
 - Natural language canvas manipulation
-- 9 AI tools (create, delete, update, select, duplicate, rotate, align, distribute, templates)
+- Unified AI agent (works on dashboard and canvas)
+- 15+ AI tools (create, delete, update, select, duplicate, rotate, align, distribute, templates, project management)
 - Context-aware command processing
 - Collaborative lock respect
 - Client-side intent router for instant responses
 - Memory bank with templates and defaults
 - Comprehensive error handling and ambiguity detection
+
+✅ **Advanced Canvas Features**
+
+- **Layers Panel**: Drag-to-reorder, visibility toggle, z-index management
+- **Smart Guides**: Alignment detection with visual guides (center, edges)
+- **Snap-to-Grid**: Grid overlay with configurable sizes
+- **Lifecycle Save**: Auto-save on navigate, refresh, close (no periodic auto-save)
+- **Multiple Shape Types**: Rectangle, Circle, Triangle, Line, Arrow, Text, Image, Drawing
+- **Drawing Tool**: Freehand drawing with line smoothing and customization
 
 ## Environment Setup
 
@@ -289,14 +299,30 @@ Firestore and Realtime Database rules ensure:
 - Users can only modify their own cursor/presence data
 - All users can read/write shapes (collaborative editing)
 
+## Testing
+
+Comprehensive testing documentation is available in the `/testing/` folder:
+
+- [Master Test Plan](testing/MASTER_TEST_PLAN.md) - Complete A-Z testing checklist
+- [01 - Authentication Tests](testing/01_AUTHENTICATION_TESTS.md)
+- [02 - Dashboard Tests](testing/02_DASHBOARD_TESTS.md)
+- [03 - Canvas Tests](testing/03_CANVAS_TESTS.md)
+- [04 - Collaboration Tests](testing/04_COLLABORATION_TESTS.md)
+- [05 - AI Agent Tests](testing/05_AI_AGENT_TESTS.md)
+- [06 - Performance Tests](testing/06_PERFORMANCE_TESTS.md)
+- [07 - Security Tests](testing/07_SECURITY_TESTS.md)
+- [08 - Deployment Checklist](testing/08_DEPLOYMENT_CHECKLIST.md)
+
+**Test Status**: All TypeScript errors fixed ✅ | Build passing ✅
+
 ## Documentation
 
 - [AI Agent User Guide](docs/AI_AGENT_GUIDE.md) - Complete guide for using AI commands
 - [AI Agent Implementation Summary](docs/AI_AGENT_SUMMARY.md) - Technical overview
-- [AI Agent Testing](docs/AI_AGENT_TESTING.md) - Test results and coverage
 - [Memory Bank README](memoryBank/README.md) - Memory bank structure and usage
 - [Security Quick Reference](SECURITY_QUICK_REF.md) - Pre-deploy secrets checklist
 - [Product Requirements Document](collabcanvas_prd.md) - Complete PRD with all features
+- [Architecture Document](collabcanvas_architecture.md) - System architecture and design
 - [Task List](collabcanvas_tasklist.md) - Development task breakdown
 
 ## Development Notes

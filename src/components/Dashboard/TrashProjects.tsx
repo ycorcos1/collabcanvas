@@ -446,16 +446,16 @@ style.textContent = `
   .project-thumbnail {
     position: relative;
     width: 100%;
-    height: 160px;
+    height: 180px;
     overflow: hidden;
-    background-color: var(--bg-secondary);
-    opacity: 0.7;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   }
 
   .project-thumbnail img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    filter: saturate(0.85);
   }
 
   .project-thumbnail-fallback {
@@ -467,11 +467,11 @@ style.textContent = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--text-4xl);
+    font-size: 42px;
     font-weight: var(--font-bold);
-    color: white;
-    background-color: #6b7280;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    color: rgba(255,255,255,0.95);
+    background: radial-gradient(circle at 30% 30%, #64748b 0%, #374151 100%);
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
   }
 
   .project-content {
@@ -481,7 +481,7 @@ style.textContent = `
   .project-name {
     font-size: var(--text-base);
     font-weight: var(--font-semibold);
-    color: var(--text-secondary);
+    color: var(--text-primary);
     margin: 0 0 var(--space-2) 0;
     white-space: nowrap;
     overflow: hidden;
@@ -494,7 +494,7 @@ style.textContent = `
 
   .project-deleted {
     font-size: var(--text-sm);
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
   }
 
   .project-actions {

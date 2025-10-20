@@ -318,85 +318,15 @@
   }
 }
 
-/* Exit Prompt Modal */
-.exit-prompt-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
+/* Shift key multi-select cursor feedback */
+.canvas-workspace.shift-held {
+  cursor: crosshair !important;
 }
 
-.exit-prompt-modal {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  min-width: 400px;
-  max-width: 500px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+.canvas-workspace.shift-held * {
+  cursor: crosshair !important;
 }
 
-.exit-prompt-modal h3 {
-  margin: 0 0 12px 0;
-  color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.exit-prompt-modal p {
-  margin: 0 0 24px 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.exit-prompt-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.exit-prompt-button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.exit-prompt-button.secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border-color: var(--border-color);
-}
-
-.exit-prompt-button.secondary:hover {
-  background: var(--bg-tertiary);
-}
-
-.exit-prompt-button.danger {
-  background: #ef4444;
-  color: white;
-}
-
-.exit-prompt-button.danger:hover {
-  background: #dc2626;
-}
-
-.exit-prompt-button.primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.exit-prompt-button.primary:hover {
-  background: #2563eb;
+.canvas-workspace.shift-held .konvajs-content {
+  cursor: crosshair !important;
 }
