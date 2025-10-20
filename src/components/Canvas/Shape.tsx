@@ -56,18 +56,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
     const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
     const transformerRef = useRef<Konva.Transformer>(null);
 
-    // Debug: Log when shape props change
-    useEffect(() => {
-      if (import.meta.env.DEV) {
-        console.log(`[Shape Props Update] ${shape.id}:`, {
-          type: shape.type,
-          x: shape.x,
-          y: shape.y,
-          width: shape.width,
-          height: shape.height,
-        });
-      }
-    }, [shape.id, shape.x, shape.y, shape.width, shape.height, shape.type]);
+    // Debug log removed
 
     // Attach transformer to shape when selected
     useEffect(() => {
@@ -125,17 +114,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
       const node = shapeRef.current;
       if (!node || isPreview || isTransforming || isSelected) return; // Skip if selected (being transformed)
 
-      if (import.meta.env.DEV) {
-        console.log(`[Sync Effect] Running for shape ${shape.id}:`, {
-          type: shape.type,
-          dimensions: {
-            x: shape.x,
-            y: shape.y,
-            w: shape.width,
-            h: shape.height,
-          },
-        });
-      }
+      // Debug log removed
 
       // For circles: ensure radius matches shape dimensions
       if (shape.type === "circle" || shape.type === "ellipse") {
@@ -257,18 +236,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
       const scaleX = shapeNode.scaleX();
       const scaleY = shapeNode.scaleY();
 
-      if (import.meta.env.DEV) {
-        console.log(`[Transform End] Shape ${shape.id}:`, {
-          type: shape.type,
-          scale: { x: scaleX, y: scaleY },
-          beforeResize: {
-            x: shape.x,
-            y: shape.y,
-            w: shape.width,
-            h: shape.height,
-          },
-        });
-      }
+      // Debug log removed
 
       // Handle different shape types with their specific coordinate systems
       if (shape.type === "circle" || shape.type === "ellipse") {
@@ -291,14 +259,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
         const newX = centerX - newRadius;
         const newY = centerY - newRadius;
 
-        if (import.meta.env.DEV) {
-          console.log(`[Circle Resize] Calling onResize with:`, {
-            x: newX,
-            y: newY,
-            width: newSize,
-            height: newSize,
-          });
-        }
+        // Debug log removed
 
         onResize(shape.id, newX, newY, newSize, newSize);
       } else if (
@@ -827,7 +788,7 @@ export const Shape: React.FC<ShapeProps> = React.memo(
 
     // Default to rectangle
     return (
-      <Group ref={groupRef}>
+      <Group ref={groupRef} visible={isVisible}>
         <Rect
           ref={shapeRef as React.RefObject<Konva.Rect>}
           {...commonProps}
