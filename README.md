@@ -2,6 +2,8 @@
 
 A real-time collaborative canvas application with AI-powered natural language manipulation, built with React, TypeScript, Firebase, and OpenAI.
 
+Walkthrough Video: https://youtu.be/Kfjt6XnsfVg
+
 ## 🎉 MVP COMPLETED!
 
 All core features have been implemented according to the PRD specifications:
